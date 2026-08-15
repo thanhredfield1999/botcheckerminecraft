@@ -1,0 +1,15 @@
+{
+  "name": "Restaurant Tycoon ordering GUI",
+  "description": "Chủ sở hữu plot_1 đã setup supply và DB test fixture phải được chuẩn bị trước. Chỉ tăng draft và mở cửa sổ xác nhận thanh toán; không thanh toán.",
+  "maxDurationMs": 180000,
+  "steps": [
+    { "id": "state_before", "action": "assert_state", "minimumHealth": 20, "minimumFood": 20, "gui": "closed" },
+    { "id": "open_order_menu", "action": "chat", "message": "/restaurant order plot_1" },
+    { "id": "ownership_check", "action": "wait_for_text", "text": "Đang kiểm tra quyền sở hữu và thiết lập nhập hàng...", "source": "chat" },
+    { "id": "order_gui_open", "action": "wait_for_gui", "titleIncludes": "Đặt nguyên liệu - plot_1" },
+    { "id": "select_tomato", "action": "click_gui", "nameIncludes": "Cà chua", "button": "left", "inspectDelayMs": 750 },
+    { "id": "confirm_order", "action": "click_gui", "nameIncludes": "Xác nhận đơn", "button": "left", "inspectDelayMs": 750 },
+    { "id": "payment_gui_open", "action": "wait_for_gui", "titleIncludes": "Xác nhận thanh toán" },
+    { "id": "state_after", "action": "assert_state", "minimumHealth": 20, "minimumFood": 20, "gui": "open" }
+  ]
+}

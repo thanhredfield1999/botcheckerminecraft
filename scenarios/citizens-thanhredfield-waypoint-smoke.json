@@ -1,0 +1,14 @@
+{
+  "name": "ThanhRedfield Citizens waypoint smoke",
+  "description": "Đi bộ qua các waypoint bounded tới vùng ThanhRedfield rồi xác minh locator; không command, teleport, click GUI hoặc tương tác NPC.",
+  "maxDurationMs": 120000,
+  "steps": [
+    {"id":"state-before","action":"assert_state","minimumHealth":20,"minimumFood":20,"gui":"closed","timeoutMs":3000},
+    {"id":"waypoint-1","action":"go_to","x":45,"y":-60,"z":-35,"range":8,"travel":"walk","timeoutMs":20000},
+    {"id":"waypoint-2","action":"go_to","x":58,"y":-60,"z":-52,"range":8,"travel":"walk","timeoutMs":20000},
+    {"id":"waypoint-3","action":"go_to","x":68,"y":-61,"z":-68,"range":8,"travel":"walk","timeoutMs":20000},
+    {"id":"npc-area","action":"go_to","x":74,"y":-61,"z":-80,"range":8,"travel":"walk","timeoutMs":20000},
+    {"id":"assert-thanhredfield","action":"assert_nearby_entity","nameIncludes":"ThanhRedfield","maxDistance":48,"timeoutMs":8000},
+    {"id":"state-after","action":"assert_state","minimumHealth":20,"minimumFood":20,"gui":"closed","timeoutMs":3000}
+  ]
+}

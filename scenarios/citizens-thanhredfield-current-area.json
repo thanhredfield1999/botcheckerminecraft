@@ -1,0 +1,52 @@
+{
+  "name": "ThanhRedfield Citizens current area smoke",
+  "description": "Đi bộ bounded tới khu hiện tại của ThanhRedfield rồi xác minh locator Citizens; không command, teleport, click GUI hoặc tương tác NPC.",
+  "maxDurationMs": 90000,
+  "steps": [
+    {
+      "id": "state-before",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    },
+    {
+      "id": "waypoint-near-current-area",
+      "action": "go_to",
+      "x": 50,
+      "y": -60,
+      "z": -35,
+      "range": 8,
+      "travel": "walk",
+      "timeoutMs": 25000,
+      "note": "Waypoint trung gian; chỉ dùng pathfinder của client."
+    },
+    {
+      "id": "walk-to-current-thanhredfield-area",
+      "action": "go_to",
+      "x": 41,
+      "y": -61,
+      "z": -13,
+      "range": 8,
+      "travel": "walk",
+      "timeoutMs": 35000,
+      "note": "Khu vực NPC được log gần nhất; không dùng /tp."
+    },
+    {
+      "id": "assert-thanhredfield-visible",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "maxDistance": 48,
+      "timeoutMs": 8000
+    },
+    {
+      "id": "state-after",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}

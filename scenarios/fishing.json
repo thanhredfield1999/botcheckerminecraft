@@ -1,0 +1,14 @@
+{
+  "name": "First fishing journey",
+  "description": "Example journey. Adjust GUI labels and coordinates to match the target server.",
+  "maxDurationMs": 900000,
+  "steps": [
+    { "id": "join_messages", "action": "wait", "durationMs": 5000 },
+    { "id": "open_menu", "action": "chat", "message": "/menu" },
+    { "id": "menu_open", "action": "wait_for_gui", "timeoutMs": 10000 },
+    { "id": "choose_fishing", "action": "click_gui", "nameIncludes": "câu cá" },
+    { "id": "fishing_guidance", "action": "wait_for_text", "text": "câu", "source": "any", "timeoutMs": 15000 },
+    { "id": "equip_rod", "action": "equip", "itemIncludes": "fishing rod", "timeoutMs": 10000 },
+    { "id": "catch_fish", "action": "fish", "attempts": 1, "timeoutMs": 120000 }
+  ]
+}

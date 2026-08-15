@@ -1,0 +1,13 @@
+{
+  "name": "First farming journey",
+  "description": "Example journey. Adjust labels and navigation steps to match the target server.",
+  "maxDurationMs": 600000,
+  "steps": [
+    { "id": "join_messages", "action": "wait", "durationMs": 5000 },
+    { "id": "open_menu", "action": "chat", "message": "/menu" },
+    { "id": "menu_open", "action": "wait_for_gui", "timeoutMs": 10000 },
+    { "id": "choose_farming", "action": "click_gui", "nameIncludes": "nông trại" },
+    { "id": "farming_guidance", "action": "wait_for_text", "text": "trồng", "source": "any", "timeoutMs": 15000 },
+    { "id": "plant_seed", "action": "plant", "seedIncludes": "seeds", "soil": "farmland", "timeoutMs": 30000 }
+  ]
+}

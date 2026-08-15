@@ -1,0 +1,37 @@
+name: POSIX shutdown gate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-posix-shutdown:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Verify direct-entrypoint shutdown on POSIX
+        run: node --import tsx --test test/direct-entrypoint-shutdown.integration.test.ts
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

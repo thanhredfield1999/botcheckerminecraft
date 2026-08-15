@@ -1,0 +1,40 @@
+{
+  "name": "NPC quest GUI journey",
+  "description": "Walk to a configured quest NPC, interact like a player, inspect its GUI and only then click the matching quest item.",
+  "maxDurationMs": 180000,
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "visit_quest_npc",
+      "action": "interact_entity",
+      "nameIncludes": "NPC_NAME_HERE",
+      "x": 0,
+      "y": 64,
+      "z": 0,
+      "travel": "walk",
+      "interactionRange": 2.5,
+      "maxDistance": 16,
+      "waitForGui": true,
+      "timeoutMs": 60000,
+      "note": "Replace the NPC name and coordinates with values observed on your server. Use teleport only for an authorized test account."
+    },
+    {
+      "id": "accept_visible_quest",
+      "action": "click_gui",
+      "nameIncludes": "QUEST_ITEM_TEXT_HERE",
+      "button": "left",
+      "inspectDelayMs": 1000,
+      "timeoutMs": 10000,
+      "note": "The complete GUI is logged as text before this click is authorized."
+    },
+    {
+      "id": "observe_quest_result",
+      "action": "wait",
+      "durationMs": 3000
+    }
+  ]
+}

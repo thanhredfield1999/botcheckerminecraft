@@ -1,0 +1,40 @@
+{
+  "name": "ThanhRedfield Citizens identity-only gate",
+  "description": "Xác minh read-only entity stream chứa đúng LivingNPC ThanhRedfield theo UUID trong phạm vi tối đa 48 block; không di chuyển, command, click GUI, pathfinding hoặc tương tác entity.",
+  "maxDurationMs": 20000,
+  "steps": [
+    {
+      "id": "precondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    },
+    {
+      "id": "inspect-bounded-entity-stream",
+      "action": "inspect_entities",
+      "maxDistance": 48,
+      "limit": 64,
+      "timeoutMs": 3000,
+      "note": "Snapshot chẩn đoán bounded; không chọn entity gần nhất để quyết định identity."
+    },
+    {
+      "id": "assert-thanhredfield-exact-identity",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "requiredUuid": "46a5553d-cedc-428f-b51a-4f5ddec03c9b",
+      "maxDistance": 48,
+      "timeoutMs": 8000,
+      "note": "Fail closed nếu chỉ có entity trùng tên nhưng sai UUID; ngoài tracking range là inconclusive fixture."
+    },
+    {
+      "id": "postcondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}

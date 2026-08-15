@@ -1,0 +1,36 @@
+{
+  "name": "LivingNPC crossing observer",
+  "description": "Bot đi bộ tới vùng an toàn gần NPC và chỉ quan sát vị trí theo thời gian; không chat, GUI, interact, attack, dig, place hoặc teleport.",
+  "maxDurationMs": 180000,
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "observe_door_crossing",
+      "action": "observe_crossing",
+      "nameIncludes": "Alex",
+      "targetUuid": "3d1d6e6d-6f19-4214-b794-f3ba0c202a1d",
+      "serverWorld": "StillCliff",
+      "dimension": "overworld",
+      "gateBlock": { "x": -17, "y": -60, "z": -67 },
+      "maxDistance": 64,
+      "approach": { "x": -17.5, "y": -60, "z": -66.5 },
+      "exit": { "x": -15.5, "y": -60, "z": -66.5 },
+      "entryClearance": 0.3,
+      "exitClearance": 0.3,
+      "verticalTolerance": 1,
+      "requiredExitSamples": 2,
+      "planeEpsilon": 0.1,
+      "corridorHalfWidth": 0.75,
+      "maxStepDistance": 1.75,
+      "exitDwellMs": 300,
+      "requireUuid": true,
+      "sampleMs": 100,
+      "timeoutMs": 120000,
+      "note": "Door observer: pin ID/UUID duy nhất; cần entry-side observation, segment liên tục qua aperture, signed-plane transition, 2 mẫu exit-side và dwell 300 ms. Không dùng Citizens COMPLETED."
+    }
+  ]
+}

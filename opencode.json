@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "minecraft-workflow": {
+      "path": "../multitask-opencode",
+      "description": "Shared Minecraft engineering workflow, testing evidence, and repository-boundary rules. BotChecker source, tests, AGENTS.md, and CURRENT_STATE.md remain authoritative."
+    },
+    "livingnpc": {
+      "path": "../living-npc-plugin",
+      "description": "LivingNPC plugin under integration testing. Use it to understand player-visible behavior and design scenarios; do not edit, deploy, or restart it during BotChecker-only work."
+    },
+    "restauranttycoon": {
+      "path": "../restauranttycoon",
+      "description": "RestaurantTycoon plugin under integration testing. Use current source, tests, CURRENT_STATE.md, and product contracts to design player-visible journeys; keep it read-only during BotChecker-only work."
+    }
+  }
+}

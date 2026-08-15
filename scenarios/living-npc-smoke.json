@@ -1,0 +1,37 @@
+{
+  "name": "LivingNPC hosted-server smoke",
+  "description": "Xác nhận tester khỏe, không có GUI mở và thấy ThanhRedfield trong activation range trước khi quan sát; không gửi command, click GUI hoặc tương tác NPC.",
+  "maxDurationMs": 30000,
+  "steps": [
+    {
+      "id": "precondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    },
+    {
+      "id": "precondition-living-npc-range",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "maxDistance": 48,
+      "timeoutMs": 5000
+    },
+    {
+      "id": "observe-hosted-server",
+      "action": "wait",
+      "durationMs": 10000,
+      "timeoutMs": 15000,
+      "note": "Smoke test không phá hủy trên server đang host"
+    },
+    {
+      "id": "postcondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "name": "ThanhRedfield single tester player journey",
+  "description": "Một tester duy nhất: kiểm tra precondition, quan sát entity stream bounded, tiếp cận NPC đang được client track, right-click một lần để nhận dialogue và hậu kiểm. Không command, teleport, GUI click hay thay đổi block/inventory.",
+  "maxDurationMs": 45000,
+  "steps": [
+    {
+      "id": "precondition-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000,
+      "note": "Tester phải bắt đầu khỏe, đủ thức ăn và không mở GUI."
+    },
+    {
+      "id": "observe-client-visible-entities",
+      "action": "inspect_entities",
+      "maxDistance": 48,
+      "limit": 64,
+      "timeoutMs": 3000,
+      "note": "Ghi bounded entity snapshot trước tương tác; không scan world và không mở rộng tracking range."
+    },
+    {
+      "id": "locate-thanhredfield",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "maxDistance": 48,
+      "timeoutMs": 8000,
+      "note": "Nếu không thấy NPC trong client entity stream, dừng tại đây; không teleport hoặc retry mù."
+    },
+    {
+      "id": "right-click-dialogue",
+      "action": "interact_entity",
+      "nameIncludes": "ThanhRedfield",
+      "requiredUuid": "46a5553d-cedc-428f-b51a-4f5ddec03c9b",
+      "maxDistance": 48,
+      "interactionRange": 3,
+      "travel": "walk",
+      "waitForGui": false,
+      "timeoutMs": 20000,
+      "note": "Tiếp cận bằng client pathfinder rồi right-click đúng một lần; LivingNPC hiện trả dialogue chat, không mở GUI."
+    },
+    {
+      "id": "verify-dialogue",
+      "action": "wait_for_text",
+      "text": "ThanhRedfield:",
+      "source": "chat",
+      "timeoutMs": 5000,
+      "note": "Xác minh phản hồi player-visible từ NPCRightClickEvent."
+    },
+    {
+      "id": "postcondition-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000,
+      "note": "Đảm bảo dialogue không làm mở GUI hoặc gây tác động ngoài ý muốn."
+    }
+  ]
+}

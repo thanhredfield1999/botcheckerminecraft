@@ -1,0 +1,26 @@
+{
+  "name": "Citizens identity smoke",
+  "description": "Xác minh locator nhận diện một Citizens NPC đã nằm trong client tracking range; không gửi command, click GUI, di chuyển hoặc tương tác entity.",
+  "maxDurationMs": 12000,
+  "steps": [
+    {
+      "id": "wait-for-stream",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "locate-citizens-npc",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "Jumonka",
+      "maxDistance": 48,
+      "timeoutMs": 5000
+    },
+    {
+      "id": "assert-safe-client-state",
+      "action": "assert_state",
+      "minimumHealth": 1,
+      "minimumFood": 0,
+      "gui": "closed"
+    }
+  ]
+}

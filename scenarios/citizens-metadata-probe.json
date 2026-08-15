@@ -1,0 +1,28 @@
+{
+  "name": "Citizens metadata probe",
+  "description": "Chờ entity stream ổn định rồi ghi snapshot nhận diện client-visible có giới hạn; không gửi command, click GUI, di chuyển hoặc tương tác entity.",
+  "maxDurationMs": 15000,
+  "steps": [
+    {
+      "id": "settle-entity-stream",
+      "action": "wait",
+      "durationMs": 3000,
+      "timeoutMs": 5000
+    },
+    {
+      "id": "inspect-nearby-entities",
+      "action": "inspect_entities",
+      "maxDistance": 48,
+      "limit": 64,
+      "timeoutMs": 3000
+    },
+    {
+      "id": "verify-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}

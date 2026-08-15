@@ -1,0 +1,12 @@
+{
+  "name": "GUI smoke test",
+  "description": "Open the server menu, inspect it and select Fishing by item name or lore.",
+  "maxDurationMs": 180000,
+  "steps": [
+    { "id": "settle_after_join", "action": "wait", "durationMs": 3000 },
+    { "id": "open_main_menu", "action": "chat", "message": "/menu" },
+    { "id": "main_menu_visible", "action": "wait_for_gui", "timeoutMs": 10000 },
+    { "id": "select_fishing", "action": "click_gui", "nameIncludes": "câu cá", "timeoutMs": 10000 },
+    { "id": "observe_result", "action": "wait", "durationMs": 3000 }
+  ]
+}

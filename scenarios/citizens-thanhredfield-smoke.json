@@ -1,0 +1,41 @@
+{
+  "name": "ThanhRedfield Citizens identity smoke",
+  "description": "Đi bộ tới vùng đã quan sát của ThanhRedfield rồi xác minh locator Citizens chỉ đọc; không command, teleport, click GUI hoặc tương tác NPC.",
+  "maxDurationMs": 60000,
+  "steps": [
+    {
+      "id": "precondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    },
+    {
+      "id": "walk-to-thanhredfield-area",
+      "action": "go_to",
+      "x": 74,
+      "y": -61,
+      "z": -80,
+      "range": 8,
+      "travel": "walk",
+      "timeoutMs": 45000,
+      "note": "Chỉ dùng Citizens pathfinder của bot; không dùng /tp."
+    },
+    {
+      "id": "assert-thanhredfield-visible",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "maxDistance": 48,
+      "timeoutMs": 8000
+    },
+    {
+      "id": "postcondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}
