@@ -52,6 +52,31 @@ test('cleanup is bounded when the bot never emits end', async () => {
   assert.equal(bot.listenerCount('end'), 0)
 })
 
+test('cleanup keeps the disconnect timeout referenced while the bot never emits end', async () => {
+  const bot = new FakeBot()
+  bot.quit = () => { bot.quits++ }
+  const session = new BotSession(bot, 50)
+
+  const originalSetTimeout = globalThis.setTimeout
+  const scheduled: NodeJS.Timeout[] = []
+  globalThis.setTimeout = ((callback: (...args: any[]) => void, ms?: number, ...args: any[]) => {
+    const handle = originalSetTimeout(callback, ms, ...args)
+    scheduled.push(handle)
+    return handle
+  }) as typeof setTimeout
+  try {
+    const pending = session.cleanup('timeout')
+    assert.equal(scheduled.length, 1)
+    assert.equal(typeof scheduled[0].hasRef, 'function')
+    assert.equal(scheduled[0].hasRef(), true)
+    await pending
+  } finally {
+    globalThis.setTimeout = originalSetTimeout
+  }
+
+  assert.equal(bot.quits, 1)
+})
+
 test('waitForSpawn rejects on kick and removes every temporary listener', async () => {
   const bot = new FakeBot()
   const waiting = waitForSpawn(bot, new AbortController().signal)

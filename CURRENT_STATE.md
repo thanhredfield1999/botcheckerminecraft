@@ -22,6 +22,7 @@ Last reviewed: 2026-08-15
 - Queue overflow returns HTTP `429`; cancelling a queued run does not start Mineflayer and persists a cancelled report.
 - `GET /health` reports queue `active`, `pending`, and `capacity` values.
 - `BotSession` owns telemetry listeners, pathfinder stop, open-GUI close, and bounded disconnect cleanup. Connect waiting removes temporary listeners on spawn, kick, error, end, timeout, or cancellation.
+- Bounded disconnect cleanup keeps its timeout referenced while the returned cleanup promise depends on it. Unreferencing that timer allowed POSIX Node to drain the event loop and cancel the pending test/run before cleanup resolved when Mineflayer never emitted `end`.
 - `TestRun` has a bot-factory seam for component tests and attaches the spawn wait synchronously after bot creation, avoiding a lost-spawn race.
 - `assert_state` validates health, food, and GUI state without mutating the server. `assert_nearby_entity` polls the client entity stream within its bounded step timeout and records name, distance, and position evidence. Khi khai báo `requiredUuid`, locator bắt buộc khớp đồng thời tên và UUID, fail closed nếu chỉ có entity trùng tên sai UUID, đồng thời ghi exact UUID đã xác minh vào evidence.
 - `inspect_entities` records a bounded, sanitized snapshot of the current Mineflayer entity stream and player-info identity fields. It is capped at 48 blocks, 64 entities, 32 metadata entries per entity, and 256 characters per string; it does not scan the world, force-load chunks, or retain arbitrary entity objects.
@@ -39,6 +40,12 @@ Last reviewed: 2026-08-15
 - Protocol decode errors have an offline-tested, opt-in diagnostic seam controlled by `PROTOCOL_DIAGNOSTICS=true` and disabled by default. When Protodef attaches the failing decompressed frame as `error.buffer`, BotChecker records only the bounded protocol field, frame length, and SHA-256; it does not retain frame bytes or arbitrary error properties. This does not change Protodef's array-size guard or add packet listeners.
 
 ## Verification
+
+GitHub Actions POSIX evidence on 2026-08-15:
+
+- Run `31882776650` on Ubuntu 24.04 / Node.js 22 passed both direct-entrypoint `SIGINT` and `SIGTERM` shutdown tests with no skips, proving listener closure and process exit on a platform that delivers catchable signals.
+- The same run exposed an independent BotChecker cleanup defect in the full suite: `cleanup is bounded when the bot never emits end` was cancelled because its only timeout had been unreferenced. A RED regression asserted the cleanup timeout remains referenced; the minimal fix removed only that `unref`, and local full verification then passed with 103 tests passed and 2 intentional Windows signal skips.
+- The follow-up GitHub Actions run must pass before the complete POSIX workflow is considered green.
 
 Full local verification:
 

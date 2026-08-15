@@ -99,7 +99,6 @@ export class BotSession {
 
       this.bot.once('end', finish)
       timer = setTimeout(finish, this.disconnectTimeoutMs)
-      timer.unref?.()
       try {
         this.bot.quit(reason)
       } catch {
