@@ -45,7 +45,7 @@ GitHub Actions POSIX evidence on 2026-08-15:
 
 - Run `31882776650` on Ubuntu 24.04 / Node.js 22 passed both direct-entrypoint `SIGINT` and `SIGTERM` shutdown tests with no skips, proving listener closure and process exit on a platform that delivers catchable signals.
 - The same run exposed an independent BotChecker cleanup defect in the full suite: `cleanup is bounded when the bot never emits end` was cancelled because its only timeout had been unreferenced. A RED regression asserted the cleanup timeout remains referenced; the minimal fix removed only that `unref`, and local full verification then passed with 103 tests passed and 2 intentional Windows signal skips.
-- The follow-up GitHub Actions run must pass before the complete POSIX workflow is considered green.
+- Follow-up run `31899832804` on commit `822f320` passed in 27 seconds: locked install, typecheck, both direct-entrypoint POSIX signal tests, the full test suite, and build all completed successfully. The complete POSIX workflow is green; the remaining annotation concerns GitHub's Node runtime for `actions/checkout@v4` and `actions/setup-node@v4`, not the configured project runtime or test result.
 
 Full local verification:
 
