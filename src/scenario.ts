@@ -26,6 +26,16 @@ const stepSchema = z.discriminatedUnion('action', [
   baseStep.extend({ action: z.literal('chat'), message: z.string().min(1) }),
   baseStep.extend({ action: z.literal('wait_for_text'), text: z.string().min(1), source: z.enum(['any', 'chat', 'title', 'action_bar']).default('any') }),
   baseStep.extend({ action: z.literal('wait_for_gui'), titleIncludes: z.string().optional() }),
+  baseStep.extend({
+    action: z.literal('assert_gui'),
+    titleIncludes: z.string().min(1).optional(),
+    items: z.array(z.strictObject({
+      slot: z.number().int().nonnegative().optional(),
+      nameIncludes: z.string().min(1).optional(),
+      loreIncludes: z.string().min(1).optional(),
+      count: z.number().int().positive().optional()
+    }).refine(value => value.slot !== undefined || value.nameIncludes || value.loreIncludes, 'GUI item selector is required')).min(1).optional()
+  }).refine(value => value.titleIncludes !== undefined || value.items !== undefined, 'titleIncludes or items is required'),
   baseStep.extend({ action: z.literal('click_gui'), slot: z.number().int().nonnegative().optional(), nameIncludes: z.string().optional(), loreIncludes: z.string().optional(), button: z.enum(['left', 'right']).default('left'), inspectDelayMs: z.number().int().nonnegative().max(10_000).default(750) }).refine(value => value.slot !== undefined || value.nameIncludes || value.loreIncludes, 'slot, nameIncludes or loreIncludes is required'),
   baseStep.extend({ action: z.literal('go_to'), x: z.number(), y: z.number(), z: z.number(), range: z.number().positive().max(16).default(1), travel: z.enum(['walk', 'teleport']).default('walk') }),
   baseStep.extend({

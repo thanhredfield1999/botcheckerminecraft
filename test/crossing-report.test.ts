@@ -87,6 +87,10 @@ test('crossing timeout giữ identity và raw observations dưới verdict INCON
     await started
 
     assert.equal(run.status, 'failed')
+    const report = run.report()
+    assert.equal(report.steps[0]?.verdict, 'INCONCLUSIVE')
+    assert.equal(report.verdict, 'INCONCLUSIVE')
+    assert.equal(report.issues[0]?.severity, 'low')
     assert.match(run.steps[0].message, /^INCONCLUSIVE_TRACKING:/)
     const evidence = run.steps[0].evidence as {
       verdict?: string

@@ -11,6 +11,15 @@ Last reviewed: 2026-08-15
 
 ## Implemented Behavior
 
+Report contract update on 2026-08-16:
+
+- Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.
+- Report chứa manifest schema v1: phiên bản runner, source revision khi được cung cấp, SHA-256 scenario đã parse, target cấu hình và protocol/world/dimension quan sát được từ client.
+- Manifest không chứa username, password hoặc credentials Minecraft.
+- Scenario hỗ trợ `assert_gui` để chờ rồi xác minh hậu điều kiện GUI theo title và item selector (slot/name/lore/count); fixture ordering kiểm nút thanh toán nhưng không click thanh toán.
+- GUI selector/click giữ toàn bộ slot cho logic, kể cả slot `>=64`; evidence, report và console GUI vẫn chỉ giữ tối đa 64 item đã sanitize. Regression coverage xác minh `assert_gui` và `click_gui` dùng được slot 80 trong GUI 90 slot, evidence GUI bounded `<=64`, và selectors trùng slot trả fail.
+- Local verification: `npm run typecheck`, `npm test` (121 pass, 0 fail, 2 skip có chủ đích trên Windows), `npm run build`, focused report/crossing/GUI tests và `git diff --check` đều pass. Chưa chạy server hoặc live Minecraft cho thay đổi này.
+
 - Connect with configured offline or Microsoft authentication.
 - Capture player-visible chat, titles, action bars, deaths, kicks, and GUIs.
 - Walk or use an explicitly authorized teleport command.

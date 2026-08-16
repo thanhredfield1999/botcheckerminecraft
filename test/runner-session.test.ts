@@ -134,6 +134,29 @@ test('wait_for_text ignores matching text recorded before the step starts', asyn
   }
 })
 
+test('windowClose ghi title GUI đã sanitize vào timeline', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-window-close-title-'))
+  const bot = new FakeBot()
+  const closeScenario = scenarioSchema.parse({
+    name: 'sanitized window close', maxDurationMs: 1_000,
+    steps: [{ id: 'wait', action: 'wait', durationMs: 30 }]
+  })
+  const run = new TestRun(closeScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {}, connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    bot.emit('windowClose', { title: 'Thanh\u0000 toán' })
+    await started
+
+    assert.equal(run.events.find(event => event.type === 'gui_close')?.summary, 'Thanh  toán')
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
 test('click_gui fails closed when a selector matches multiple slots', async () => {
   const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-ambiguous-'))
   const bot = new FakeBot()
@@ -161,6 +184,226 @@ test('click_gui fails closed when a selector matches multiple slots', async () =
     assert.equal(run.status, 'failed')
     assert.match(run.steps[0].message, /2 GUI items match/)
     assert.deepEqual(bot.clickedSlots, [])
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('click_gui giữ tương thích nameIncludes tìm trong lore', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-lore-name-'))
+  const bot = new FakeBot()
+  bot.currentWindow = {
+    id: 10, type: 'minecraft:generic_9x1', title: 'Quest Menu',
+    slots: [{ slot: 0, name: 'paper', displayName: 'Nhiệm vụ', count: 1, customLore: ['Accept quest'], nbt: undefined }]
+  }
+  const scenario = scenarioSchema.parse({
+    name: 'legacy lore selector', maxDurationMs: 1_000,
+    steps: [{ id: 'choose-quest', action: 'click_gui', nameIncludes: 'Accept quest', inspectDelayMs: 0 }]
+  })
+  const run = new TestRun(scenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'passed')
+    assert.deepEqual(bot.clickedSlots, [0])
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('click_gui tìm được lore ngoài giới hạn evidence', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-long-lore-'))
+  const bot = new FakeBot()
+  const lore = Array.from({ length: 17 }, (_, index) => index === 16 ? `${'x'.repeat(300)} legacy target` : `Dòng ${index}`)
+  bot.currentWindow = {
+    id: 11, type: 'minecraft:generic_9x1', title: 'Quest Menu',
+    slots: [{ slot: 0, name: 'paper', displayName: 'Nhiệm vụ', count: 1, customLore: lore, nbt: undefined }]
+  }
+  const scenario = scenarioSchema.parse({
+    name: 'long lore selector', maxDurationMs: 1_000,
+    steps: [{ id: 'choose-quest', action: 'click_gui', nameIncludes: 'legacy target', inspectDelayMs: 0 }]
+  })
+  const run = new TestRun(scenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'passed')
+    assert.deepEqual(bot.clickedSlots, [0])
+    const evidence = run.events.find(event => event.type === 'gui_inspection')?.data as { gui: { items: Array<{ lore: string[] }> } }
+    assert.equal(evidence.gui.items[0].lore.length, 16)
+    assert.ok(evidence.gui.items[0].lore.every(line => line.length <= 256))
+    const clickEvidence = run.steps[0]?.evidence as { item: { lore: string[] } }
+    assert.equal(clickEvidence.item.lore.length, 16)
+    assert.ok(clickEvidence.item.lore.every(line => line.length <= 256))
+    assert.doesNotMatch(JSON.stringify(clickEvidence), /legacy target/)
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('assert_gui kiểm title và item làm hậu điều kiện sau click', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-postcondition-'))
+  const bot = new FakeBot()
+  const item = { slot: 11, name: 'lime_concrete', displayName: 'Thanh toán 25', count: 1, customLore: ['Đơn sẽ được ghi bền vững'], nbt: undefined }
+  bot.currentWindow = {
+    id: 10, type: 'minecraft:generic_9x3', title: 'Xác nhận thanh toán',
+    slots: Array.from({ length: 27 }, (_, slot) => slot === 11 ? item : null)
+  }
+  const guiScenario = scenarioSchema.parse({
+    name: 'GUI postcondition', maxDurationMs: 1_000,
+    steps: [{
+      id: 'payment-ready', action: 'assert_gui', titleIncludes: 'Xác nhận thanh toán',
+      items: [{ slot: 11, nameIncludes: 'Thanh toán', loreIncludes: 'ghi bền vững', count: 1 }]
+    }]
+  })
+  const run = new TestRun(guiScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'passed')
+    assert.equal(run.steps[0].status, 'passed')
+    const evidence = run.steps[0].evidence as { matchedItems?: Array<{ slot?: number }> }
+    assert.equal(evidence.matchedItems?.[0]?.slot, 11)
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('assert_gui chờ GUI chuyển trạng thái trước khi kiểm hậu điều kiện', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-transition-'))
+  const bot = new FakeBot()
+  bot.currentWindow = { id: 9, type: 'minecraft:generic_9x1', title: 'Đặt nguyên liệu', slots: Array(9).fill(null) }
+  const guiScenario = scenarioSchema.parse({
+    name: 'GUI transition', maxDurationMs: 1_000,
+    steps: [{ id: 'payment-ready', action: 'assert_gui', timeoutMs: 500, titleIncludes: 'Xác nhận thanh toán' }]
+  })
+  const run = new TestRun(guiScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    setTimeout(() => {
+      bot.currentWindow = { id: 10, type: 'minecraft:generic_9x3', title: 'Xác nhận thanh toán', slots: Array(27).fill(null) }
+    }, 25)
+    await started
+    assert.equal(run.status, 'passed')
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('assert_gui dùng được slot 80 trong GUI 90 slot; evidence bounded 64', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-slot80-assert-'))
+  const bot = new FakeBot()
+  const slots = Array.from({ length: 90 }, (_, i) =>
+    i === 80 ? { slot: 80, name: 'emerald', displayName: 'Emerald', count: 5, nbt: undefined } : null
+  )
+  bot.currentWindow = { id: 20, type: 'minecraft:generic_9x10', title: 'Big GUI', slots }
+  const guiScenario = scenarioSchema.parse({
+    name: 'slot 80 assert', maxDurationMs: 1_000,
+    steps: [{ id: 'high-slot', action: 'assert_gui', titleIncludes: 'Big GUI', items: [{ slot: 80, nameIncludes: 'Emerald', count: 5 }] }]
+  })
+  const run = new TestRun(guiScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'passed')
+    assert.equal(run.steps[0].status, 'passed')
+    const evidence = run.steps[0].evidence as { matchedItems?: Array<{ slot?: number }>; gui?: { items?: unknown[] } }
+    assert.equal(evidence.matchedItems?.[0]?.slot, 80)
+    // evidence GUI bounded to 64 items
+    assert.ok((evidence.gui?.items?.length ?? 0) <= 64, 'evidence GUI items phải bounded <= 64')
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('click_gui dùng được slot 80 trong GUI 90 slot', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-slot80-click-'))
+  const bot = new FakeBot()
+  const slots = Array.from({ length: 90 }, (_, i) =>
+    i === 80 ? { slot: 80, name: 'emerald', displayName: 'Emerald', count: 5, nbt: undefined } : null
+  )
+  bot.currentWindow = { id: 21, type: 'minecraft:generic_9x10', title: 'Big GUI', slots }
+  const clickScenario = scenarioSchema.parse({
+    name: 'slot 80 click', maxDurationMs: 1_000,
+    steps: [{ id: 'click-high', action: 'click_gui', slot: 80, inspectDelayMs: 0 }]
+  })
+  const run = new TestRun(clickScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'passed')
+    assert.deepEqual(bot.clickedSlots, [80])
+    const evidence = run.steps[0].evidence as { clickedSlot?: number }
+    assert.equal(evidence.clickedSlot, 80)
+  } finally {
+    await rm(reportDir, { recursive: true, force: true })
+  }
+})
+
+test('assert_gui selectors không trùng slot trả fail', async () => {
+  const reportDir = await mkdtemp(path.join(tmpdir(), 'botchecker-gui-overlap-'))
+  const bot = new FakeBot()
+  const item = { slot: 5, name: 'paper', displayName: 'Quest', count: 1, nbt: undefined }
+  bot.currentWindow = {
+    id: 22, type: 'minecraft:generic_9x1', title: 'Quest Menu',
+    slots: Array.from({ length: 9 }, (_, i) => i === 5 ? item : null)
+  }
+  const overlapScenario = scenarioSchema.parse({
+    name: 'overlap selector', maxDurationMs: 1_000,
+    steps: [{
+      id: 'overlap', action: 'assert_gui', titleIncludes: 'Quest',
+      items: [{ slot: 5, nameIncludes: 'Quest' }, { nameIncludes: 'Quest' }],
+      timeoutMs: 200
+    }]
+  })
+  const run = new TestRun(overlapScenario, minecraft, reportDir, {
+    createBot: () => bot as never, prepareNavigation: () => {},
+    connectTimeoutMs: 100, disconnectTimeoutMs: 100
+  })
+
+  try {
+    const started = run.start()
+    bot.emit('spawn')
+    await started
+
+    assert.equal(run.status, 'failed')
+    const evidence = run.steps[0].evidence as { reason?: string }
+    assert.equal(evidence?.reason, 'selector overlap')
   } finally {
     await rm(reportDir, { recursive: true, force: true })
   }

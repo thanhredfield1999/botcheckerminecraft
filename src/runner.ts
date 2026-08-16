@@ -1,13 +1,14 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
+import runnerPackage from '../package.json' with { type: 'json' }
 import mineflayer, { type Bot } from 'mineflayer'
 import type { Entity } from 'prismarine-entity'
 import { Vec3 } from 'vec3'
 import type { Scenario, ScenarioStep } from './scenario.js'
-import { formatGuiSnapshot, itemSearchText, snapshotGui } from './snapshot.js'
-import type { GuiSnapshot, RunStatus, StepResult, TestReport, TimelineEvent } from './types.js'
+import { boundedGuiItems, boundedGuiSnapshot, formatGuiSnapshot, itemSearchText, sanitizeGuiText, snapshotGui } from './snapshot.js'
+import type { GuiSnapshot, RunManifest, RunStatus, StepResult, TestReport, TimelineEvent, Verdict } from './types.js'
 import { RunLifecycle } from './lifecycle.js'
 import { BotSession, waitForSpawn } from './bot-session.js'
 import { CrossingTracker } from './crossing.js'
@@ -31,6 +32,13 @@ interface TestRunDependencies {
   connectTimeoutMs?: number
   disconnectTimeoutMs?: number
   protocolDiagnosticsEnabled?: boolean
+  sourceRevision?: string
+}
+
+function verdictForStep(status: StepResult['status'], message: string): Verdict {
+  if (status === 'passed') return 'PASS'
+  if (status === 'skipped' || message.startsWith('INCONCLUSIVE_')) return 'INCONCLUSIVE'
+  return 'FAIL'
 }
 
 type WorldAwareBot = Bot & {
@@ -149,9 +157,10 @@ export class TestRun {
   private inspectGui(reason: string): GuiSnapshot {
     const gui = snapshotGui(this.requireBot())
     if (!gui) throw new Error('No GUI is open')
-    this.gui = gui
-    const visual = formatGuiSnapshot(gui)
-    this.record('gui_inspection', `${reason}: ${gui.title}`, { reason, visual, gui })
+    const evidenceGui = boundedGuiSnapshot(gui)
+    this.gui = evidenceGui
+    const visual = formatGuiSnapshot(evidenceGui)
+    this.record('gui_inspection', `${reason}: ${evidenceGui.title}`, { reason, visual, gui: evidenceGui })
     console.log(`[BotChecker ${this.id}] ${reason}\n${visual}`)
     return gui
   }
@@ -162,10 +171,10 @@ export class TestRun {
     session.on('title', message => this.recordText('title', String(message)))
     session.on('windowOpen', () => {
       const gui = this.inspectGui('GUI opened')
-      this.record('gui_open', gui.title, gui)
+      this.record('gui_open', gui.title, boundedGuiSnapshot(gui))
     })
     session.on('windowClose', window => {
-      this.record('gui_close', String(window.title))
+      this.record('gui_close', sanitizeGuiText(window.title))
       this.gui = null
     })
     session.on('kicked', reason => {
@@ -263,7 +272,7 @@ export class TestRun {
           step.id,
           timeout => stepController.abort(timeout)
         )
-        this.steps.push({ id: step.id, action: step.action, status: 'passed', startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message: 'Completed', evidence })
+        this.steps.push({ id: step.id, action: step.action, status: 'passed', verdict: 'PASS', startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message: 'Completed', evidence })
         this.record('step_passed', step.id, evidence)
       } catch (error) {
         const rawMessage = error instanceof Error ? error.message : String(error)
@@ -272,7 +281,7 @@ export class TestRun {
           : rawMessage
         const status = step.optional ? 'skipped' : 'failed'
         const evidence = this.activeStepEvidence
-        this.steps.push({ id: step.id, action: step.action, status, startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message, evidence })
+        this.steps.push({ id: step.id, action: step.action, status, verdict: verdictForStep(status, message), startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message, evidence })
         this.record(`step_${status}`, `${step.id}: ${message}`, evidence)
         if (!step.optional) return
       } finally {
@@ -301,22 +310,62 @@ export class TestRun {
       }
       case 'wait_for_gui':
         return this.poll(() => {
-          this.gui = snapshotGui(bot)
-          if (!this.gui) return undefined
-          if (step.titleIncludes && !this.gui.title.toLocaleLowerCase().includes(step.titleIncludes.toLocaleLowerCase())) return undefined
-          return this.inspectGui('GUI ready')
+          const gui = snapshotGui(bot)
+          this.gui = gui ? boundedGuiSnapshot(gui) : null
+          if (!gui) return undefined
+          if (step.titleIncludes && !gui.title.toLocaleLowerCase().includes(step.titleIncludes.toLocaleLowerCase())) return undefined
+          return boundedGuiSnapshot(this.inspectGui('GUI ready'))
         }, signal)
+      case 'assert_gui': {
+        const matched = await this.poll(() => {
+          const gui = snapshotGui(bot)
+          if (!gui) return undefined
+          if (step.titleIncludes && !gui.title.toLocaleLowerCase().includes(step.titleIncludes.toLocaleLowerCase())) {
+            this.activeStepEvidence = { reason: 'title mismatch', gui: boundedGuiSnapshot(gui) }
+            return undefined
+          }
+          const matchedItems = step.items?.map(selector => {
+            const matches = gui.items.filter(item => {
+              const search = itemSearchText(item)
+              return (selector.slot === undefined || item.slot === selector.slot)
+                && (!selector.nameIncludes || search.includes(selector.nameIncludes.toLocaleLowerCase()))
+                && (!selector.loreIncludes || item.lore.join('\n').toLocaleLowerCase().includes(selector.loreIncludes.toLocaleLowerCase()))
+                && (selector.count === undefined || item.count === selector.count)
+            })
+            if (matches.length !== 1) return undefined
+            return matches[0]
+          })
+          if (matchedItems?.some(item => item === undefined)) {
+            this.activeStepEvidence = { reason: 'selector mismatch', gui: boundedGuiSnapshot(gui) }
+            return undefined
+          }
+          const slots = matchedItems?.map(item => item!.slot) ?? []
+          if (new Set(slots).size !== slots.length) {
+            this.activeStepEvidence = { reason: 'selector overlap', gui: boundedGuiSnapshot(gui) }
+            return undefined
+          }
+          return {
+            gui: boundedGuiSnapshot(gui),
+            ...(matchedItems ? { matchedItems: boundedGuiItems(matchedItems as GuiSnapshot['items']) } : {})
+          }
+        }, signal)
+        const { gui, matchedItems } = matched
+        this.gui = boundedGuiSnapshot(gui)
+        this.record('gui_assertion', `GUI postcondition passed: ${gui.title}`, { gui, matchedItems })
+        return { gui, matchedItems }
+      }
       case 'click_gui': {
         const inspected = this.inspectGui(`Before click step ${step.id}`)
         await wait(step.inspectDelayMs, signal)
         let current = snapshotGui(bot)
         if (!current || current.id !== inspected.id) throw new Error('GUI changed or closed while BotChecker was reading it; click blocked')
         if (JSON.stringify(current) !== JSON.stringify(inspected)) current = this.inspectGui(`GUI changed before click step ${step.id}; refreshed`)
-        this.gui = current
+        this.gui = boundedGuiSnapshot(current)
         const matchingItems = step.slot !== undefined
           ? current.items.filter(candidate => candidate.slot === step.slot)
           : current.items.filter(candidate => {
-              const search = itemSearchText(candidate)
+              // Giữ tương thích với scenario cũ: nameIncludes từng tìm cả trong lore.
+              const search = `${itemSearchText(candidate)}\n${candidate.lore.join('\n')}`.toLocaleLowerCase()
               return (!step.nameIncludes || search.includes(step.nameIncludes.toLocaleLowerCase())) && (!step.loreIncludes || candidate.lore.join('\n').toLocaleLowerCase().includes(step.loreIncludes.toLocaleLowerCase()))
             })
         if (step.slot === undefined && matchingItems.length > 1) {
@@ -325,9 +374,10 @@ export class TestRun {
         const item = matchingItems[0]
         const slot = step.slot ?? item?.slot
         if (slot === undefined) throw new Error('GUI item not found')
-        this.record('gui_click_authorized', `Clicking slot ${slot} after inspection`, { button: step.button, item, guiId: current.id })
+        const evidenceItem = item ? boundedGuiItems([item])[0] : undefined
+        this.record('gui_click_authorized', `Clicking slot ${slot} after inspection`, { button: step.button, item: evidenceItem, guiId: current.id })
         await bot.simpleClick[step.button === 'left' ? 'leftMouse' : 'rightMouse'](slot)
-        return { clickedSlot: slot, item }
+        return { clickedSlot: slot, item: evidenceItem }
       }
       case 'go_to':
         await this.travelTo(step.x, step.y, step.z, step.range, step.travel, signal)
@@ -373,7 +423,7 @@ export class TestRun {
           ? await this.poll(() => snapshotGui(bot) ?? undefined, signal)
           : undefined
         if (gui) this.inspectGui(`GUI opened by ${step.nameIncludes}`)
-        return this.withDefinedValues({ entity: entity.displayName ?? entity.name, uuid: step.requiredUuid, position: entity.position, gui })
+        return this.withDefinedValues({ entity: entity.displayName ?? entity.name, uuid: step.requiredUuid, position: entity.position, gui: gui ? boundedGuiSnapshot(gui) : undefined })
       }
       case 'equip': {
         const item = bot.inventory.items().find(candidate => `${candidate.name}\n${candidate.displayName}`.toLocaleLowerCase().includes(step.itemIncludes.toLocaleLowerCase()))
@@ -861,6 +911,8 @@ export class TestRun {
       runId: this.id,
       scenario: this.scenario.name,
       status: this.status,
+      verdict: this.verdict(),
+      manifest: this.manifest(),
       startedAt: this.startedAt.toISOString(),
       finishedAt: this.finishedAt?.toISOString(),
       durationMs: finished - this.startedAt.getTime(),
@@ -871,8 +923,44 @@ export class TestRun {
         skipped: this.steps.filter(step => step.status === 'skipped').length
       },
       steps: this.steps,
-      issues: this.steps.filter(step => step.status !== 'passed').map(step => ({ severity: step.status === 'failed' ? 'high' as const : 'low' as const, stepId: step.id, message: step.message })),
+      issues: this.steps.filter(step => step.status !== 'passed').map(step => ({ severity: step.verdict === 'FAIL' ? 'high' as const : 'low' as const, stepId: step.id, message: step.message })),
       timeline: this.events
+    }
+  }
+
+  private verdict(): Verdict {
+    if (this.steps.some(step => step.verdict === 'FAIL')) return 'FAIL'
+    if (this.steps.some(step => step.verdict === 'INCONCLUSIVE')) return 'INCONCLUSIVE'
+    if (this.status === 'failed') return 'FAIL'
+    if (this.status !== 'passed') return 'INCONCLUSIVE'
+    return 'PASS'
+  }
+
+  private manifest(): RunManifest {
+    const bot = this.bot
+    const sourceRevision = (this.dependencies.sourceRevision ?? process.env.GIT_COMMIT)?.trim() || undefined
+    return {
+      schemaVersion: 1,
+      runner: {
+        name: runnerPackage.name,
+        version: runnerPackage.version,
+        ...(sourceRevision ? { sourceRevision } : {})
+      },
+      scenario: {
+        name: this.scenario.name,
+        sha256: createHash('sha256').update(JSON.stringify(this.scenario)).digest('hex')
+      },
+      target: {
+        host: this.minecraft.host,
+        port: this.minecraft.port,
+        configuredVersion: this.minecraft.version
+      },
+      observed: {
+        negotiatedVersion: bot?.version,
+        protocolVersion: bot?.protocolVersion,
+        serverWorld: bot ? observedServerWorld(bot) : undefined,
+        dimension: bot ? observedDimension(bot) : undefined
+      }
     }
   }
 

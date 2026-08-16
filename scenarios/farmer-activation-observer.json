@@ -1,0 +1,30 @@
+{
+  "name": "LivingNPC Farmer activation observer",
+  "description": "Giữ tester đứng yên để kích hoạt chunk và quan sát telemetry server; không command, di chuyển, teleport, GUI click hoặc tương tác entity.",
+  "maxDurationMs": 300000,
+  "steps": [
+    {
+      "id": "precondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 5000
+    },
+    {
+      "id": "observe-farmer-runtime",
+      "action": "wait",
+      "durationMs": 290000,
+      "timeoutMs": 295000,
+      "note": "Read-only activation observer"
+    },
+    {
+      "id": "postcondition-client-state",
+      "action": "assert_state",
+      "minimumHealth": 1,
+      "minimumFood": 1,
+      "gui": "closed",
+      "timeoutMs": 5000
+    }
+  ]
+}

@@ -22,6 +22,12 @@ test('scenario applies safe defaults', () => {
   assert.equal(scenario.steps[0].action === 'click_gui' && scenario.steps[0].inspectDelayMs, 750)
 })
 
+test('GUI assertion rejects an empty postcondition', () => {
+  const parsed = scenarioSchema.safeParse({ name: 'GUI postcondition', steps: [{ id: 'gui', action: 'assert_gui', titleIncludes: 'Menu' }] })
+  assert.equal(parsed.success, true)
+  assert.equal(scenarioSchema.safeParse({ name: 'empty GUI assertion', steps: [{ id: 'empty', action: 'assert_gui' }] }).success, false)
+})
+
 test('NPC interaction supports human-like travel and waiting for its GUI', () => {
   const scenario = scenarioSchema.parse({
     name: 'npc quest',
@@ -315,7 +321,7 @@ test('fixture restaurant tycoon ordering GUI khóa exact sequence, selectors, co
 
   assert.deepEqual(steps.map(step => step.action), [
     'assert_state', 'chat', 'wait_for_text', 'wait_for_gui',
-    'click_gui', 'click_gui', 'wait_for_gui', 'assert_state'
+    'click_gui', 'click_gui', 'assert_gui', 'assert_state'
   ])
 
   const stateBefore = steps[0]
@@ -344,7 +350,10 @@ test('fixture restaurant tycoon ordering GUI khóa exact sequence, selectors, co
   assert.ok(confirmOrder.action === 'click_gui' && confirmOrder.inspectDelayMs >= 750)
 
   const paymentGui = steps[6]
-  assert.equal(paymentGui.action === 'wait_for_gui' && paymentGui.titleIncludes, 'Xác nhận thanh toán')
+  assert.equal(paymentGui.action === 'assert_gui' && paymentGui.titleIncludes, 'Xác nhận thanh toán')
+  assert.deepEqual(paymentGui.action === 'assert_gui' && paymentGui.items, [
+    { slot: 11, nameIncludes: 'Thanh toán', loreIncludes: 'ghi bền vững', count: 1 }
+  ])
 
   const stateAfter = steps[7]
   assert.equal(stateAfter.action === 'assert_state' && stateAfter.minimumHealth, 20)
