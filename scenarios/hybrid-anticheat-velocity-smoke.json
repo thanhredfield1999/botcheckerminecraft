@@ -1,0 +1,15 @@
+{
+  "name": "HybridAnticheat velocity smoke",
+  "description": "BotChecker applies authorized levitation on disposable Paper, observes bounded movement grace, then checks the client remains connected and anti-cheat stays OBSERVE.",
+  "maxDurationMs": 60000,
+  "steps": [
+    {"id":"initial-status","action":"chat","message":"/hac status","timeoutMs":5000},
+    {"id":"initial-visible","action":"wait_for_text","text":"HybridAnticheat enforcement=OBSERVE","source":"chat","timeoutMs":10000},
+    {"id":"apply-levitation","action":"chat","message":"/effect give @s minecraft:levitation 1 5 true","timeoutMs":5000},
+    {"id":"effect-visible","action":"wait_for_text","text":"Applied effect Levitation","source":"chat","timeoutMs":10000},
+    {"id":"velocity-observation","action":"wait","durationMs":5000,"timeoutMs":10000},
+    {"id":"final-status","action":"chat","message":"/hac status","timeoutMs":5000},
+    {"id":"final-visible","action":"wait_for_text","text":"HybridAnticheat enforcement=OBSERVE","source":"chat","timeoutMs":10000},
+    {"id":"final-state","action":"assert_state","minimumHealth":1,"minimumFood":0,"gui":"closed","timeoutMs":10000}
+  ]
+}

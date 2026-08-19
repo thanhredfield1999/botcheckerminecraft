@@ -1,0 +1,68 @@
+{
+  "name": "HybridAnticheat movement smoke",
+  "description": "BotChecker joins disposable Paper 1.21.11, records /hac status, performs authorized teleport, lets client emit movement packets, then records status again. OBSERVE only; no kick or ban expected.",
+  "maxDurationMs": 60000,
+  "steps": [
+    {
+      "id": "initial-state",
+      "action": "assert_state",
+      "minimumHealth": 1,
+      "minimumFood": 0,
+      "gui": "closed",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "initial-status-command",
+      "action": "chat",
+      "message": "/hac status",
+      "timeoutMs": 5000
+    },
+    {
+      "id": "initial-status-visible",
+      "action": "wait_for_text",
+      "text": "HybridAnticheat enforcement=OBSERVE",
+      "source": "chat",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "authorized-teleport",
+      "action": "chat",
+      "message": "/tp @s ~ ~10 ~",
+      "timeoutMs": 5000
+    },
+    {
+      "id": "teleport-visible",
+      "action": "wait_for_text",
+      "text": "Teleported",
+      "source": "chat",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "post-teleport-observation",
+      "action": "wait",
+      "durationMs": 5000,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "post-teleport-status-command",
+      "action": "chat",
+      "message": "/hac status",
+      "timeoutMs": 5000
+    },
+    {
+      "id": "post-teleport-status-visible",
+      "action": "wait_for_text",
+      "text": "HybridAnticheat enforcement=OBSERVE",
+      "source": "chat",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "final-state",
+      "action": "assert_state",
+      "minimumHealth": 1,
+      "minimumFood": 0,
+      "gui": "closed",
+      "timeoutMs": 10000
+    }
+  ]
+}
