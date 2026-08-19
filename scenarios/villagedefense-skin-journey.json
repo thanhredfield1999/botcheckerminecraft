@@ -1,0 +1,22 @@
+{
+  "name": "VillageDefense Oraxen skin journey",
+  "description": "Player-visible contract for VillageDefense skin GUI. Requires a test server with VillageDefense loaded and permission villagedefense.skin.",
+  "maxDurationMs": 180000,
+  "steps": [
+    {"id":"open-skin-menu","action":"chat","message":"/vd skin"},
+    {"id":"assert-category-menu","action":"assert_gui","titleIncludes":"Chọn loại skin","items":[
+      {"nameIncludes":"Kiếm"},{"nameIncludes":"Rìu"},{"nameIncludes":"Cung"},{"nameIncludes":"Nón"},{"nameIncludes":"Áo giáp"},{"nameIncludes":"Quần"},{"nameIncludes":"Giày"}
+    ]},
+    {"id":"open-sword-category","action":"click_gui","nameIncludes":"Kiếm","inspectDelayMs":750},
+    {"id":"assert-sword-themes","action":"assert_gui","titleIncludes":"Skin: Kiếm","items":[
+      {"nameIncludes":"Fire"},{"nameIncludes":"Ice"},{"nameIncludes":"Lightning"},{"nameIncludes":"Tắt skin"}
+    ]},
+    {"id":"apply-fire-sword-skin","action":"click_gui","nameIncludes":"Fire","inspectDelayMs":750},
+    {"id":"assert-fire-result","action":"wait_for_text","text":"Skin Fire đã áp dụng cho Kiếm","source":"any","timeoutMs":30000},
+    {"id":"assert-menu-survives-apply","action":"assert_gui","titleIncludes":"Skin: Kiếm","items":[
+      {"nameIncludes":"Fire"},{"nameIncludes":"Tắt skin"}
+    ]},
+    {"id":"disable-sword-skin","action":"click_gui","nameIncludes":"Tắt skin","inspectDelayMs":750},
+    {"id":"assert-disable-result","action":"wait_for_text","text":"Skin đã tắt cho category: sword","source":"any","timeoutMs":30000}
+  ]
+}

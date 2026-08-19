@@ -281,6 +281,20 @@ test('mọi fixture scenario trong repository đều hợp lệ dưới schema s
   assert.ok(names.length > 0)
 })
 
+test('fixture VillageDefense skin journey khóa category, theme, apply và disable flow', async () => {
+  const scenario = await loadScenario(path.resolve('scenarios'), 'villagedefense-skin-journey')
+  assert.deepEqual(scenario.steps.map(step => step.action), [
+    'chat', 'assert_gui', 'click_gui', 'assert_gui', 'click_gui',
+    'wait_for_text', 'assert_gui', 'click_gui', 'wait_for_text'
+  ])
+  assert.deepEqual(scenario.steps[1].action === 'assert_gui' && scenario.steps[1].items?.map(item => item.nameIncludes), [
+    'Kiếm', 'Rìu', 'Cung', 'Nón', 'Áo giáp', 'Quần', 'Giày'
+  ])
+  assert.equal(scenario.steps[3].action === 'assert_gui' && scenario.steps[3].titleIncludes, 'Skin: Kiếm')
+  assert.equal(scenario.steps[5].action === 'wait_for_text' && scenario.steps[5].text, 'Skin Fire đã áp dụng cho Kiếm')
+  assert.equal(scenario.steps[8].action === 'wait_for_text' && scenario.steps[8].text, 'Skin đã tắt cho category: sword')
+})
+
 test('fixture LivingNPC crossing khóa exact UUID, world, gate và hai phía cửa', async () => {
   const scenario = await loadScenario(path.resolve('scenarios'), 'living-npc-crossing-observer')
   assert.deepEqual(scenario.steps.map(step => step.action), ['wait', 'observe_crossing'])
