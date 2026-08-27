@@ -152,6 +152,7 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 - Independent proposal review chỉ PASS có điều kiện cho configured-key possession + fresh correlated claim; nó FAIL nếu được gọi runtime attestation. Opus 4.8 static correction review `0277f613-fb5f-4c19-8e87-c821b5b3cfcf` sau quota reset trả `PASS`, `0` blocker/high/medium cho boundary library-only/non-release; đây không phải runtime evidence.
 - Chưa hoàn tất loaded-runtime proof và release binding: trusted key custody/provisioning, actual probe/JVM CodeSource/config observation, shared transactional nonce store cho multiprocess, boot/server-instance truth, report/bundle/server integration, controlled Paper evidence, directory fsync policy và archive hash vẫn mở.
 - Vì vậy P0.4 giữ trạng thái `PARTIAL`, không được dùng slice này để tuyên bố candidate/runtime provenance đã verified.
+- `VERIFIED offline/test-only` (2026-08-28): một Java 21 fixture vector tạo canonical signed-provider claim bytes khớp byte-for-byte Node và chữ ký Ed25519 được verifier thật chấp nhận; Opus review `3b7884a6-7acf-4f83-ad67-ea3a7ca9f74a` PASS, full gate `375/373/0/2`. Đây chỉ là crypto interoperability fixture, không phải Paper probe/key custody/runtime proof.
 
 **OBSERVED**
 

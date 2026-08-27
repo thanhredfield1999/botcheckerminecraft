@@ -135,6 +135,14 @@ Last reviewed: 2026-08-27
 - Trạng thái vẫn chỉ là `VERIFIED offline`: static review không chứng minh key custody, physical probe, JVM-loaded state, truth của server/boot claims, Paper runtime, security vận hành hoặc release readiness. Sonnet/design attempts trước bị HTTP `429` không được tính là verdict.
 - Chưa mở Paper/listener, chưa deploy/reload/restart, chưa chạm production và chưa push.
 
+## 2026-08-28 — Java 21 signed-claim interoperability fixture
+
+- `VERIFIED offline/test-only`: `test/fixtures/java/SignedProviderClaimInteropFixture.java` compile bằng `javac --release 21`, tự dựng canonical JSON fixed-order và ký Ed25519 bằng PKCS#8 private key ephemeral do Node test tạo trong temp directory.
+- Regression đã RED vì Java fixture chưa tồn tại rồi GREEN: canonical bytes Java khớp byte-for-byte `canonicalSignedProviderClaimV1`; chữ ký Java được `SignedProviderClaimVerifier.verifyAndConsume` chấp nhận thật, nonce bị consume và `releaseEligible:false`.
+- Full exact-tree gate sau slice: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `375` tests, `373` pass, `0` fail, `2` intentional Windows signal skips. Java interop test chạy thật, không skip trên host hiện tại.
+- Opus 4.8 review `3b7884a6-7acf-4f83-ad67-ea3a7ca9f74a` trả `PASS`, `0` blocker/high/medium. Allowed claim chỉ là một Java 21 test-fixture vector đại diện tương thích canonical bytes + Ed25519 offline.
+- Đây không phải production probe: không `src/` signer/private-key loader, không Paper/Bukkit/server/report integration, không key custody, loaded-JVM proof, runtime evidence hoặc release eligibility. LOW backlog: gate cả `java` runtime version để tránh false RED trên host lệch toolchain; thêm negative/optional-instance interop vectors trước khi suy rộng compatibility coverage.
+
 Report contract update on 2026-08-16:
 
 - Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.
