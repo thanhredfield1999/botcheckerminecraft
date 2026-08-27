@@ -61,8 +61,9 @@ test('assert_gui nameIncludes chỉ xét material, displayName và customName', 
   assert.deepEqual(run.steps[0]?.evidence, {
     reason: 'selector mismatch',
     gui: {
-      id: 10, type: 'minecraft:generic_9x1', title: 'Thanh toán', slotCount: 1,
-      items: [{ slot: 0, material: 'paper', displayName: 'Xác nhận', lore: ['Thanh toán'], count: 1 }]
+      id: 10, type: 'minecraft:generic_9x1', title: 'Thanh toán',
+      topSlotCount: 1, totalSlotCount: 1, inventoryStart: 1, slotCount: 1,
+      items: [{ slot: 0, section: 'top', material: 'paper', displayName: 'Xác nhận', lore: ['Thanh toán'], count: 1 }]
     }
   })
 })
@@ -108,8 +109,9 @@ test('assert_gui từ chối selector overlap thay vì dùng một item hai lầ
   assert.deepEqual(run.steps[0]?.evidence, {
     reason: 'selector overlap',
     gui: {
-      id: 10, type: 'minecraft:generic_9x1', title: 'Thanh toán', slotCount: 1,
-      items: [{ slot: 0, material: 'paper', displayName: 'Xác nhận thanh toán', lore: [], count: 1 }]
+      id: 10, type: 'minecraft:generic_9x1', title: 'Thanh toán',
+      topSlotCount: 1, totalSlotCount: 1, inventoryStart: 1, slotCount: 1,
+      items: [{ slot: 0, section: 'top', material: 'paper', displayName: 'Xác nhận thanh toán', lore: [], count: 1 }]
     }
   })
 })
@@ -132,7 +134,7 @@ test('assert_gui tìm được item ở slot vượt giới hạn evidence', asy
   assert.equal(evidence.gui.slotCount, 90)
   assert.equal(evidence.gui.items.length, 64)
   assert.equal(evidence.gui.items.some(item => item.slot === 80), false)
-  assert.deepEqual(evidence.matchedItems, [{ slot: 80, material: 'paper', displayName: 'Thanh toán', lore: [], count: 1 }])
+  assert.deepEqual(evidence.matchedItems, [{ slot: 80, section: 'top', material: 'paper', displayName: 'Thanh toán', lore: [], count: 1 }])
 })
 
 test('click_gui click được slot vượt giới hạn evidence sau khi inspect', async () => {

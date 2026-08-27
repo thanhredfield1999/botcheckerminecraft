@@ -20,6 +20,9 @@ export const config = {
   queueCapacity: numberEnv('RUN_QUEUE_CAPACITY', 1),
   scenarioDir: path.resolve(process.env.SCENARIO_DIR ?? 'scenarios'),
   reportDir: path.resolve(process.env.REPORT_DIR ?? 'reports'),
+  targetBindingFile: process.env.TARGET_BINDING_FILE?.trim()
+    ? path.resolve(process.env.TARGET_BINDING_FILE.trim())
+    : undefined,
   protocolDiagnosticsEnabled: booleanEnv('PROTOCOL_DIAGNOSTICS'),
   minecraft: {
     host: process.env.MC_HOST ?? '127.0.0.1',

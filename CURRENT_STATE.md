@@ -1,6 +1,6 @@
 # BotChecker Current State
 
-Last reviewed: 2026-08-15
+Last reviewed: 2026-08-27
 
 ## Baseline
 
@@ -10,6 +10,130 @@ Last reviewed: 2026-08-15
   a private HTTP API.
 
 ## Implemented Behavior
+
+## 2026-08-27 — P0 decoder/polling post-UAT hardening
+
+- `VERIFIED offline`: Adventure decoder dùng recursion-path thay vì global dedupe, nên component object dùng lại không bị coi là cycle; traversal bị chặn bởi depth `16`, node budget `512`, selector text `4096` ký tự và `64` lore lines. Evidence vẫn tách riêng ở `256` ký tự/`16` lore lines, nên selector lore dòng 17 dùng được mà report không giữ dòng đó.
+- `VERIFIED offline`: captured-shaped fixtures gồm string/JSON/translatable/nested lore, installed `prismarine-chat@1.13.0`, protocol-774 `prismarine-nbt`, shared object, cycle/throwing accessor và input rất lớn. Không còn `[object Object]` trên các shape được kiểm.
+- `VERIFIED offline`: `assert_state` poll đồng thời health/food/GUI với cadence riêng `10 ms`, giữ default poll khác ở `100 ms`, abort theo step timeout và lưu last observed failures/evidence.
+- Focused P0 gate cuối: `15/15` PASS; focused persistence/bundle + P0 gate sau race file song song: `21/21` PASS. Exact independent read-only review: `PASS`, `0` blocker/high/medium.
+- Full ordered gate trên tree ổn định: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `325` tests, `323` pass, `0` fail, `2` intentional Windows signal skips; typecheck/build/diff-check PASS.
+- ItemGuard live rerun ở mục kế tiếp vẫn là runtime evidence authoritative cho source fingerprint đã archive. Hardening local này chưa được bind bằng runtime fingerprint mới, không hồi tố archive và không chạm Paper/production.
+
+## 2026-08-27 — ItemGuard controlled UX authoritative rerun
+
+- `VERIFIED live` trên isolated Paper `1.21.11-131`, protocol `774`: member run `d26d730e-6bff-4471-8c96-5d104d811f62` `24/24 PASS`; staff run `40698a9d-a0ff-4422-ac9a-3b5e21a1a33b` `38/38 PASS`.
+- Live journey xác minh bounded Adventure title/name/lore decode, `assert_state` polling close, monotonic GUI generation, Unicode NFC `wait_for_text.allOf`, top/player section semantics, material/cardinality/absence selectors và top-only click guard.
+- Staff fixture exact `29` items: page 1 `28`, page 2 `1`; filter/history/detail/back/code-history/final close đều PASS. Member permission/self-history journey PASS mà không dùng fixed sleep.
+- Live RED `d9feae08-...` xác định protocol-774 prismarine-NBT `{type,value}` chưa được unwrap; captured fixture RED rồi GREEN với bounded `compound/list/string` unwrap. Staff RED `969fd096-...` là scenario selector quá rộng đếm back control; acceptance `exactly 2` được giữ bằng history-row marker riêng.
+- Final BotChecker gate trước rerun: typecheck PASS; `318` pass, `0` fail, `2` intentional Windows skips; build/diff-check PASS. Runtime source fingerprint `fc7d4d7e1986bdfef35cc8dfac879ef97ed07344b5f84c1d7bc7a0506c4b2a10`.
+- Post-report current-tree ordered gate sau các slice song song: typecheck PASS; `326` pass, `0` fail, `2` intentional Windows skips; build/diff-check PASS. Đây không phải runtime-bound fingerprint mới và không hồi tố archive UAT.
+- Evidence archive SHA-256 `b64914fe00b7025ff644638a3d114a7a897f999325dc7d49448d254b6bf99a00`; historical RED/PARTIAL evidence retained. ItemGuard clone restored byte-exact/offline; production untouched.
+- This verifies the exercised command/GUI UX capability only. P2 multi-account orchestration, typed attribution, full Paper/plugin/config binding and release readiness remain separate scopes.
+
+## 2026-08-27 — ItemGuard controlled UX UAT gap checkpoint
+
+- `OBSERVED live` trên controlled Paper `1.21.11-131`, protocol `774`, Mineflayer `4.37.1`: permission và functional GUI slot journeys chạy được; các run cũ đã tái hiện Adventure component decode, `assert_state` one-shot, text-event reuse và GUI transition gaps.
+- `VERIFIED offline`: `snapshotGui` decode Adventure title/custom-name/lore thành plain text bounded, dùng recursion-stack để không coi shared object là cycle, và không giữ `[object Object]`.
+- `VERIFIED offline`: `assert_state` poll chung health/food/GUI tới deadline, abort được và giữ last-state evidence khi timeout.
+- `VERIFIED offline`: `wait_for_text.allOf` khớp nhiều predicate Unicode NFC trong cùng event mới; chưa có bounded lookback qua step cũ.
+- `VERIFIED offline`: monotonic `windowGeneration` + `assert_gui.afterStep` chờ GUI generation mới, trong khi inspect-before-click/stale-window guard vẫn fail-closed.
+- `VERIFIED offline`: GUI snapshot tách top/player inventory; selector hỗ trợ section/material/cardinality/absence/empty slot; click mặc định chỉ được top inventory và player slot cần opt-in explicit.
+- Full backlog P0/P1/P2, tight repro và acceptance tests: `docs/ITEMGUARD_UX_UAT_BOTCHECKER_GAPS_2026-08-27.md`.
+- Evidence archive ngoài controlled clone: `E:/AI.WORK/evidence/itemguard-ux-uat-20260827.tar.gz`, SHA-256 `ac6840fe4ea13279042d09c52781c431ec10265e18834b762a0b048e7b79c3da`.
+- ItemGuard candidate không có runtime exception trong journey; không quy các harness/oracle failures thành product bug. Production không bị chạm.
+
+## 2026-08-27 — Immutable report artifact slice
+
+- `VERIFIED offline`: `src/evidence-writer.ts` ghi artifact bounded bằng temp file `wx`, fsync file, hard-link create-new tới destination, read-back và SHA-256 verify, rồi dọn temp.
+- `VERIFIED offline`: collision và hai concurrent writer cùng destination chỉ cho một writer thắng; artifact đầu tiên được bảo toàn; path traversal và artifact vượt size bound bị từ chối.
+- `VERIFIED offline`: `TestRun` dùng immutable writer cho report JSON và route-map JSON/HTML; integration regression chứng minh report collision không overwrite bytes có trước.
+- Đây mới là lớp immutable artifact của P0.4. Chưa có full evidence-bundle manifest, exact Paper/plugin/probe/config binding, directory fsync policy, stale-candidate verifier hoặc final archive hash; không đánh dấu P0.4 hoàn tất.
+- Focused decoder/GUI gate: `20/20` pass; focused immutable writer/report persistence gate cuối: `7/7` pass.
+- Full ordered gate trên final tree: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `310` tests, `308` pass, `0` fail, `2` intentional Windows signal skips; typecheck/build/diff-check pass.
+- Không kết nối Minecraft/Paper, không mở API listener, không deploy/reload/restart và không chạm production trong slice này. ItemGuard controlled UAT rerun và exact candidate runtime vẫn `NOT VERIFIED`.
+
+## 2026-08-27 — Independent review correction
+
+- Review read-only đến sau implementation; các test/schema mismatch nó thấy thuộc snapshot cũ và không còn tái hiện trên final full gate.
+- Ba counterexample còn hiệu lực đã RED rồi GREEN:
+  - `assert_gui.afterStep` nay dùng `windowGeneration` khi step tham chiếu hoàn tất, nên không thể tái dùng GUI đã mở trong chính step đó;
+  - GUI title/name/lore selectors dùng cùng Unicode NFC canonicalizer với text oracle;
+  - timeline summaries do GUI sinh ra được sanitize và bound `<=256`, trong khi chat summary không bị cắt trước `wait_for_text` oracle.
+- Focused review correction gate: `16/16` pass, gồm stale-window, completion-baseline, Adventure/NFC, timeline bound, text composite và GUI selectors.
+- Full ordered gate sau correction: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `313` tests, `311` pass, `0` fail, `2` intentional Windows signal skips.
+- Finding formatter chưa gắn nhãn `section` trong console được giữ là readability P2; JSON evidence và click guard vẫn chứa/enforce `section`, nên không phải blocker proof hiện tại.
+- P0 tiếp theo vẫn là capability manifest/exact binding: Git commit+dirty, source/package/lock fingerprints và candidate/provider/config identity. Immutable writer hiện tại không tự chứng minh những binding này.
+- Không có Paper/runtime/production operation trong correction này.
+
+## 2026-08-27 — Capability manifest provenance slice
+
+- `VERIFIED offline`: report runtime mặc định được bind `RunManifest.capability` schema v1, gồm exact Git commit + dirty flag, Node/platform/arch, root `package.json` SHA-256, exact loaded package metadata path/hash, `package-lock.json` SHA-256, locked direct dependency versions, code-root, per-file hashes và aggregate source fingerprint.
+- Collector hash đúng code được nạp: `src/*.ts` khi TSX và `dist/src/*.js` + `dist/package.json` khi chạy compiled build. Source traversal bounded `256` file, `2 MiB/file`, `32 MiB` tổng; symlink, path traversal, file đổi trong lúc đọc và working-tree status đổi trong lúc collect đều fail-closed.
+- Capability entries phân biệt `runtime-wired` với `library-only`; callback contracts như multi-client/persistence/crash-recovery không bị quảng cáo thành live provider.
+- Runtime collector được cache một lần và default server truyền cùng manifest/commit vào mọi `TestRun`; `sourceRevision` mâu thuẫn capability Git commit bị từ chối khi tạo run.
+- Focused capability/report/server gate: `10/10` pass. Compiled collector xác minh `codeRoot=dist/src`, `54` compiled JS fingerprints, loaded package `dist/package.json`, dirty state explicit và capability modes đúng.
+- Full ordered gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `321` tests, `319` pass, `0` fail, `2` intentional Windows signal skips.
+- P0 provenance vẫn `PARTIAL`: chưa bind exact Paper/server JAR, plugin candidate/probe JAR CodeSource, config/data baseline, provider/approval/boot token hoặc final evidence-bundle hash. Không gọi đây là candidate/runtime verified.
+- Không mở API listener, không kết nối Minecraft/Paper, không deploy/reload/restart và không chạm production.
+
+## 2026-08-27 — Evidence bundle seal slice
+
+- `VERIFIED offline`: mỗi `TestRun` thành công ghi persistence hiện tạo raw report tương thích `<runId>.json` cùng seal create-new `<runId>.bundle.json`; route-map JSON/HTML nếu có được đưa vào cùng artifact graph.
+- Seal schema v1 bind `runId`, scenario SHA-256, optional capability source fingerprint, sorted artifact roles/names/bytes/SHA-256 và canonical `bundleSha256`; seal được ghi cuối, vì vậy thiếu seal biểu thị bundle chưa hoàn tất thay vì giả complete.
+- Writer preflight exact seal/report/run filename binding, duplicate/collision và toàn bộ artifact bytes được snapshot trước `await`. Verifier strict-schema từ chối unknown field, bundle hash sai, missing/tampered artifact, non-regular/symlink, oversized file và file đổi trong lúc đọc.
+- Focused immutable/capability/report bundle gate: `22/22` pass. Compiled collector bind `dist/src`, `55` JS fingerprints và `evidence-bundle=runtime-wired`.
+- Full ordered gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `328` tests, `326` pass, `0` fail, `2` intentional Windows signal skips.
+- P0.4 vẫn `PARTIAL`: artifact graph/seal đã có nhưng chưa bind Paper/server JAR, plugin/probe candidate JAR, config/data baseline, provider/approval/boot token; chưa có archive hash hoặc directory-fsync policy.
+- Không mở listener/Paper/Minecraft, không deploy/reload/restart và không chạm production.
+
+## 2026-08-27 — Structured failure envelope / multi-client slice
+
+- `VERIFIED offline partial`: thêm strict bounded `FailureEnvelope` taxonomy gồm `code`, `phase`, `provider`, `causeClass`, `boundedDetail`, `artifactRefs`, `retryable`, `trustBoundary`; credential assignments/Bearer values được redacted trước persist và credential-like refs/metadata bị reject.
+- `runMultiClient` không còn nuốt provider exception thành `skipped` với `{}`. Nested cause hiện được giữ theo client trong raw evaluation và `buildMultiClientReport`; validation failure cũng tạo structured aggregate failure.
+- Multi-client aggregation giữ `FAIL_PRODUCT` ưu tiên hơn missing observer nhưng vẫn bảo toàn toàn bộ failures; status/code mâu thuẫn (`failed` + `INCONCLUSIVE_*`, `skipped` + `FAIL_*`) bị reject. Legacy failed/skipped observation không có envelope được gắn synthetic bounded failure thay vì evidence trống.
+- Focused failure/multi-client/assert-state gate: `22/22` pass. Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `334` tests, `332` pass, `0` fail, `2` intentional Windows signal skips.
+- Một test `assert_state` cũ dùng ngưỡng wall-clock `<150ms` fail khi Node test files chạy song song và event loop bị contention, nhưng chạy focused lặp 3 lần đều xanh ~39–47ms. Oracle được sửa để xác minh semantic timeout, failure evidence và exact abort-signal wiring thay vì ngưỡng scheduler-dependent; đây không phải performance claim.
+- P0.5 vẫn `PARTIAL`: gameplay/GUI/persistence/crash-recovery/transaction/compatibility/authorized-plan runners chưa được migrate toàn bộ sang envelope; protocol diagnostic chưa gắn taxonomy/phase/provider.
+- Không mở listener/Paper/Minecraft, không deploy/reload/restart và không chạm production.
+
+## 2026-08-27 — Opus 4.8 provenance/evidence correction
+
+- Independent read-only Opus review `9e1f44c2-8d0d-4bf1-b72b-e3417707ea2f` audit capability provenance, immutable bundle và failure envelope. Hermes tái hiện hai false-evidence counterexample: report collision làm `start()` reject nhưng in-memory vẫn `passed/PASS`; malformed multi-client observation có thể che `FAIL_PRODUCT` của client khác.
+- `VERIFIED offline`: mọi report persistence exception nay ghi `persist_error`, set `error`, chuyển run không-cancelled sang `failed/FAIL` rồi rethrow. Route sidecar dùng ordinal `step-0001` deterministic thay raw `step.id`, nên Unicode/space/slash trong ID không làm mất bundle.
+- `VERIFIED offline`: default server collect/cache capability manifest ngay khi dựng `createServer()`, trước first run; injected `runFactory` không shell Git. Effective `sourceRevision` được pin ở constructor, gồm `GIT_COMMIT` fallback, reject mismatch và không để whitespace dependency vô hiệu hóa fallback.
+- `VERIFIED offline`: multi-client validation cô lập malformed evidence nhưng giữ `FAIL_PRODUCT`; circular/token/oversized evidence không hạ FAIL. Duplicate/over-limit aggregate giữ existing/synthetic FAIL và synthetic skipped counterexamples; invalid status/failure metadata vẫn fail-closed thành INCONCLUSIVE.
+- TDD evidence: 5 original regressions RED→GREEN; same-client malformed, duplicate aggregate, skipped aggregate consistency và empty-sourceRevision đều RED→GREEN. Focused final gate `32/32` PASS trước hai LOW hardenings; focused multi-client `19/19`, report contract `6/6` và final combined gate đều PASS.
+- Opus correction `a6bc9c5a-2fcf-47ae-a4f4-6e1503ad5d57` tìm thêm same-client/aggregate counterexamples và chúng đã được sửa. Final narrow review `4ebd4c5d-cb83-4248-a017-f369da96a526` trả `PASS`, không blocker/high/medium; LOW skipped-evidence consistency cũng đã sửa sau review.
+- Full exact-tree ordered gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `344` tests, `342` pass, `0` fail, `2` intentional Windows signal skips.
+- Rủi ro còn lại: report/timeline vượt `16 MiB` sẽ surface thành FAIL nhưng có thể không có sealed bundle; raw persistence error chưa scrub absolute filesystem path; exact Paper/server/plugin/probe/config/provider/approval binding và envelope migration cho runner khác vẫn mở. Không gọi đây là runtime/candidate/release verified.
+- Không mở listener/Paper/Minecraft, không deploy/reload/restart và không chạm production.
+
+## 2026-08-27 — Offline exact target artifact binding
+
+- Design review Opus 4.8 `89f6c77b-842a-4fd6-94d4-28273c5a450a` bác proposal ban đầu vì một file offline có thể tự mint `runtime-bound`. Thiết kế đã thu hẹp: miền grade chỉ có `development-unbound | artifact-bound`; `releaseEligible` luôn `false`; không có observed/boot-token/runtime-bound producer.
+- `VERIFIED offline`: `src/target-binding.ts` strict/canonical bind đúng 1 Paper JAR, đúng 1 candidate plugin JAR, tối thiểu 1 config baseline và tối đa 1 optional probe; provider/authorization/artifact role, logical ID/path và SHA-256 được bounded, NFC-safe, credential-rejecting, unique và deterministic.
+- `VERIFIED offline`: `TARGET_BINDING_FILE` chỉ được default server stable-read một lần lúc `createServer()`, reject symlink/non-regular/oversized/changing/malformed file. Injected `runFactory` không đọc file hoặc shell. Mọi report ghi rõ evidence grade; offline LivingNPC report và run không binding là `development-unbound`.
+- `VERIFIED offline`: artifact-bound `TestRun` snapshot canonical binding tại constructor, ghi cùng `targetBindingSha256` vào report và bundle seal. `verifyArtifactBoundBundle` verify seal/artifact bytes, parse report từ chính buffer đã verify, kiểm report/seal run ID, capability fingerprint, canonical binding hash và exact expected binding; kết quả luôn `releaseEligible:false` dù functional verdict là gì.
+- TDD counterexamples RED→GREEN: forged runtime grade, unbound PASS, stale/mismatched target, role/path/scope/schema/secret/duplicate/cardinality violations, report/seal run ID mismatch, mutable caller binding, capability fingerprint divergence và invalid source revision.
+- Opus correction `a1df4b1b-8349-4379-8ea4-efed4f772c67` và final hardening review `e6f94603-ba6f-4aef-a63b-676f8374412a` đều `PASS`, không blocker/high/medium cho boundary `offline artifact-bound only`.
+- Final exact-tree gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `356` tests, `354` pass, `0` fail, `2` intentional Windows signal skips.
+- Tuyệt đối không suy ra JAR/config tồn tại, được JVM load, đúng server đã kết nối, runtime verified hoặc release-ready. Runtime proof cần trusted probe có chữ ký và nonce do verifier phát; hiện chưa triển khai. Không mở listener/Paper/Minecraft, không deploy/reload/restart và không chạm production.
+- LOW backlog: áp commit validation chung cho offline LivingNPC report; có thể recompute capability source fingerprint từ embedded source list; scrub absolute path trong persistence errors; cân nhắc siết direct-call run ID namespace.
+
+## 2026-08-28 — Offline signed-provider claim verifier
+
+- Threat review độc lập của proposal kết luận `FAIL` nếu gọi đây là authenticated runtime proof, nhưng `PASS có điều kiện` cho boundary hẹp: possession của configured Ed25519 key + fresh correlated claim + exact declared artifact match trong một verifier process. Implementation và tên claim đã giữ đúng boundary hẹp này.
+- `VERIFIED offline`: configured-key store strict/canonical Ed25519 SPKI, key ID là SHA-256 DER, immutable policy snapshot, exact provider/binding scope và key validity. Private/non-Ed25519/noncanonical key encodings bị từ chối; production module không nhận hoặc persist private key.
+- `VERIFIED offline`: challenge bind domain/audience/verifier instance/sequence/run/key/provider/target hash/trust-store fingerprint, dùng nonce 32 byte, TTL bounded, dual wall/monotonic clocks, capacity và invalid-attempt budget. Replay, cross-instance, exact-expiry, clock rollback/overflow và caller mutation fail-closed.
+- `VERIFIED offline`: canonical signed claim strict schema, safe integer/NFC/path guards, exact artifact set/role/path/hash, observed-time window và Ed25519 signature canonical base64url. Verify/consume đồng bộ; kết quả luôn `ACCEPTED_NON_RELEASE`, `artifact-bound`, `releaseEligible:false`; server/boot IDs chỉ là `claimed*` strings.
+- Capability `signed-provider-claim` là `library-only`. Không có report/bundle/server/Paper/JVM integration hoặc API tạo `runtime-bound`. Challenge store là single-process/in-memory; restart hoặc process khác reject challenge cũ. Multiprocess/network deployment cần shared transactional nonce store và rate limiting riêng.
+- Reviewer phát hiện capability-manifest package/source snapshot TOCTOU; đã RED→GREEN bằng cách bracket toàn bộ reads với Git HEAD + status trước/sau. Public claim canonicalizer cũng đã được siết logical-path traversal; wall-clock expiry prune capacity và monotonic rollback latch đều có regressions.
+- Final exact-tree ordered gate sau pre-commit corrections: `npm run typecheck && npm test && npm run build && git diff --cached --check` exit `0`; `374` tests, `372` pass, `0` fail, `2` intentional Windows signal skips.
+- Pre-commit correction review trả `PASS`, `0` blocker/high/medium sau khi RED→GREEN ba finding: credential-like `qa.authorization` bị reject trước manifest; multi-account exception/report message được redact/reject; LivingNPC evidence dùng `timestampMillis` thay vì biến tick counter thành epoch.
+- Opus 4.8 static correction review `0277f613-fb5f-4c19-8e87-c821b5b3cfcf` sau quota reset trả `PASS`, `0` blocker/high/medium cho đúng boundary library-only/non-release. Review xác nhận M1 capability snapshot TOCTOU và L2 public path-schema correction đã khép. LOW còn lại: có thể dời monotonic watermark sau input validation; network/multiprocess tương lai cần shared transactional nonce store + per-key/provider rate limiting.
+- Trạng thái vẫn chỉ là `VERIFIED offline`: static review không chứng minh key custody, physical probe, JVM-loaded state, truth của server/boot claims, Paper runtime, security vận hành hoặc release readiness. Sonnet/design attempts trước bị HTTP `429` không được tính là verdict.
+- Chưa mở Paper/listener, chưa deploy/reload/restart, chưa chạm production và chưa push.
 
 Report contract update on 2026-08-16:
 
@@ -47,6 +171,7 @@ Report contract update on 2026-08-16:
 - `scenarios/living-npc-smoke.json` is a fail-closed, non-destructive check: healthy client with closed GUI, named NPC within the 48-block activation range, bounded observation, then healthy postcondition. It sends no command, GUI click, teleport, or NPC interaction.
 - `scenarios/restaurant-tycoon-ordering-gui.json` covers the implemented RestaurantTycoon ordering GUI only through draft selection and the payment-confirmation screen. It requires an authorized `plot_1` owner plus prepared supply setup and test database fixture, uses inspect-before-click for `Cà chua` and `Xác nhận đơn`, and deliberately never clicks payment or claims delivery, handoff, or warehouse behavior.
 - Protocol decode errors have an offline-tested, opt-in diagnostic seam controlled by `PROTOCOL_DIAGNOSTICS=true` and disabled by default. When Protodef attaches the failing decompressed frame as `error.buffer`, BotChecker records only the bounded protocol field, frame length, and SHA-256; it does not retain frame bytes or arbitrary error properties. This does not change Protodef's array-size guard or add packet listeners.
+- Route oracle added 2026-08-20: action `observe_route` independently verifies ordered checkpoints A→B→C, rejects A→C shortcut and discontinuous jumps, validates fence blocks from the client block cache, and requires each configured gate to be open during an independent signed-plane crossing. It never reads LivingNPC telemetry, phase, Citizens completion, or `GOING_TO_PLOT` state.
 
 ## Verification
 
@@ -230,3 +355,86 @@ and the generated report path.
 
 The active LivingNPC repository is `E:\AI.WORK\living-npc-plugin`. Old nested copies
 are historical and must not be edited from this project.
+
+## LivingNPC crossing observer attempt — 2026-08-20
+
+- Target was isolated Paper clone `E:\AI.WORK\living-npc-paper-clean-smoke`, port `25578`; no production connection.
+- BotChecker API used loopback port `18084`; run ID `860b0ca1-b648-4285-a75f-fbe8b8e0735e`.
+- Run failed before scenario step execution. Server kicked client with `Internal Exception: io.netty.handler.codec.DecoderException: Failed to decode packet 'serverbound/minecraft:hello'`.
+- This is a BotChecker/Minecraft protocol connection failure, not crossing evidence and not evidence of LivingNPC navigation or door behavior.
+- Earlier persisted-spawn run on the same isolated target negotiated protocol `774` and passed entity visibility. Therefore protocol compatibility is intermittent or startup/run-state dependent; root cause remains `UNKNOWN`.
+- `PROTOCOL_DIAGNOSTICS=true` remains required for a fresh bounded reproduction. Diagnostics must record only bounded field, frame length, and frame SHA-256; never raw frame bytes or credentials.
+- Paper log also showed `UnsupportedClassVersionError` for WorldEdit/WorldGuard class file `69` under Java `21.0.4` (maximum `65`), so those dependencies were unavailable in this run. This is a fixture dependency mismatch and invalidates WorldGuard runtime conclusions.
+- Do not retry crossing observer until fixture plugins are Java-21-compatible and BotChecker readiness/handshake is independently green.
+
+## Plugin QA Platform Phase 1 — offline contract gate
+
+- Added `docs/PLUGIN_QA_PLATFORM_PHASE_1.md` defining black-box multi-project QA boundary, persistence/restart, permission matrix and negative/security contracts.
+- Scenario/report metadata now supports project, fixture, account role, authorization and phase without credentials.
+- Added bounded pure evaluators: `src/persistence-contract.ts`, `src/permission-contract.ts`, `src/permission-matrix.ts`, `src/negative-contract.ts`.
+- Regression coverage: persistence before/after restart evidence, permission allow/deny state invariants, matrix aggregation, negative reject/no-mutation and credential/evidence bounds.
+- Full local gate after this slice: `npm run typecheck`, `npm test` (`185` pass, `0` fail, `2` intentional Windows signal skips), `npm run build`, `git diff --check` pass.
+- Evidence level: offline contract/unit verification only. No live server, restart, multi-account permission matrix or production operation performed.
+- Remaining: connect contracts to scenario/report execution, add external restart context, add multi-account runner, then run only on authorized isolated fixture.
+- Persistence execution linkage now exists in `src/qa-execution.ts`; reports can carry bounded `executionId`, `beforeRunId`, `afterRunId`, `side` metadata. Same run ID is `INCONCLUSIVE`; credential-like IDs reject.
+- `TestRun` accepts optional `qaExecution` and writes linkage into manifest. This remains metadata/evaluator support only; BotChecker still does not restart server.
+- Full local gate after linkage: `npm run typecheck`, `npm test` (`191` pass, `0` fail, `2` intentional Windows signal skips), `npm run build`, `git diff --check` pass.
+- Added `src/persistence-coordinator.ts`: bounded state machine requires before snapshot, then externally supplied authorized/observed restart evidence, then after snapshot. It never controls or restarts server.
+- Coordinator regression suite: `5` tests pass; full gate after coordinator is `196` pass, `0` fail, `2` intentional Windows signal skips.
+- Added `src/permission-plan.ts`: bounded multi-account permission plan. Each cell carries account reference, role/action and authorization; missing authorization is `INCONCLUSIVE`, duplicate account/action and credential-like account refs reject.
+- Permission plan regression suite: `5` tests pass; full gate after plan is `201` pass, `0` fail, `2` intentional Windows signal skips.
+- Evidence remains offline only. No multi-account live execution, server restart, deployment or production action performed.
+- Added `src/negative-plan.ts`: bounded multi-account negative/security plan. Each case carries account reference, case ID and authorization; missing authorization is `INCONCLUSIVE`, mutation or accepted reject request is `FAIL`, duplicate/credential-like identifiers reject.
+- Negative plan regression suite: `5` tests pass; full gate after plan is `206` pass, `0` fail, `2` intentional Windows signal skips.
+- Evidence remains offline contract verification. No live negative/security run performed.
+- Added `src/qa-plan-report.ts`: bounded report contract for permission/negative-security plans. `RunManifest.qaPlan` now carries validated verdict, summary, account refs and cell evidence counts; raw authorization and payload are excluded.
+- QA plan report regression suite: `3` tests pass; full gate after manifest linkage is `209` pass, `0` fail, `2` intentional Windows signal skips.
+- Runner accepts validated `qaPlan` through dependency input only; it does not execute multi-account plans, grant authorization, restart server or deploy.
+- Added `src/multi-account-runner.ts`: callback-based sequential orchestrator; account execution starts only with authorization, executor errors become `INCONCLUSIVE`, FAIL propagates, evidence is bounded and credential-like evidence rejects.
+- Multi-account runner regression suite: `5` tests pass; full gate after runner is `218` pass, `0` fail, `2` intentional Windows signal skips.
+- Runner remains caller-controlled. It does not read credentials, create authorization, deploy, restart or control production.
+- Added `src/multi-account-report.ts`: converts multi-account runner result into validated `qaPlan` cells for manifest; preserves per-account verdict/summary and bounded mutation count, excludes authorization/raw evidence.
+- Multi-account report regression suite: `3` tests pass; full gate after report adapter is `221` pass, `0` fail, `2` intentional Windows signal skips.
+- Evidence remains offline. No live multi-client run, account provider, server restart or production operation performed.
+- `TestRun` now accepts `multiAccountResult` and builds validated `qaPlan` manifest metadata through `buildMultiAccountQaPlan`; caller no longer needs manual mapping.
+- Full gate after runner-to-manifest linkage: `224` pass, `0` fail, `2` intentional Windows signal skips. No live multi-account, account provider, restart or deployment performed.
+- Added `src/persistence-report.ts`: converts persistence execution result into bounded manifest evidence; keeps execution IDs, restart evidence ID and changed keys, excludes raw state payload.
+- `TestRun` accepts `persistenceResult` and writes persistence report metadata without controlling restart.
+- Persistence report regression suite: `3` tests pass; full gate after persistence report linkage: `224` pass, `0` fail, `2` intentional Windows signal skips.
+- Evidence remains offline. No live restart, account provider, deployment or production action performed.
+- Added `src/persistence-runner.ts`: before → caller-provided external authorized/observed restart → after orchestration; provider failure or missing authorization returns `INCONCLUSIVE`, never controls server restart.
+- Persistence runner regression suite: `3` tests pass; callback order verified as `before`, `restart`, `after`.
+- Full gate after persistence runner: `227` pass, `0` fail, `2` intentional Windows signal skips; typecheck/build/diff check pass.
+- Added `src/authorized-plan-runner.ts`: permission/negative plans execute sequentially through caller-provided provider callbacks; missing authorization skips provider, provider failure becomes `INCONCLUSIVE`.
+- Authorized plan runner regression suite: `3` tests pass; full gate after runner is `230` pass, `0` fail, `2` intentional Windows signal skips.
+- Evidence remains offline. No live account provider, permission run, negative/security run, deployment or production action performed.
+- Added `src/compatibility-matrix.ts`: bounded evaluator for Minecraft/Paper/plugin targets; compares observed protocol, negotiated version, plugin presence and scenario result.
+- Compatibility matrix regression suite: `4` tests pass; full gate after compatibility slice is `234` pass, `0` fail, `2` intentional Windows signal skips.
+- Compatibility evidence remains offline. Missing runtime evidence is `INCONCLUSIVE`; mismatch is `FAIL`; no live server/version compatibility claim made.
+- Added `src/compatibility-report.ts` and `RunManifest.compatibility`; `TestRun` now accepts `compatibilityResult` and stores bounded target metadata, verdict, summary and evidence.
+- Compatibility report regression suite: `2` tests pass; full gate after manifest linkage is `236` pass, `0` fail, `2` intentional Windows signal skips.
+- No live compatibility matrix, server deployment, restart or production operation performed.
+- Added `src/transaction-contract.ts`: bounded economy transaction evaluator for complete/reject expectations, balance/item deltas and no-mutation rejection.
+- Transaction contract regression suite: `5` tests pass; full gate after transaction slice is `241` pass, `0` fail, `2` intentional Windows signal skips.
+- Transaction evidence remains offline. No live economy provider, balance mutation, transaction execution, deployment or production action performed.
+- Added `src/transaction-report.ts` and `RunManifest.transaction`; `TestRun` now accepts `transactionResult` and stores bounded transaction evidence without raw before/after state.
+- Transaction report regression suite: `3` tests pass; full gate after report linkage is `244` pass, `0` fail, `2` intentional Windows signal skips.
+- No live economy provider, transaction execution, deployment, restart or production operation performed.
+- Added `src/transaction-runner.ts`: caller-provided before snapshot and transaction executor boundary; provider/validation failure returns `INCONCLUSIVE`, with no economy/server control.
+- Transaction runner regression suite: `4` tests pass; full gate after provider boundary is `248` pass, `0` fail, `2` intentional Windows signal skips.
+- Added `src/transaction-idempotency.ts`: bounded duplicate-submit evaluator; repeated same transaction must not add balance/item mutation, missing attempt evidence is `INCONCLUSIVE`, duplicate mutation is `FAIL`.
+- Idempotency regression suite: `4` tests pass; full gate after idempotency slice is `252` pass, `0` fail, `2` intentional Windows signal skips.
+- Added `src/crash-recovery-contract.ts`: bounded evaluator for authorized crash boundary and recovery readiness; missing authorization/observation is `INCONCLUSIVE`, observed non-ready recovery is `FAIL`.
+- Crash/recovery regression suite: `5` tests pass; full gate after crash/recovery slice is `257` pass, `0` fail, `2` intentional Windows signal skips.
+- No process kill, restart, deployment or production action performed.
+- Added crash/recovery report + runner, GUI/inventory evaluator, gameplay journey evaluator and multi-client aggregate evaluator.
+- New regression suites: crash report/runner `4` tests, GUI `4`, gameplay `4`, multi-client `4`; full gate after these slices is `273` pass, `0` fail, `2` intentional Windows signal skips.
+- Crash/recovery report + runner được nối vào `RunManifest.crashRecovery`; GUI/gameplay/multi-client reports hiện được nối lần lượt vào `RunManifest.gui`, `RunManifest.gameplay`, `RunManifest.multiClient`.
+- GUI, gameplay và multi-client report regression suites: `4` tests pass; full gate after report linkage is `277` pass, `0` fail, `2` intentional Windows signal skips.
+- These remain offline contracts; no live client provider, isolated fixture, deployment, restart or production operation performed.
+- Added `src/gui-runner.ts`, `src/gameplay-runner.ts`, `src/multi-client-runner.ts`: caller-provided provider boundaries; GUI runs before-click-after, gameplay runs ordered steps, multi-client runs sequentially; provider failures are `INCONCLUSIVE`.
+- Journey runner regression suite: `5` tests pass; full gate after provider runners is `282` pass, `0` fail, `2` intentional Windows signal skips.
+- Added `src/compatibility-runner.ts`: caller-provided target observation boundary, sequential target execution, provider failure mapped to bounded `INCONCLUSIVE` target results.
+- Compatibility runner regression suite: `2` tests pass; full gate after compatibility provider boundary is `284` pass, `0` fail, `2` intentional Windows signal skips.
+- LivingNPC Farmer/pathfinding capability assessment is `LOCAL_REPLAY_VERIFIED_NOT_PAPER_RUNTIME`. Added a strict read-only fixture scenario, RouteOracle replay regression and sanitized local validator artifact. Focused route/telemetry gate passed `18/18`; full BotChecker gate passed `286`, failed `0`, with `2` intentional Windows signal skips; typecheck/build/diff check pass.
+- BotChecker can receive Farmer/pathfinding verification via exact UUID, continuous ordered route/gate geometry and telemetry diagnostics. Current LivingNPC artifact on controlled Paper was not run; production was not connected or changed. Handoff: `docs/FARMER_PATHFINDING_CAPABILITY_HANDOFF_2026-08-25.md`.

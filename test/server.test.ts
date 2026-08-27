@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import type { CapabilityManifest } from '../src/capability-manifest.js'
 import { createServer } from '../src/server.js'
 import { scenarioSchema } from '../src/scenario.js'
+import { buildArtifactTargetBinding } from '../src/target-binding.js'
 import type { RunStatus } from '../src/types.js'
 
 function deferred() {
@@ -13,6 +15,68 @@ function deferred() {
 const scenario = scenarioSchema.parse({
   name: 'queue-test',
   steps: [{ id: 'wait', action: 'wait', durationMs: 1 }]
+})
+
+const capabilityManifest: CapabilityManifest = {
+  schemaVersion: 1,
+  git: { commit: '3339f2229679a0cf78aa31b8a35ea9ea2ae2d29d', dirty: true },
+  runtime: { node: 'v22.22.0', platform: 'win32', arch: 'x64' },
+  codeRoot: 'src', packageJsonSha256: '1'.repeat(64),
+  loadedPackageJson: { path: 'package.json', sha256: '1'.repeat(64) },
+  packageLockSha256: '2'.repeat(64), sourceFingerprint: '3'.repeat(64),
+  sources: [{ path: 'src/server.ts', sha256: '4'.repeat(64) }],
+  dependencies: [], capabilities: [{ name: 'gui-journey', mode: 'runtime-wired' }]
+}
+
+const targetBinding = buildArtifactTargetBinding({
+  schemaVersion: 1,
+  bindingId: 'server-target',
+  provider: { kind: 'filesystem-snapshot', id: 'fixture-resolver', version: '1.0.0' },
+  authorization: { id: 'approval-20260827', scope: ['artifact-bind'] },
+  artifacts: [
+    { logicalId: 'candidate', role: 'candidate', logicalPath: 'plugins/Plugin.jar', sha256: '5'.repeat(64) },
+    { logicalId: 'paper', role: 'paper', logicalPath: 'server/paper.jar', sha256: '6'.repeat(64) },
+    { logicalId: 'config', role: 'config', logicalPath: 'plugins/Plugin/config.yml', sha256: '7'.repeat(64) }
+  ]
+})
+
+test('default server collect capability manifest và target binding eager khi createServer', async () => {
+  let collections = 0
+  let bindingLoads = 0
+  const app = createServer({
+    logger: false,
+    capabilityManifestCollector: () => { collections++; return capabilityManifest },
+    targetBindingFile: 'fixture-binding.json',
+    targetBindingLoader: file => {
+      bindingLoads++
+      assert.equal(file, 'fixture-binding.json')
+      return targetBinding
+    }
+  })
+  try {
+    assert.equal(collections, 1)
+    assert.equal(bindingLoads, 1)
+  } finally {
+    await app.close()
+  }
+})
+
+test('server injected runFactory không đọc target binding file', async () => {
+  let bindingLoads = 0
+  const app = createServer({
+    logger: false,
+    targetBindingFile: 'must-not-read.json',
+    targetBindingLoader: () => { bindingLoads++; throw new Error('must not read') },
+    runFactory: () => ({
+      id: 'injected', status: 'queued', start: async () => {}, cancel: () => {},
+      persistCancelled: async () => {}, view: () => ({}), report: () => ({})
+    })
+  })
+  try {
+    assert.equal(bindingLoads, 0)
+  } finally {
+    await app.close()
+  }
 })
 
 test('API queues FIFO, exposes pressure, rejects overflow and cancels queued runs without starting them', async t => {

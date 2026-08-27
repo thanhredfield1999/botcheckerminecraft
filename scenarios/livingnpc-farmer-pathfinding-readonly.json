@@ -1,0 +1,49 @@
+{
+  "name": "LivingNPC Farmer pathfinding read-only acceptance",
+  "description": "Quan sát đúng một Farmer theo UUID qua P0, staging, A, gate B, C và final. Chỉ dùng entity stream và block cache; không command, teleport, click, interaction hoặc mutation.",
+  "maxDurationMs": 120000,
+  "qa": {
+    "project": "LivingNPC",
+    "fixture": "controlled-farmer-route-794b",
+    "accountRole": "read-only-observer",
+    "authorization": ["read-only-entity-observation", "read-only-block-cache"]
+  },
+  "steps": [
+    {
+      "id": "observe-farmer-route",
+      "action": "observe_route",
+      "nameIncludes": "Alaric",
+      "targetUuid": "df648175-d295-4e6e-a9f6-eefb0f43ff2f",
+      "maxDistance": 64,
+      "checkpoints": [
+        { "id": "P0", "position": { "x": 199.5, "y": -60.0, "z": 200.5 }, "radius": 0.8 },
+        { "id": "STAGING", "position": { "x": 203.3738, "y": -60.0, "z": 200.1227 }, "radius": 0.35 },
+        { "id": "A", "position": { "x": 203.8896, "y": -60.0, "z": 200.7665 }, "radius": 0.3 },
+        { "id": "B", "position": { "x": 205.5, "y": -60.0, "z": 200.5 }, "radius": 0.3 },
+        { "id": "C", "position": { "x": 206.1722, "y": -60.0, "z": 200.3915 }, "radius": 0.3 },
+        { "id": "FINAL", "position": { "x": 212.0, "y": -60.0, "z": 201.0 }, "radius": 1.5 }
+      ],
+      "fences": [],
+      "gates": [
+        {
+          "checkpointId": "B",
+          "block": { "x": 205, "y": -60, "z": 200 },
+          "approach": { "x": 204.5, "y": -60.0, "z": 200.5 },
+          "exit": { "x": 206.5, "y": -60.0, "z": 200.5 },
+          "entryClearance": 0.3,
+          "exitClearance": 0.3,
+          "verticalTolerance": 1.0,
+          "requiredExitSamples": 2,
+          "planeEpsilon": 0.1,
+          "corridorHalfWidth": 0.75,
+          "maxStepDistance": 1.75,
+          "exitDwellMs": 100
+        }
+      ],
+      "requireFenceEvidence": false,
+      "sampleMs": 100,
+      "timeoutMs": 115000,
+      "note": "Fixture-specific coordinates from docs/evidence/2026-08-25-controlled-794b-pregate-failclosed-and-full-journey.json; prepare an authorized isolated clone before live use."
+    }
+  ]
+}

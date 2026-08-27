@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { z } from 'zod'
+import { containsCredentialMaterial } from './failure-envelope.js'
 
 const baseStep = z.strictObject({
   id: z.string().min(1),
@@ -24,19 +25,44 @@ const gateBlockSchema = z.strictObject({
 const stepSchema = z.discriminatedUnion('action', [
   baseStep.extend({ action: z.literal('wait'), durationMs: z.number().int().nonnegative().max(300_000) }),
   baseStep.extend({ action: z.literal('chat'), message: z.string().min(1) }),
-  baseStep.extend({ action: z.literal('wait_for_text'), text: z.string().min(1), source: z.enum(['any', 'chat', 'title', 'action_bar']).default('any') }),
+  baseStep.extend({
+    action: z.literal('wait_for_text'),
+    text: z.string().min(1).optional(),
+    allOf: z.array(z.string().min(1)).min(2).max(16).optional(),
+    source: z.enum(['any', 'chat', 'title', 'action_bar']).default('any')
+  }).refine(value => (value.text === undefined) !== (value.allOf === undefined), 'exactly one of text or allOf is required'),
   baseStep.extend({ action: z.literal('wait_for_gui'), titleIncludes: z.string().optional() }),
   baseStep.extend({
     action: z.literal('assert_gui'),
+    afterStep: z.string().min(1).optional(),
+    topSlotCount: z.number().int().nonnegative().max(256).optional(),
     titleIncludes: z.string().min(1).optional(),
     items: z.array(z.strictObject({
       slot: z.number().int().nonnegative().optional(),
+      section: z.enum(['top', 'player']).default('top'),
+      material: z.string().min(1).optional(),
       nameIncludes: z.string().min(1).optional(),
       loreIncludes: z.string().min(1).optional(),
-      count: z.number().int().positive().optional()
-    }).refine(value => value.slot !== undefined || value.nameIncludes || value.loreIncludes, 'GUI item selector is required')).min(1).optional()
-  }).refine(value => value.titleIncludes !== undefined || value.items !== undefined, 'titleIncludes or items is required'),
-  baseStep.extend({ action: z.literal('click_gui'), slot: z.number().int().nonnegative().optional(), nameIncludes: z.string().optional(), loreIncludes: z.string().optional(), button: z.enum(['left', 'right']).default('left'), inspectDelayMs: z.number().int().nonnegative().max(10_000).default(750) }).refine(value => value.slot !== undefined || value.nameIncludes || value.loreIncludes, 'slot, nameIncludes or loreIncludes is required'),
+      count: z.number().int().positive().optional(),
+      exactly: z.number().int().nonnegative().max(256).optional(),
+      absent: z.literal(true).optional(),
+      slotEmpty: z.literal(true).optional()
+    }).superRefine((value, context) => {
+      if (value.slot === undefined && !value.material && !value.nameIncludes && !value.loreIncludes) {
+        context.addIssue({ code: 'custom', message: 'GUI item selector is required' })
+      }
+      if (value.slotEmpty) {
+        if (value.slot === undefined) context.addIssue({ code: 'custom', path: ['slot'], message: 'slotEmpty requires slot' })
+        if (value.material || value.nameIncludes || value.loreIncludes || value.count !== undefined || value.exactly !== undefined || value.absent) {
+          context.addIssue({ code: 'custom', message: 'slotEmpty cannot be combined with item predicates' })
+        }
+      }
+      if (value.absent && value.exactly !== undefined && value.exactly !== 0) {
+        context.addIssue({ code: 'custom', path: ['exactly'], message: 'absent only permits exactly 0' })
+      }
+    })).min(1).optional()
+  }).refine(value => value.titleIncludes !== undefined || value.topSlotCount !== undefined || value.items !== undefined, 'titleIncludes, topSlotCount or items is required'),
+  baseStep.extend({ action: z.literal('click_gui'), slot: z.number().int().nonnegative().optional(), section: z.enum(['top', 'player']).default('top'), nameIncludes: z.string().optional(), loreIncludes: z.string().optional(), button: z.enum(['left', 'right']).default('left'), inspectDelayMs: z.number().int().nonnegative().max(10_000).default(750) }).refine(value => value.slot !== undefined || value.nameIncludes || value.loreIncludes, 'slot, nameIncludes or loreIncludes is required'),
   baseStep.extend({ action: z.literal('go_to'), x: z.number(), y: z.number(), z: z.number(), range: z.number().positive().max(16).default(1), travel: z.enum(['walk', 'teleport']).default('walk') }),
   baseStep.extend({
     action: z.literal('interact_entity'),
@@ -81,6 +107,30 @@ const stepSchema = z.discriminatedUnion('action', [
     maxInventoryItems: z.number().int().positive().max(46).default(46)
   }),
   baseStep.extend({
+    action: z.literal('observe_route'),
+    nameIncludes: z.string().min(1),
+    targetUuid: z.string().trim().uuid(),
+    maxDistance: z.number().positive().max(128).default(64),
+    checkpoints: z.array(z.strictObject({ id: z.string().min(1), position: positionSchema, radius: z.number().positive().max(8) })).min(2).max(16),
+    fences: z.array(z.strictObject({ block: gateBlockSchema, expectedName: z.string().min(1).optional() })).max(128).default([]),
+    gates: z.array(z.strictObject({
+      checkpointId: z.string().min(1),
+      block: gateBlockSchema,
+      approach: positionSchema,
+      exit: positionSchema,
+      entryClearance: z.number().nonnegative().default(0.3),
+      exitClearance: z.number().nonnegative().default(0.3),
+      verticalTolerance: z.number().positive().default(1),
+      requiredExitSamples: z.number().int().positive().max(20).default(2),
+      planeEpsilon: z.number().positive().max(1).default(0.1),
+      corridorHalfWidth: z.number().positive().max(8).default(0.75),
+      maxStepDistance: z.number().positive().max(8).default(1.75),
+      exitDwellMs: z.number().int().nonnegative().max(10_000).default(300)
+    })).max(16).default([]),
+    requireFenceEvidence: z.boolean().default(true),
+    sampleMs: z.number().int().min(50).max(5_000).default(100)
+  }),
+  baseStep.extend({
     action: z.literal('observe_crossing'),
     nameIncludes: z.string().min(1),
     targetUuid: z.string().trim().uuid().optional(),
@@ -107,6 +157,16 @@ export const scenarioSchema = z.strictObject({
   name: z.string().min(1),
   description: z.string().default(''),
   maxDurationMs: z.number().int().positive().max(3_600_000).default(900_000),
+  qa: z.strictObject({
+    project: z.string().trim().min(1).max(128),
+    fixture: z.string().trim().min(1).max(128),
+    accountRole: z.string().trim().min(1).max(64),
+    authorization: z.array(z.string().trim().min(1).max(128).refine(
+      value => !containsCredentialMaterial(value),
+      'Credential-like QA authorization rejected'
+    )).min(1).max(32),
+    phase: z.enum(['persistence', 'permission', 'negative-security']).optional()
+  }).optional(),
   steps: z.array(stepSchema).min(1)
 }).superRefine((scenario, context) => {
   const seen = new Set<string>()
@@ -115,6 +175,12 @@ export const scenarioSchema = z.strictObject({
       context.addIssue({
         code: 'custom', path: ['steps', index, 'id'],
         message: `Step ID bị trùng: ${step.id}`
+      })
+    }
+    if (step.action === 'assert_gui' && step.afterStep !== undefined && !seen.has(step.afterStep)) {
+      context.addIssue({
+        code: 'custom', path: ['steps', index, 'afterStep'],
+        message: 'afterStep phải tham chiếu một step đứng trước assert_gui'
       })
     }
     seen.add(step.id)

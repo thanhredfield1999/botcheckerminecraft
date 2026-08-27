@@ -1,0 +1,50 @@
+{
+  "name": "LivingNPC persisted NPC spawn smoke",
+  "description": "Controlled isolated smoke: console moves tester near persisted NPC home, then verifies NPC respawn and visibility.",
+  "maxDurationMs": 30000,
+  "steps": [
+    {
+      "id": "precondition-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    },
+    {
+      "id": "wait-for-console-teleport",
+      "action": "wait",
+      "durationMs": 10000,
+      "timeoutMs": 12000,
+      "note": "Operator sends console teleport on isolated server after bot join."
+    },
+    {
+      "id": "wait-bind-and-spawn",
+      "action": "wait",
+      "durationMs": 5000,
+      "timeoutMs": 7000
+    },
+    {
+      "id": "observe-entity-stream",
+      "action": "inspect_entities",
+      "maxDistance": 48,
+      "limit": 64,
+      "timeoutMs": 3000
+    },
+    {
+      "id": "assert-persisted-npc-visible",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "ThanhRedfield",
+      "maxDistance": 48,
+      "timeoutMs": 5000
+    },
+    {
+      "id": "postcondition-state",
+      "action": "assert_state",
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed",
+      "timeoutMs": 3000
+    }
+  ]
+}

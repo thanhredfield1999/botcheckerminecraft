@@ -32,6 +32,32 @@ npm run dev
 
 PowerShell does not load `.env` automatically. Use your environment manager or set variables in the process.
 
+### Declared target artifact binding
+
+`TARGET_BINDING_FILE` may point to a strict JSON manifest that declares the exact
+Paper JAR, candidate plugin JAR, configuration baselines and optional probe JAR
+intended for a run. The file is read once when the default server is created;
+symlinks, malformed fields, duplicate identities and unsupported schema versions
+are rejected.
+
+This is offline artifact provenance only. Reports remain
+`releaseEligible: false`; hashes and bundle seals do not prove that a JVM loaded
+those files and are not signatures.
+
+### Signed provider claims (library only)
+
+The library includes a strict Ed25519 configured-key verifier for short-lived,
+single-process challenges. It can confirm that a fresh claim was signed by the
+configured key and that its declared provider and artifacts exactly match an
+expected artifact binding. Challenges are in memory, bounded, consumed once and
+invalid after restart or in another process.
+
+This capability is not wired into the HTTP server, reports, Paper, a JVM probe or
+release admission. A successful result remains `artifact-bound` and
+`releaseEligible: false`. Claimed server and boot identifiers are signed claim
+contents, not independently verified runtime identities. Multiprocess use needs a
+shared transactional nonce store and separate rate limiting.
+
 ## API
 
 ```http

@@ -15,7 +15,7 @@ test('assert_gui yêu cầu hậu điều kiện nội dung cụ thể', () => {
   assert.deepEqual(valid.steps[0], {
     id: 'payment-ready', action: 'assert_gui', timeoutMs: 30_000, optional: false,
     titleIncludes: 'Xác nhận thanh toán',
-    items: [{ nameIncludes: 'Thanh toán', count: 1 }]
+    items: [{ section: 'top', nameIncludes: 'Thanh toán', count: 1 }]
   })
   assert.equal(scenarioSchema.safeParse({
     name: 'weak GUI assertion', steps: [{ id: 'gui', action: 'assert_gui' }]

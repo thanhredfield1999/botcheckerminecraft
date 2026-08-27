@@ -6,6 +6,11 @@ import { loadScenario, type Scenario } from './scenario.js'
 import { TestRun } from './runner.js'
 import { RunQueue } from './queue.js'
 import type { RunStatus } from './types.js'
+import { runtimeCapabilityManifest, type CapabilityManifest } from './capability-manifest.js'
+import {
+  loadArtifactTargetBindingFile,
+  type ArtifactTargetBinding
+} from './target-binding.js'
 
 const createRunSchema = z.object({ scenario: z.string().regex(/^[a-zA-Z0-9_-]+$/) })
 
@@ -23,6 +28,9 @@ interface ServerOptions {
   queueCapacity?: number
   scenarioLoader?: (directory: string, name: string) => Promise<Scenario>
   runFactory?: (scenario: Scenario) => ManagedRun
+  capabilityManifestCollector?: () => CapabilityManifest
+  targetBindingFile?: string
+  targetBindingLoader?: (file: string) => ArtifactTargetBinding
   logger?: boolean
 }
 
@@ -31,10 +39,22 @@ export function createServer(options: ServerOptions = {}) {
   const runs = new Map<string, ManagedRun>()
   const queue = new RunQueue(options.queueCapacity ?? config.queueCapacity)
   const scenarioLoader = options.scenarioLoader ?? loadScenario
-  const runFactory = options.runFactory ?? ((scenario: Scenario) => new TestRun(
-    scenario, config.minecraft, config.reportDir,
-    { protocolDiagnosticsEnabled: config.protocolDiagnosticsEnabled }
-  ))
+  const capabilityManifest = options.runFactory
+    ? undefined
+    : (options.capabilityManifestCollector ?? runtimeCapabilityManifest)()
+  const targetBindingFile = options.targetBindingFile ?? config.targetBindingFile
+  const targetBinding = options.runFactory || !targetBindingFile
+    ? undefined
+    : (options.targetBindingLoader ?? loadArtifactTargetBindingFile)(targetBindingFile)
+  const runFactory = options.runFactory ?? ((scenario: Scenario) => {
+    if (!capabilityManifest) throw new Error('Capability manifest unavailable')
+    return new TestRun(scenario, config.minecraft, config.reportDir, {
+      protocolDiagnosticsEnabled: config.protocolDiagnosticsEnabled,
+      sourceRevision: capabilityManifest.git.commit,
+      capabilityManifest,
+      ...(targetBinding ? { targetBinding } : {})
+    })
+  })
 
   app.get('/health', async () => ({ ok: true, queue: queue.snapshot() }))
 

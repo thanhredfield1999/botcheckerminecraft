@@ -1,5 +1,3 @@
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
 import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import runnerPackage from '../package.json' with { type: 'json' }
@@ -12,10 +10,31 @@ import type { GuiSnapshot, RunManifest, RunStatus, StepResult, TestReport, Timel
 import { RunLifecycle } from './lifecycle.js'
 import { BotSession, waitForSpawn } from './bot-session.js'
 import { CrossingTracker } from './crossing.js'
+import { RouteOracle, fenceBlockMatches, fenceBlocksDirectPath } from './route-oracle.js'
+import { renderRoutePixelMapHtml, type RoutePixelMapInput } from './route-pixel-map.js'
 import { entityIdentityLabels, pinUniqueEntity, validateUniquePinnedEntity } from './entity-observer.js'
 import { summarizeProtocolDecodeError } from './protocol-diagnostic.js'
+import { buildMultiAccountQaPlan } from './multi-account-report.js'
+import type { MultiAccountRunnerResult } from './multi-account-runner.js'
+import { buildPersistenceQaReport } from './persistence-report.js'
+import type { PersistenceExecutionResult } from './qa-execution.js'
+import { buildCompatibilityReport } from './compatibility-report.js'
+import type { CompatibilityMatrixResult } from './compatibility-matrix.js'
+import { buildTransactionReport } from './transaction-report.js'
+import type { TransactionEvaluation } from './transaction-contract.js'
+import { buildCrashRecoveryReport } from './crash-recovery-report.js'
+import type { CrashRecoveryEvaluation } from './crash-recovery-contract.js'
+import { buildGuiReport } from './gui-report.js'
+import type { GuiEvaluation } from './gui-contract.js'
+import { buildGameplayReport, buildMultiClientReport } from './journey-reports.js'
+import type { GameplayEvaluation } from './gameplay-contract.js'
+import type { MultiClientEvaluation } from './multi-client-contract.js'
+import type { CapabilityManifest } from './capability-manifest.js'
+import { writeEvidenceBundle, type EvidenceBundleInput } from './evidence-bundle.js'
+import { evidenceBinding, type ArtifactTargetBinding } from './target-binding.js'
 
 const { goals, Movements, pathfinder } = createRequire(import.meta.url)('mineflayer-pathfinder') as typeof import('mineflayer-pathfinder')
+const GIT_COMMIT_PATTERN = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/
 
 interface MinecraftOptions {
   host: string
@@ -33,12 +52,33 @@ interface TestRunDependencies {
   disconnectTimeoutMs?: number
   protocolDiagnosticsEnabled?: boolean
   sourceRevision?: string
+  capabilityManifest?: CapabilityManifest
+  targetBinding?: ArtifactTargetBinding
+  qaExecution?: {
+    executionId: string
+    beforeRunId: string
+    afterRunId: string
+    side: 'before' | 'after'
+  }
+  qaPlan?: RunManifest['qaPlan']
+  multiAccountResult?: { result: MultiAccountRunnerResult; kind: 'permission' | 'negative-security' }
+  persistenceResult?: { result: PersistenceExecutionResult; project: string; fixture: string }
+  compatibilityResult?: CompatibilityMatrixResult
+  transactionResult?: { result: TransactionEvaluation; project: string; fixture: string }
+  crashRecoveryResult?: { result: CrashRecoveryEvaluation; project: string; fixture: string }
+  guiResult?: { result: GuiEvaluation; project: string; fixture: string }
+  gameplayResult?: { result: GameplayEvaluation; project: string; fixture: string }
+  multiClientResult?: { result: MultiClientEvaluation; project: string; fixture: string }
 }
 
 function verdictForStep(status: StepResult['status'], message: string): Verdict {
   if (status === 'passed') return 'PASS'
   if (status === 'skipped' || message.startsWith('INCONCLUSIVE_')) return 'INCONCLUSIVE'
   return 'FAIL'
+}
+
+function normalizedSearchText(value: string): string {
+  return value.normalize('NFC').toLocaleLowerCase()
 }
 
 type WorldAwareBot = Bot & {
@@ -135,13 +175,29 @@ export class TestRun {
   private session?: BotSession
   private cancelled = false
   private activeStepEvidence?: unknown
+  private windowGeneration = 0
+  private readonly completedStepWindowGenerations = new Map<string, number>()
+  private readonly sourceRevision?: string
+  private readonly evidenceBinding: RunManifest['evidence']
 
   constructor(
     readonly scenario: Scenario,
     private readonly minecraft: MinecraftOptions,
     private readonly reportDir: string,
     private readonly dependencies: TestRunDependencies = {}
-  ) {}
+  ) {
+    const dependencyRevision = dependencies.sourceRevision?.trim()
+    const sourceRevision = (dependencyRevision || process.env.GIT_COMMIT)?.trim().toLocaleLowerCase()
+    const capabilityCommit = dependencies.capabilityManifest?.git.commit.toLocaleLowerCase()
+    if (sourceRevision && !GIT_COMMIT_PATTERN.test(sourceRevision)) {
+      throw new Error('sourceRevision must be an exact Git commit')
+    }
+    if (sourceRevision && capabilityCommit && sourceRevision !== capabilityCommit) {
+      throw new Error('sourceRevision does not match capability manifest Git commit')
+    }
+    this.sourceRevision = sourceRevision
+    this.evidenceBinding = evidenceBinding(dependencies.targetBinding)
+  }
 
   private record(type: string, summary: string, data?: unknown): void {
     const event = { at: new Date().toISOString(), elapsedMs: Date.now() - this.startedAt.getTime(), type, summary, data }
@@ -160,7 +216,7 @@ export class TestRun {
     const evidenceGui = boundedGuiSnapshot(gui)
     this.gui = evidenceGui
     const visual = formatGuiSnapshot(evidenceGui)
-    this.record('gui_inspection', `${reason}: ${evidenceGui.title}`, { reason, visual, gui: evidenceGui })
+    this.record('gui_inspection', sanitizeGuiText(`${reason}: ${evidenceGui.title}`), { reason, visual, gui: evidenceGui })
     console.log(`[BotChecker ${this.id}] ${reason}\n${visual}`)
     return gui
   }
@@ -170,11 +226,13 @@ export class TestRun {
     session.on('actionBar', message => this.recordText('action_bar', String(message)))
     session.on('title', message => this.recordText('title', String(message)))
     session.on('windowOpen', () => {
+      this.windowGeneration++
       const gui = this.inspectGui('GUI opened')
-      this.record('gui_open', gui.title, boundedGuiSnapshot(gui))
+      this.record('gui_open', sanitizeGuiText(gui.title), { windowGeneration: this.windowGeneration, gui: boundedGuiSnapshot(gui) })
     })
     session.on('windowClose', window => {
-      this.record('gui_close', sanitizeGuiText(window.title))
+      this.windowGeneration++
+      this.record('gui_close', sanitizeGuiText(window.title), { windowGeneration: this.windowGeneration })
       this.gui = null
     })
     session.on('kicked', reason => {
@@ -236,7 +294,7 @@ export class TestRun {
       this.finishedAt = new Date()
       await this.lifecycle.finish()
       await this.session?.cleanup(this.cancelled ? 'Test cancelled' : 'Test finished')
-      await this.writeReport()
+      await this.persistReport()
     }
   }
 
@@ -250,7 +308,7 @@ export class TestRun {
 
   async persistCancelled(): Promise<void> {
     if (!this.finishedAt) this.finishedAt = new Date()
-    await this.writeReport()
+    await this.persistReport()
   }
 
   private async executeScenario(): Promise<void> {
@@ -278,13 +336,16 @@ export class TestRun {
         const rawMessage = error instanceof Error ? error.message : String(error)
         const message = step.action === 'observe_crossing' && rawMessage === `Timeout: ${step.id}`
           ? `INCONCLUSIVE_TRACKING: timeout before crossing proof (${step.timeoutMs} ms)`
-          : rawMessage
+          : step.action === 'assert_state' && rawMessage === `Timeout: ${step.id}`
+            ? this.assertStateEvidenceMessage()
+            : rawMessage
         const status = step.optional ? 'skipped' : 'failed'
         const evidence = this.activeStepEvidence
         this.steps.push({ id: step.id, action: step.action, status, verdict: verdictForStep(status, message), startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message, evidence })
         this.record(`step_${status}`, `${step.id}: ${message}`, evidence)
         if (!step.optional) return
       } finally {
+        this.completedStepWindowGenerations.set(step.id, this.windowGeneration)
         this.lifecycle.signal.removeEventListener('abort', abortFromRun)
         this.activeStepEvidence = undefined
       }
@@ -302,10 +363,17 @@ export class TestRun {
         bot.chat(step.message)
         return { sent: step.message }
       case 'wait_for_text': {
-        const found = await this.poll(() => this.events.slice(eventCursor).find(event => {
-          const sourceMatches = step.source === 'any' || event.type === step.source
-          return sourceMatches && event.summary.toLocaleLowerCase().includes(step.text.toLocaleLowerCase())
-        }), signal)
+        const predicates = (step.allOf ?? [step.text!]).map(normalizedSearchText)
+        const found = await this.poll(() => {
+          const relativeIndex = this.events.slice(eventCursor).findIndex(event => {
+            const sourceMatches = step.source === 'any' || event.type === step.source
+            const normalizedSummary = normalizedSearchText(event.summary)
+            return sourceMatches && predicates.every(predicate => normalizedSummary.includes(predicate))
+          })
+          if (relativeIndex < 0) return undefined
+          const eventIndex = eventCursor + relativeIndex
+          return { eventIndex, event: this.events[eventIndex] }
+        }, signal)
         return found
       }
       case 'wait_for_gui':
@@ -313,60 +381,115 @@ export class TestRun {
           const gui = snapshotGui(bot)
           this.gui = gui ? boundedGuiSnapshot(gui) : null
           if (!gui) return undefined
-          if (step.titleIncludes && !gui.title.toLocaleLowerCase().includes(step.titleIncludes.toLocaleLowerCase())) return undefined
+          if (step.titleIncludes && !normalizedSearchText(gui.title).includes(normalizedSearchText(step.titleIncludes))) return undefined
           return boundedGuiSnapshot(this.inspectGui('GUI ready'))
         }, signal)
       case 'assert_gui': {
+        const requiredGeneration = step.afterStep === undefined
+          ? undefined
+          : this.completedStepWindowGenerations.get(step.afterStep)
+        if (step.afterStep !== undefined && requiredGeneration === undefined) {
+          throw new Error(`GUI generation baseline not found for step: ${step.afterStep}`)
+        }
         const matched = await this.poll(() => {
           const gui = snapshotGui(bot)
           if (!gui) return undefined
-          if (step.titleIncludes && !gui.title.toLocaleLowerCase().includes(step.titleIncludes.toLocaleLowerCase())) {
+          if (requiredGeneration !== undefined && this.windowGeneration <= requiredGeneration) {
+            this.activeStepEvidence = {
+              reason: 'window generation did not advance',
+              requiredGenerationGreaterThan: requiredGeneration,
+              windowGeneration: this.windowGeneration,
+              gui: boundedGuiSnapshot(gui)
+            }
+            return undefined
+          }
+          if (step.topSlotCount !== undefined && gui.topSlotCount !== step.topSlotCount) {
+            this.activeStepEvidence = {
+              reason: 'top slot count mismatch',
+              expectedTopSlotCount: step.topSlotCount,
+              gui: boundedGuiSnapshot(gui)
+            }
+            return undefined
+          }
+          if (step.titleIncludes && !normalizedSearchText(gui.title).includes(normalizedSearchText(step.titleIncludes))) {
             this.activeStepEvidence = { reason: 'title mismatch', gui: boundedGuiSnapshot(gui) }
             return undefined
           }
-          const matchedItems = step.items?.map(selector => {
+          const selectorEvaluations = step.items?.map(selector => {
+            if (selector.slotEmpty) {
+              const slotInRange = selector.slot! < gui.totalSlotCount
+              const actualSection = selector.slot! < gui.inventoryStart ? 'top' : 'player'
+              const occupied = gui.items.some(item => item.slot === selector.slot)
+              return {
+                matches: [] as GuiSnapshot['items'],
+                expected: 0,
+                satisfied: slotInRange && actualSection === selector.section && !occupied
+              }
+            }
             const matches = gui.items.filter(item => {
               const search = itemSearchText(item)
               return (selector.slot === undefined || item.slot === selector.slot)
-                && (!selector.nameIncludes || search.includes(selector.nameIncludes.toLocaleLowerCase()))
-                && (!selector.loreIncludes || item.lore.join('\n').toLocaleLowerCase().includes(selector.loreIncludes.toLocaleLowerCase()))
+                && item.section === selector.section
+                && (!selector.material || normalizedSearchText(item.material) === normalizedSearchText(selector.material))
+                && (!selector.nameIncludes || normalizedSearchText(search).includes(normalizedSearchText(selector.nameIncludes)))
+                && (!selector.loreIncludes || normalizedSearchText(item.lore.join('\n')).includes(normalizedSearchText(selector.loreIncludes)))
                 && (selector.count === undefined || item.count === selector.count)
             })
-            if (matches.length !== 1) return undefined
-            return matches[0]
+            const expected = selector.absent ? 0 : selector.exactly ?? 1
+            return { matches, expected, satisfied: matches.length === expected }
           })
-          if (matchedItems?.some(item => item === undefined)) {
+          if (selectorEvaluations?.some(evaluation => !evaluation.satisfied)) {
             this.activeStepEvidence = { reason: 'selector mismatch', gui: boundedGuiSnapshot(gui) }
             return undefined
           }
-          const slots = matchedItems?.map(item => item!.slot) ?? []
+          const matchedItems = selectorEvaluations?.flatMap(evaluation => evaluation.matches) ?? []
+          const slots = matchedItems.map(item => item.slot)
           if (new Set(slots).size !== slots.length) {
             this.activeStepEvidence = { reason: 'selector overlap', gui: boundedGuiSnapshot(gui) }
             return undefined
           }
           return {
+            windowGeneration: this.windowGeneration,
             gui: boundedGuiSnapshot(gui),
-            ...(matchedItems ? { matchedItems: boundedGuiItems(matchedItems as GuiSnapshot['items']) } : {})
+            ...(selectorEvaluations ? {
+              matchedItems: boundedGuiItems(matchedItems),
+              selectorMatches: selectorEvaluations.map(evaluation => ({
+                matchCount: evaluation.matches.length,
+                expected: evaluation.expected,
+                matchedItems: boundedGuiItems(evaluation.matches)
+              }))
+            } : {})
           }
         }, signal)
-        const { gui, matchedItems } = matched
+        const { gui, matchedItems, selectorMatches, windowGeneration } = matched
         this.gui = boundedGuiSnapshot(gui)
-        this.record('gui_assertion', `GUI postcondition passed: ${gui.title}`, { gui, matchedItems })
-        return { gui, matchedItems }
+        this.record('gui_assertion', sanitizeGuiText(`GUI postcondition passed: ${gui.title}`), { windowGeneration, gui, matchedItems, selectorMatches })
+        return { windowGeneration, gui, matchedItems, selectorMatches }
       }
       case 'click_gui': {
+        const inspectedGeneration = this.windowGeneration
         const inspected = this.inspectGui(`Before click step ${step.id}`)
         await wait(step.inspectDelayMs, signal)
         let current = snapshotGui(bot)
-        if (!current || current.id !== inspected.id) throw new Error('GUI changed or closed while BotChecker was reading it; click blocked')
+        if (!current || current.id !== inspected.id || this.windowGeneration !== inspectedGeneration) {
+          throw new Error('GUI changed or closed while BotChecker was reading it; click blocked')
+        }
         if (JSON.stringify(current) !== JSON.stringify(inspected)) current = this.inspectGui(`GUI changed before click step ${step.id}; refreshed`)
         this.gui = boundedGuiSnapshot(current)
+        const requestedSlotSection = step.slot === undefined
+          ? undefined
+          : step.slot < current.inventoryStart ? 'top' : 'player'
+        if (step.slot !== undefined && (step.slot >= current.totalSlotCount || requestedSlotSection !== step.section)) {
+          throw new Error(`Slot ${step.slot} is outside ${step.section} inventory; set section explicitly`)
+        }
         const matchingItems = step.slot !== undefined
-          ? current.items.filter(candidate => candidate.slot === step.slot)
+          ? current.items.filter(candidate => candidate.slot === step.slot && candidate.section === step.section)
           : current.items.filter(candidate => {
               // Giữ tương thích với scenario cũ: nameIncludes từng tìm cả trong lore.
-              const search = `${itemSearchText(candidate)}\n${candidate.lore.join('\n')}`.toLocaleLowerCase()
-              return (!step.nameIncludes || search.includes(step.nameIncludes.toLocaleLowerCase())) && (!step.loreIncludes || candidate.lore.join('\n').toLocaleLowerCase().includes(step.loreIncludes.toLocaleLowerCase()))
+              const search = normalizedSearchText(`${itemSearchText(candidate)}\n${candidate.lore.join('\n')}`)
+              return candidate.section === step.section
+                && (!step.nameIncludes || search.includes(normalizedSearchText(step.nameIncludes)))
+                && (!step.loreIncludes || normalizedSearchText(candidate.lore.join('\n')).includes(normalizedSearchText(step.loreIncludes)))
             })
         if (step.slot === undefined && matchingItems.length > 1) {
           throw new Error(`${matchingItems.length} GUI items match selector; specify a unique selector or slot`)
@@ -375,9 +498,9 @@ export class TestRun {
         const slot = step.slot ?? item?.slot
         if (slot === undefined) throw new Error('GUI item not found')
         const evidenceItem = item ? boundedGuiItems([item])[0] : undefined
-        this.record('gui_click_authorized', `Clicking slot ${slot} after inspection`, { button: step.button, item: evidenceItem, guiId: current.id })
+        this.record('gui_click_authorized', `Clicking slot ${slot} after inspection`, { button: step.button, item: evidenceItem, guiId: current.id, windowGeneration: inspectedGeneration })
         await bot.simpleClick[step.button === 'left' ? 'leftMouse' : 'rightMouse'](slot)
-        return { clickedSlot: slot, item: evidenceItem }
+        return { clickedSlot: slot, item: evidenceItem, windowGeneration: inspectedGeneration }
       }
       case 'go_to':
         await this.travelTo(step.x, step.y, step.z, step.range, step.travel, signal)
@@ -468,11 +591,13 @@ export class TestRun {
         return { count }
       }
       case 'assert_state': {
-        if (step.minimumHealth !== undefined && bot.health < step.minimumHealth) throw new Error(`Expected health >= ${step.minimumHealth}, found ${bot.health}`)
-        if (step.minimumFood !== undefined && bot.food < step.minimumFood) throw new Error(`Expected food >= ${step.minimumFood}, found ${bot.food}`)
-        const gui = bot.currentWindow ? 'open' : 'closed'
-        if (step.gui !== 'any' && gui !== step.gui) throw new Error(`Expected GUI ${step.gui}, found ${gui}`)
-        return { health: bot.health, food: bot.food, gui }
+        return this.poll(() => {
+          const observed = this.observedState(step)
+          this.activeStepEvidence = observed
+          return observed.failures.length === 0
+            ? { health: observed.health, food: observed.food, gui: observed.gui }
+            : undefined
+        }, signal, 10)
       }
       case 'assert_nearby_entity': {
         const entity = await this.poll(
@@ -575,6 +700,111 @@ export class TestRun {
         const distance = position.distanceTo({ x: step.x, y: step.y, z: step.z } as Vec3)
         if (distance > step.range) throw new Error(`Expected distance <= ${step.range}, found ${distance.toFixed(2)}`)
         return { distance, position: this.position() }
+      }
+      case 'observe_route': {
+        const evidence = {
+          verdict: 'INCONCLUSIVE' as 'INCONCLUSIVE' | 'PASS',
+          route: { checkpoints: step.checkpoints, fences: step.fences, gates: step.gates },
+          fenceEvidence: [] as Array<{ block: { x: number; y: number; z: number }; name?: string; valid: boolean }>,
+          observations: [] as unknown[],
+          routePixelMap: undefined as RoutePixelMapInput | undefined
+        }
+        this.activeStepEvidence = evidence
+        const pinned = pinUniqueEntity(
+          Object.values(bot.entities), bot.entity.position, step.nameIncludes, step.maxDistance, true, step.targetUuid)
+        const oracle = new RouteOracle(step.checkpoints, step.gates.map(gate => ({
+          checkpointId: gate.checkpointId,
+          block: gate.block,
+          approach: gate.approach,
+          exit: gate.exit,
+          crossing: {
+            entryClearance: gate.entryClearance,
+            exitClearance: gate.exitClearance,
+            verticalTolerance: gate.verticalTolerance,
+            requiredExitSamples: gate.requiredExitSamples,
+            planeEpsilon: gate.planeEpsilon,
+            corridorHalfWidth: gate.corridorHalfWidth,
+            maxStepDistance: gate.maxStepDistance,
+            exitDwellMs: gate.exitDwellMs
+          }
+        })), Math.min(...step.gates.map(gate => gate.maxStepDistance), 1.75))
+        const routeStartedAt = performance.now()
+        const observedOpenGates = new Set<string>()
+        const validateFences = () => {
+          evidence.fenceEvidence.length = 0
+          for (const fence of step.fences) {
+            const block = bot.blockAt(new Vec3(fence.block.x, fence.block.y, fence.block.z), false)
+            const name = block?.name
+            const valid = typeof name === 'string' && fenceBlockMatches(name, fence.expectedName)
+            evidence.fenceEvidence.push({ block: fence.block, name, valid })
+            if (step.requireFenceEvidence && !valid) {
+              throw new Error(`INCONCLUSIVE_FIXTURE: fence ${fence.block.x},${fence.block.y},${fence.block.z} is ${name ?? 'unavailable'}`)
+            }
+          }
+        }
+        validateFences()
+        if (step.requireFenceEvidence && !fenceBlocksDirectPath(
+          step.checkpoints[0].position,
+          step.checkpoints[step.checkpoints.length - 1].position,
+          step.fences.map(fence => ({ x: fence.block.x, y: fence.block.y, z: fence.block.z })))) {
+          throw new Error('INCONCLUSIVE_FIXTURE: fence geometry does not block direct A-C path')
+        }
+        try {
+          while (true) {
+            const current = validateUniquePinnedEntity(
+              Object.values(bot.entities), bot.entity.position, step.nameIncludes, step.maxDistance,
+              pinned.identity, pinned.entity, step.targetUuid)
+            const openGates: string[] = []
+            for (const gate of step.gates) {
+              const block = bot.blockAt(new Vec3(gate.block.x, gate.block.y, gate.block.z), false)
+              const properties = block?.getProperties?.() as { open?: unknown } | undefined
+              if (properties?.open === true) openGates.push(gate.checkpointId)
+            }
+            for (const gateId of openGates) observedOpenGates.add(gateId)
+            const sampleElapsedMs = Math.round(performance.now())
+            const observation = oracle.observe(current.position, sampleElapsedMs, openGates)
+            evidence.observations.push({ ...observation, sampleElapsedMs, openGates: [...openGates] })
+            if (observation.passed) {
+              evidence.verdict = 'PASS'
+              return evidence
+            }
+            await wait(step.sampleMs, signal)
+          }
+        } finally {
+          evidence.observations = evidence.observations.slice(-512)
+          const observations = evidence.observations as Array<{
+            position: { x: number; y: number; z: number }
+            sampleElapsedMs?: number
+            segmentIndex?: number
+            visited?: string[]
+            shortcutDetected?: boolean
+            backtrackDetected?: boolean
+            gateOrderViolation?: boolean
+            discontinuityDetected?: boolean
+          }>
+          evidence.routePixelMap = {
+            title: `Route ${this.scenario.name} / ${step.id}`,
+            checkpoints: step.checkpoints,
+            fences: step.fences.map(fence => ({ x: fence.block.x, y: fence.block.y, z: fence.block.z })),
+            gates: step.gates.map(gate => ({
+              id: gate.checkpointId,
+              block: gate.block,
+              open: observedOpenGates.has(gate.checkpointId)
+            })),
+            samples: observations.map(observation => ({
+              position: observation.position,
+              elapsedMs: Math.max(0, Math.round((observation.sampleElapsedMs ?? routeStartedAt) - routeStartedAt)),
+              checkpoint: observation.visited?.at(-1),
+              segmentIndex: observation.segmentIndex,
+              issue: observation.shortcutDetected
+                ? 'shortcut'
+                : observation.backtrackDetected ? 'backtrack'
+                : observation.gateOrderViolation ? 'gate-order-violation'
+                : observation.discontinuityDetected ? 'discontinuity' : undefined
+            })),
+            verdict: evidence.verdict
+          }
+        }
       }
       case 'observe_crossing': {
         const observations: ReturnType<CrossingTracker['observe']>[] = []
@@ -862,12 +1092,40 @@ export class TestRun {
     return this.bot
   }
 
-  private async poll<T>(check: () => T | undefined, signal: AbortSignal): Promise<T> {
+  private async poll<T>(
+    check: () => T | undefined, signal: AbortSignal, intervalMs = 100
+  ): Promise<T> {
     while (true) {
       const value = check()
       if (value !== undefined) return value
-      await wait(100, signal)
+      await wait(intervalMs, signal)
     }
+  }
+
+  private observedState(step: Extract<ScenarioStep, { action: 'assert_state' }>): {
+    health: number
+    food: number
+    gui: 'open' | 'closed'
+    elapsedMs: number
+    failures: string[]
+  } {
+    const bot = this.requireBot()
+    const gui = bot.currentWindow ? 'open' : 'closed'
+    const failures: string[] = []
+    if (step.minimumHealth !== undefined && bot.health < step.minimumHealth) {
+      failures.push(`Expected health >= ${step.minimumHealth}, found ${bot.health}`)
+    }
+    if (step.minimumFood !== undefined && bot.food < step.minimumFood) {
+      failures.push(`Expected food >= ${step.minimumFood}, found ${bot.food}`)
+    }
+    if (step.gui !== 'any' && gui !== step.gui) failures.push(`Expected GUI ${step.gui}, found ${gui}`)
+    return { health: bot.health, food: bot.food, gui, elapsedMs: Date.now() - this.startedAt.getTime(), failures }
+  }
+
+  private assertStateEvidenceMessage(): string {
+    const evidence = this.activeStepEvidence as { failures?: string[] } | undefined
+    const failures = evidence?.failures?.filter(failure => failure.length > 0) ?? []
+    return failures.length > 0 ? failures.join('; ') : 'assert_state timed out before predicates passed'
   }
 
   private abortable<T>(promise: Promise<T>, signal: AbortSignal, onAbort: () => void): Promise<T> {
@@ -938,18 +1196,50 @@ export class TestRun {
 
   private manifest(): RunManifest {
     const bot = this.bot
-    const sourceRevision = (this.dependencies.sourceRevision ?? process.env.GIT_COMMIT)?.trim() || undefined
     return {
       schemaVersion: 1,
+      evidence: this.evidenceBinding,
       runner: {
         name: runnerPackage.name,
         version: runnerPackage.version,
-        ...(sourceRevision ? { sourceRevision } : {})
+        ...(this.sourceRevision ? { sourceRevision: this.sourceRevision } : {})
       },
+      ...(this.dependencies.capabilityManifest ? { capability: this.dependencies.capabilityManifest } : {}),
       scenario: {
         name: this.scenario.name,
         sha256: createHash('sha256').update(JSON.stringify(this.scenario)).digest('hex')
       },
+      ...(this.scenario.qa ? {
+        qa: {
+          ...this.scenario.qa,
+          ...(this.dependencies.qaExecution ? { execution: this.dependencies.qaExecution } : {})
+        }
+      } : {}),
+      ...(this.dependencies.qaPlan ? { qaPlan: this.dependencies.qaPlan } : {}),
+      ...(this.dependencies.multiAccountResult
+        ? { qaPlan: buildMultiAccountQaPlan(this.dependencies.multiAccountResult.result, this.dependencies.multiAccountResult.kind) }
+        : {}),
+      ...(this.dependencies.persistenceResult
+        ? { persistence: buildPersistenceQaReport(this.dependencies.persistenceResult.result, this.dependencies.persistenceResult.project, this.dependencies.persistenceResult.fixture) }
+        : {}),
+      ...(this.dependencies.compatibilityResult
+        ? { compatibility: buildCompatibilityReport(this.dependencies.compatibilityResult) }
+        : {}),
+      ...(this.dependencies.transactionResult
+        ? { transaction: buildTransactionReport(this.dependencies.transactionResult.result, this.dependencies.transactionResult.project, this.dependencies.transactionResult.fixture) }
+        : {}),
+      ...(this.dependencies.crashRecoveryResult
+        ? { crashRecovery: buildCrashRecoveryReport(this.dependencies.crashRecoveryResult.result, this.dependencies.crashRecoveryResult.project, this.dependencies.crashRecoveryResult.fixture) }
+        : {}),
+      ...(this.dependencies.guiResult
+        ? { gui: buildGuiReport(this.dependencies.guiResult.result, this.dependencies.guiResult.project, this.dependencies.guiResult.fixture) }
+        : {}),
+      ...(this.dependencies.gameplayResult
+        ? { gameplay: buildGameplayReport(this.dependencies.gameplayResult.result, this.dependencies.gameplayResult.project, this.dependencies.gameplayResult.fixture) }
+        : {}),
+      ...(this.dependencies.multiClientResult
+        ? { multiClient: buildMultiClientReport(this.dependencies.multiClientResult.result, this.dependencies.multiClientResult.project, this.dependencies.multiClientResult.fixture) }
+        : {}),
       target: {
         host: this.minecraft.host,
         port: this.minecraft.port,
@@ -984,7 +1274,43 @@ export class TestRun {
   }
 
   private async writeReport(): Promise<void> {
-    await mkdir(this.reportDir, { recursive: true })
-    await writeFile(path.join(this.reportDir, `${this.id}.json`), JSON.stringify(this.report(), null, 2), 'utf8')
+    const report = this.report()
+    const artifacts: EvidenceBundleInput['artifacts'] = [{
+      role: 'report',
+      fileName: `${this.id}.json`,
+      content: JSON.stringify(report, null, 2)
+    }]
+    for (const [index, step] of report.steps.entries()) {
+      const map = (step.evidence as { routePixelMap?: RoutePixelMapInput } | undefined)?.routePixelMap
+      if (!map) continue
+      const prefix = `${this.id}-step-${String(index + 1).padStart(4, '0')}-route-map`
+      artifacts.push(
+        { role: 'route-map-json', fileName: `${prefix}.json`, content: JSON.stringify(map, null, 2) },
+        { role: 'route-map-html', fileName: `${prefix}.html`, content: renderRoutePixelMapHtml(map) }
+      )
+    }
+    await writeEvidenceBundle(this.reportDir, `${this.id}.bundle.json`, {
+      runId: this.id,
+      scenarioSha256: report.manifest.scenario.sha256,
+      ...(report.manifest.capability
+        ? { capabilitySourceFingerprint: report.manifest.capability.sourceFingerprint }
+        : {}),
+      ...(report.manifest.evidence.evidenceGrade === 'artifact-bound'
+        ? { targetBindingSha256: report.manifest.evidence.targetBindingSha256 }
+        : {}),
+      artifacts
+    })
+  }
+
+  private async persistReport(): Promise<void> {
+    try {
+      await this.writeReport()
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      this.error = `Evidence persistence failed: ${detail}`
+      this.record('persist_error', this.error)
+      if (!this.cancelled) this.status = 'failed'
+      throw error
+    }
   }
 }

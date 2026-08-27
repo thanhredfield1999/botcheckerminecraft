@@ -22,6 +22,50 @@ test('scenario applies safe defaults', () => {
   assert.equal(scenario.steps[0].action === 'click_gui' && scenario.steps[0].inspectDelayMs, 750)
 })
 
+test('scenario nhận metadata QA bounded cho phase được ủy quyền', () => {
+  const scenario = scenarioSchema.parse({
+    name: 'permission matrix',
+    qa: {
+      project: 'ExamplePlugin', fixture: 'isolated-paper-1', accountRole: 'player',
+      authorization: ['chat', 'read-only-assertions'], phase: 'permission'
+    },
+    steps: [{ id: 'state', action: 'assert_state', minimumHealth: 20 }]
+  })
+  assert.deepEqual(scenario.qa, {
+    project: 'ExamplePlugin', fixture: 'isolated-paper-1', accountRole: 'player',
+    authorization: ['chat', 'read-only-assertions'], phase: 'permission'
+  })
+})
+
+test('scenario từ chối metadata QA thiếu fixture hoặc authorization', () => {
+  assert.equal(scenarioSchema.safeParse({
+    name: 'missing fixture',
+    qa: { project: 'ExamplePlugin', accountRole: 'player', authorization: ['chat'], phase: 'negative-security' },
+    steps: [{ id: 'wait', action: 'wait', durationMs: 0 }]
+  }).success, false)
+  assert.equal(scenarioSchema.safeParse({
+    name: 'missing authorization',
+    qa: { project: 'ExamplePlugin', fixture: 'isolated-paper-1', accountRole: 'player', authorization: [], phase: 'permission' },
+    steps: [{ id: 'wait', action: 'wait', durationMs: 0 }]
+  }).success, false)
+})
+
+test('scenario từ chối credential trong QA authorization trước khi persist manifest', () => {
+  for (const authorization of [
+    ['chat', 'token=secret-value'],
+    ['Bearer abc.def.ghi']
+  ]) {
+    assert.equal(scenarioSchema.safeParse({
+      name: 'sensitive authorization',
+      qa: {
+        project: 'ExamplePlugin', fixture: 'isolated-paper-1', accountRole: 'player',
+        authorization, phase: 'permission'
+      },
+      steps: [{ id: 'wait', action: 'wait', durationMs: 0 }]
+    }).success, false)
+  }
+})
+
 test('GUI assertion rejects an empty postcondition', () => {
   const parsed = scenarioSchema.safeParse({ name: 'GUI postcondition', steps: [{ id: 'gui', action: 'assert_gui', titleIncludes: 'Menu' }] })
   assert.equal(parsed.success, true)
@@ -366,7 +410,7 @@ test('fixture restaurant tycoon ordering GUI khóa exact sequence, selectors, co
   const paymentGui = steps[6]
   assert.equal(paymentGui.action === 'assert_gui' && paymentGui.titleIncludes, 'Xác nhận thanh toán')
   assert.deepEqual(paymentGui.action === 'assert_gui' && paymentGui.items, [
-    { slot: 11, nameIncludes: 'Thanh toán', loreIncludes: 'ghi bền vững', count: 1 }
+    { slot: 11, section: 'top', nameIncludes: 'Thanh toán', loreIncludes: 'ghi bền vững', count: 1 }
   ])
 
   const stateAfter = steps[7]
