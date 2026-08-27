@@ -13,8 +13,7 @@ const MAX_SOURCE_BYTES = 2 * 1024 * 1024
 const MAX_TOTAL_SOURCE_BYTES = 32 * 1024 * 1024
 const MAX_PACKAGE_BYTES = 2 * 1024 * 1024
 
-export interface CapabilityManifest {
-  schemaVersion: 1
+interface CapabilityManifestBase {
   git: { commit: string; dirty: boolean }
   runtime: { node: string; platform: string; arch: string }
   codeRoot: string
@@ -27,6 +26,28 @@ export interface CapabilityManifest {
   capabilities: Array<{ name: string; mode: 'runtime-wired' | 'library-only' }>
 }
 
+export interface AuxiliaryCodeManifest {
+  component: string
+  sourceRoot: string
+  outputRoot: string
+  mode: 'source-only' | 'source-and-compiled'
+  buildScript: { path: string; sha256: string }
+  sources: Array<{ path: string; sha256: string }>
+  compiled: Array<{ path: string; sha256: string }>
+}
+
+export interface CapabilityManifestV1 extends CapabilityManifestBase {
+  schemaVersion: 1
+  auxiliaryCode?: never
+}
+
+export interface CapabilityManifestV2 extends CapabilityManifestBase {
+  schemaVersion: 2
+  auxiliaryCode: AuxiliaryCodeManifest[]
+}
+
+export type CapabilityManifest = CapabilityManifestV1 | CapabilityManifestV2
+
 export interface CapabilityManifestFacts {
   packageJson: string | Uint8Array
   packageLock: string | Uint8Array
@@ -37,6 +58,15 @@ export interface CapabilityManifestFacts {
   dependencies: Readonly<Record<string, string>>
   capabilities: Readonly<Record<string, 'runtime-wired' | 'library-only'>>
   sources: ReadonlyArray<{ path: string; content: string | Uint8Array }>
+  auxiliaryCode?: ReadonlyArray<{
+    component: string
+    sourceRoot: string
+    outputRoot: string
+    mode: 'source-only' | 'source-and-compiled'
+    buildScript: { path: string; content: string | Uint8Array }
+    sources: ReadonlyArray<{ path: string; content: string | Uint8Array }>
+    compiled: ReadonlyArray<{ path: string; content: string | Uint8Array }>
+  }>
 }
 
 function bytes(value: string | Uint8Array): Buffer {
@@ -122,16 +152,76 @@ export function buildCapabilityManifest(facts: CapabilityManifestFacts): Capabil
   })).sort((left, right) => compareText(left.name, right.name))
   assertUnique(capabilities.map(capability => capability.name), 'capability')
 
+  let totalAuxiliaryBytes = 0
+  const hashAuxiliary = (value: string | Uint8Array, label: string): string => {
+    const content = bytes(value)
+    if (content.byteLength > MAX_SOURCE_BYTES) throw new Error(`Auxiliary ${label} exceeds byte bound`)
+    totalAuxiliaryBytes += content.byteLength
+    if (totalAuxiliaryBytes > MAX_TOTAL_SOURCE_BYTES) {
+      throw new Error('Auxiliary total byte bound exceeded')
+    }
+    return sha256(content)
+  }
+  if (facts.auxiliaryCode !== undefined && facts.auxiliaryCode.length === 0) {
+    throw new Error('Auxiliary code must not be explicitly empty')
+  }
+  const auxiliaryFacts = [...(facts.auxiliaryCode ?? [])]
+  if (auxiliaryFacts.length > 8) throw new Error('Auxiliary component count exceeds bound')
+  const auxiliaryCode = auxiliaryFacts.map(component => {
+    const componentName = boundedName(component.component, 'auxiliary component', CAPABILITY_PATTERN)
+    const sourceRoot = sourcePath(component.sourceRoot)
+    const outputRoot = sourcePath(component.outputRoot)
+    const buildScriptPath = sourcePath(component.buildScript.path)
+    if (sourceRoot === outputRoot) throw new Error('Auxiliary source root and output root must be distinct')
+    if (!buildScriptPath.startsWith('scripts/')) {
+      throw new Error('Auxiliary build script must be under scripts/')
+    }
+    if (component.sources.length === 0 || component.sources.length > 64 || component.compiled.length > 128) {
+      throw new Error('Auxiliary code file count exceeds bound')
+    }
+    const auxiliarySources = component.sources.map(source => ({
+      path: sourcePath(source.path), sha256: hashAuxiliary(source.content, 'source')
+    })).sort((left, right) => compareText(left.path, right.path))
+    const compiled = component.compiled.map(file => ({
+      path: sourcePath(file.path), sha256: hashAuxiliary(file.content, 'compiled file')
+    })).sort((left, right) => compareText(left.path, right.path))
+    if (!auxiliarySources.every(source => source.path.startsWith(`${sourceRoot}/`))) {
+      throw new Error(`Auxiliary source is outside source root: ${sourceRoot}`)
+    }
+    if (!compiled.every(file => file.path.startsWith(`${outputRoot}/`))) {
+      throw new Error(`Auxiliary compiled file is outside output root: ${outputRoot}`)
+    }
+    if ((component.mode === 'source-only') !== (compiled.length === 0)) {
+      throw new Error('Auxiliary code mode does not match compiled artifacts')
+    }
+    assertUnique(auxiliarySources.map(source => source.path), 'auxiliary source path')
+    assertUnique(compiled.map(file => file.path), 'auxiliary compiled path')
+    return {
+      component: componentName,
+      sourceRoot,
+      outputRoot,
+      mode: component.mode,
+      buildScript: {
+        path: buildScriptPath,
+        sha256: hashAuxiliary(component.buildScript.content, 'build script')
+      },
+      sources: auxiliarySources,
+      compiled
+    }
+  }).sort((left, right) => compareText(left.component, right.component))
+  assertUnique(auxiliaryCode.map(component => component.component), 'auxiliary component')
+
   const runtime = {
     node: boundedName(facts.runtime.node, 'Node version'),
     platform: boundedName(facts.runtime.platform, 'runtime platform'),
     arch: boundedName(facts.runtime.arch, 'runtime architecture')
   }
-  const sourceFingerprint = sha256(JSON.stringify({ codeRoot, sources }))
+  const sourceFingerprint = sha256(JSON.stringify(auxiliaryCode.length > 0
+    ? { schemaVersion: 2, codeRoot, sources, auxiliaryCode }
+    : { codeRoot, sources }))
   if (!SHA256_PATTERN.test(sourceFingerprint)) throw new Error('Invalid source fingerprint')
 
-  return {
-    schemaVersion: 1,
+  const common = {
     git: { commit, dirty: facts.git.dirty },
     runtime,
     codeRoot,
@@ -143,6 +233,9 @@ export function buildCapabilityManifest(facts: CapabilityManifestFacts): Capabil
     dependencies,
     capabilities
   }
+  return auxiliaryCode.length > 0
+    ? { schemaVersion: 2, ...common, auxiliaryCode }
+    : { schemaVersion: 1, ...common }
 }
 
 const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runtime-wired' | 'library-only' }>> = {
@@ -202,6 +295,46 @@ function collectCodeFiles(rootDir: string, codeRoot: string): Array<{ path: stri
   return collected
 }
 
+function collectFilesByExtension(
+  rootDir: string,
+  relativeRoot: string,
+  extension: string,
+  required: boolean
+): Array<{ path: string; content: Buffer }> {
+  const absoluteRoot = path.join(rootDir, relativeRoot)
+  try {
+    const rootStat = lstatSync(absoluteRoot)
+    if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) {
+      throw new Error(`Auxiliary code root must be a regular directory: ${absoluteRoot}`)
+    }
+  } catch (error) {
+    if (!required && (error as NodeJS.ErrnoException).code === 'ENOENT') return []
+    throw error
+  }
+  const collected: Array<{ path: string; content: Buffer }> = []
+  const visit = (directory: string): void => {
+    const entries = readdirSync(directory, { withFileTypes: true })
+      .sort((left, right) => compareText(left.name, right.name))
+    for (const entry of entries) {
+      const absolute = path.join(directory, entry.name)
+      const stat = lstatSync(absolute)
+      if (stat.isSymbolicLink()) throw new Error(`Auxiliary code symlink is not allowed: ${absolute}`)
+      if (stat.isDirectory()) {
+        visit(absolute)
+        continue
+      }
+      if (!entry.isFile() || !entry.name.endsWith(extension)) continue
+      collected.push({
+        path: path.relative(rootDir, absolute).replaceAll('\\', '/'),
+        content: stableReadFile(absolute)
+      })
+      if (collected.length > 128) throw new Error('Auxiliary code file count exceeds bound')
+    }
+  }
+  visit(absoluteRoot)
+  return collected
+}
+
 function directDependencyVersions(packageJsonText: string, packageLockText: string): Record<string, string> {
   const packageJson = JSON.parse(packageJsonText) as { dependencies?: Record<string, string> }
   const packageLock = JSON.parse(packageLockText) as { packages?: Record<string, { version?: string }> }
@@ -243,6 +376,11 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
   const loadedPackageJsonPath = codeRoot === 'src' ? 'package.json' : 'dist/package.json'
   const loadedPackageJson = stableReadFile(path.join(rootDir, loadedPackageJsonPath))
   const sources = collectCodeFiles(rootDir, codeRoot)
+  const javaSources = collectFilesByExtension(rootDir, 'java-src', '.java', true)
+  const javaCompiled = codeRoot === 'dist/src'
+    ? collectFilesByExtension(rootDir, 'dist/java', '.class', true)
+    : []
+  const javaBuildScript = stableReadFile(path.join(rootDir, 'scripts/build-java.mjs'))
   const commitAfter = gitOutput(rootDir, ['rev-parse', 'HEAD'], 64 * 1024).trim()
   const statusAfter = gitOutput(rootDir, ['status', '--porcelain=v1', '--untracked-files=all'], 1024 * 1024)
   if (commitAfter !== commitBefore || statusAfter !== statusBefore) {
@@ -258,10 +396,22 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
     codeRoot,
     loadedPackageJson: { path: loadedPackageJsonPath, content: loadedPackageJson },
     dependencies: directDependencyVersions(packageJson.toString('utf8'), packageLock.toString('utf8')),
-    capabilities: Object.fromEntries(Object.entries(CAPABILITY_MODULES)
-      .filter(([, capability]) => sourcePaths.has(`${codeRoot}/${capability.module}${codeRoot === 'src' ? '.ts' : '.js'}`))
-      .map(([name, capability]) => [name, capability.mode])),
-    sources
+    capabilities: Object.fromEntries([
+      ...Object.entries(CAPABILITY_MODULES)
+        .filter(([, capability]) => sourcePaths.has(`${codeRoot}/${capability.module}${codeRoot === 'src' ? '.ts' : '.js'}`))
+        .map(([name, capability]) => [name, capability.mode] as const),
+      ['jvm-artifact-observer', 'library-only'] as const
+    ]),
+    sources,
+    auxiliaryCode: [{
+      component: 'jvm-artifact-observer',
+      sourceRoot: 'java-src',
+      outputRoot: 'dist/java',
+      mode: codeRoot === 'src' ? 'source-only' : 'source-and-compiled',
+      buildScript: { path: 'scripts/build-java.mjs', content: javaBuildScript },
+      sources: javaSources,
+      compiled: javaCompiled
+    }]
   })
 }
 

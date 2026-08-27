@@ -58,6 +58,23 @@ release admission. A successful result remains `artifact-bound` and
 contents, not independently verified runtime identities. Multiprocess use needs a
 shared transactional nonce store and separate rate limiting.
 
+### JVM artifact observation (library only)
+
+The Java 21 library can make a bounded, non-authoritative observation of the
+regular local file named by an anchor class `CodeSource` and of the class
+resource bytes currently returned through that anchor. It records a redacted
+URI fingerprint, file/resource hashes, explicit loader/MRJAR caveats and always
+sets `authoritative`, `provesLoadedBytecode`, `atomicSnapshot`, and
+`releaseEligible` to `false`.
+
+This observer has no signing or private-key API and is not connected to Paper,
+the HTTP server, reports, signed-provider claims, or release admission. It does
+not prove which bytecode the JVM defined or executed, the truth of caller-
+declared artifact roles, effective configuration, key custody, runtime behavior,
+or release readiness. Capability manifest schema v2 binds its Java source,
+build script and compiled classes; legacy manifests without auxiliary code
+remain schema v1.
+
 ## API
 
 ```http

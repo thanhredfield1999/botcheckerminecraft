@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
@@ -44,6 +45,10 @@ test('capability manifest bind package, lock, git, runtime, dependency và sourc
   assert.deepEqual(manifest.sources.map(source => source.path), ['src/runner.ts', 'src/scenario.ts'])
   assert.ok(manifest.sources.every(source => sha256.test(source.sha256)))
   assert.match(manifest.sourceFingerprint, sha256)
+  assert.equal(manifest.sourceFingerprint, createHash('sha256').update(JSON.stringify({
+    codeRoot: manifest.codeRoot,
+    sources: manifest.sources
+  })).digest('hex'))
 })
 
 test('capability manifest deterministic khi input map/list khác thứ tự', () => {
@@ -78,7 +83,14 @@ test('runtime capability collector bind exact current repo snapshot mà không m
 
   assert.match(manifest.git.commit, /^[a-f0-9]{40}$/)
   assert.equal(typeof manifest.git.dirty, 'boolean')
+  assert.equal(manifest.schemaVersion, 2)
   assert.equal(manifest.codeRoot, 'src')
+  assert.equal(manifest.sourceFingerprint, createHash('sha256').update(JSON.stringify({
+    schemaVersion: 2,
+    codeRoot: manifest.codeRoot,
+    sources: manifest.sources,
+    auxiliaryCode: manifest.auxiliaryCode
+  })).digest('hex'))
   assert.equal(manifest.packageJsonSha256, createHash('sha256').update(packageJson).digest('hex'))
   assert.equal(manifest.loadedPackageJson.path, 'package.json')
   assert.equal(manifest.loadedPackageJson.sha256, manifest.packageJsonSha256)
@@ -111,4 +123,127 @@ test('runtime capability collector bracket toàn bộ file snapshot bằng Git H
   assert.ok(sourceRead < commitAfter && sourceRead < statusAfter)
   assert.match(collector, /commitAfter !== commitBefore/)
   assert.match(collector, /statusAfter !== statusBefore/)
+})
+
+test('Java observation core được build và bind vào capability provenance', async () => {
+  const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as {
+    scripts: Record<string, string>
+  }
+  assert.equal(packageJson.scripts['build:java'], 'node scripts/build-java.mjs')
+  assert.match(packageJson.scripts.build ?? '', /npm run build:java/)
+
+  const manifest = collectRuntimeCapabilityManifest({ rootDir: process.cwd() }) as unknown as {
+    capabilities: Array<{ name: string; mode: string }>
+    auxiliaryCode?: Array<{
+      component: string
+      sourceRoot: string
+      outputRoot: string
+      mode: string
+      sources: Array<{ path: string; sha256: string }>
+      compiled: Array<{ path: string; sha256: string }>
+    }>
+  }
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observer'),
+    { name: 'jvm-artifact-observer', mode: 'library-only' }
+  )
+  const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
+  assert.equal(java?.sourceRoot, 'java-src')
+  assert.equal(java?.outputRoot, 'dist/java')
+  assert.equal(java?.mode, 'source-only')
+  assert.ok(java?.sources.some(source =>
+    source.path === 'java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java'
+    && sha256.test(source.sha256)))
+  assert.deepEqual(java?.compiled, [])
+})
+
+test('compiled capability collector bind Java class output, source và build script', async () => {
+  const buildOptions = {
+    cwd: process.cwd(),
+    encoding: 'utf8' as const,
+    timeout: 120_000,
+    maxBuffer: 2 * 1024 * 1024,
+    windowsHide: true
+  }
+  execFileSync(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], buildOptions)
+  execFileSync(process.execPath, ['scripts/build-java.mjs'], buildOptions)
+  const compiledModule = await import(`../dist/src/capability-manifest.js?compiled=${Date.now()}`) as {
+    collectRuntimeCapabilityManifest(options: { rootDir: string }): {
+      schemaVersion: number
+      codeRoot: string
+      auxiliaryCode?: Array<{
+        component: string
+        mode: string
+        buildScript: { path: string; sha256: string }
+        sources: Array<{ path: string; sha256: string }>
+        compiled: Array<{ path: string; sha256: string }>
+      }>
+    }
+  }
+  const manifest = compiledModule.collectRuntimeCapabilityManifest({ rootDir: process.cwd() })
+  const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
+  assert.equal(manifest.schemaVersion, 2)
+  assert.equal(manifest.codeRoot, 'dist/src')
+  assert.equal(java?.mode, 'source-and-compiled')
+  assert.equal(java?.buildScript.path, 'scripts/build-java.mjs')
+  assert.ok(java?.sources.some(source => source.path.endsWith('/JvmArtifactObserver.java')))
+  assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmArtifactObserver.class')))
+})
+
+test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {
+  const boundedFile = new Uint8Array(2 * 1024 * 1024)
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(),
+    auxiliaryCode: [{
+      component: 'jvm-artifact-observer',
+      sourceRoot: 'java-src',
+      outputRoot: 'dist/java',
+      mode: 'source-only',
+      buildScript: { path: 'scripts/build-java.mjs', content: 'build' },
+      sources: Array.from({ length: 17 }, (_, index) => ({
+        path: `java-src/Observer${index}.java`, content: boundedFile
+      })),
+      compiled: []
+    }]
+  }), /auxiliary total byte bound/i)
+})
+
+test('capability manifest validate auxiliary count và roots trước khi hash content', () => {
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(), auxiliaryCode: []
+  }), /auxiliary.*empty|empty.*auxiliary/i)
+
+  const tooManySources = Array.from({ length: 65 }, (_, index) => ({
+    path: `java-src/Observer${index}.java`, content: 'source'
+  }))
+  Object.defineProperty(tooManySources[0], 'content', {
+    get() { throw new Error('SOURCE_CONTENT_TOUCHED_BEFORE_COUNT_VALIDATION') }
+  })
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(),
+    auxiliaryCode: [{
+      component: 'jvm-artifact-observer', sourceRoot: 'java-src', outputRoot: 'dist/java',
+      mode: 'source-only', buildScript: { path: 'scripts/build-java.mjs', content: 'build' },
+      sources: tooManySources, compiled: []
+    }]
+  }), /auxiliary code file count exceeds bound/i)
+
+  const component = (index: number) => ({
+    component: `observer-${index}`, sourceRoot: `java-src-${index}`, outputRoot: `dist/java-${index}`,
+    mode: 'source-only' as const,
+    buildScript: { path: `scripts/build-java-${index}.mjs`, content: 'build' },
+    sources: [{ path: `java-src-${index}/Observer.java`, content: 'source' }], compiled: []
+  })
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(), auxiliaryCode: Array.from({ length: 9 }, (_, index) => component(index))
+  }), /auxiliary component count exceeds bound/i)
+
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(), auxiliaryCode: [{
+      ...component(0), buildScript: { path: 'java-src-0/build.mjs', content: 'build' }
+    }]
+  }), /build script.*scripts/i)
+  assert.throws(() => buildCapabilityManifest({
+    ...facts(), auxiliaryCode: [{ ...component(0), outputRoot: 'java-src-0' }]
+  }), /source root.*output root|roots.*distinct/i)
 })

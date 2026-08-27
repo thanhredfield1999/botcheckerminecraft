@@ -6,7 +6,8 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node -e \"import('./dist/src/runner.js')\"",
+    "build": "tsc -p tsconfig.json && npm run build:java && node -e \"import('./dist/src/runner.js')\"",
+    "build:java": "node scripts/build-java.mjs",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",

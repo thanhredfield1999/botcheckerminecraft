@@ -143,6 +143,15 @@ Last reviewed: 2026-08-27
 - Opus 4.8 review `3b7884a6-7acf-4f83-ad67-ea3a7ca9f74a` trả `PASS`, `0` blocker/high/medium. Allowed claim chỉ là một Java 21 test-fixture vector đại diện tương thích canonical bytes + Ed25519 offline.
 - Đây không phải production probe: không `src/` signer/private-key loader, không Paper/Bukkit/server/report integration, không key custody, loaded-JVM proof, runtime evidence hoặc release eligibility. LOW backlog: gate cả `java` runtime version để tránh false RED trên host lệch toolchain; thêm negative/optional-instance interop vectors trước khi suy rộng compatibility coverage.
 
+## 2026-08-28 — Non-authoritative JVM artifact observation core
+
+- `VERIFIED offline/library-only`: `java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java` quan sát bounded regular local `CodeSource` file cùng class resource do anchor loader trả, nhưng luôn ghi `authoritative=false`, `provesLoadedBytecode=false`, `atomicSnapshot=false` và `releaseEligible=false`. Declared role/ID/path tách khỏi observed class/hash; outward evidence chỉ giữ SHA-256 canonical URI, không raw path.
+- Fail-closed coverage gồm null/non-file/network/directory/final-symlink contract, size/resource/total-memory/concurrency bounds, path alias/traversal, path swap trước open, không reopen path sau snapshot, parent-delegated resource, MRJAR runtime version 21, compressed inflated-scan bound và 4097-entry bound. Symlink fixture trên host hiện tại skip trung thực vì Windows trả `EPERM`; chưa có controlled symlink evidence trên host cho phép tạo link.
+- `npm run build` compile Java bằng `javac --release 21`; capability manifest v2 bind build script, Java source và compiled `.class`. Legacy manifest không auxiliary vẫn là v1 với exact legacy fingerprint; explicit empty auxiliary fail-closed. Compiled collector được chứng minh từ trạng thái `dist/` vắng.
+- Opus threat/correction reviews `3653363a-b3b2-4e32-97da-cec4fb038253` và `3c847af3-dc3b-4759-95ae-4d977ea694da` PASS production boundary; M1 MRJAR Unix-`cp` portability đã RED→GREEN bằng Node `copyFileSync` và correction `3a74e622-6b70-43e9-ac34-d1ee14a4cc5c` xác nhận CLOSED. Capability schema v2 review `7abba73d-ba80-45da-8c28-27d15081f843` PASS, `0` blocker/high/medium; hai LOW version-domain/empty downgrade đã được sửa sau review.
+- Full exact-tree gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `391` tests, `388` pass, `0` fail, `3` skip (2 intentional Windows signal skips cũ + 1 symlink `EPERM` skip); Java build, TypeScript build và diff-check PASS.
+- Đây không phải trusted/prod probe hoặc runtime attestation: không signer/private-key/key custody, nonce/report/server/Paper integration, effective config observation, loaded-bytecode proof, runtime behavior hay release admission. Không mở Paper/listener, không deploy/reload/restart, không chạm production và chưa push.
+
 Report contract update on 2026-08-16:
 
 - Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.
