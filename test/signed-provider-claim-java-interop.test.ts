@@ -12,6 +12,7 @@ import {
   SignedProviderClaimVerifier
 } from '../src/signed-provider-claim.js'
 
+import { SignedProviderOpaqueSigningAdapter } from '../src/signed-provider-signing-adapter.js'
 import { artifactTargetBindingSha256, buildArtifactTargetBinding } from '../src/target-binding.js'
 
 const javaInteropAvailable = spawnSync('javac', ['--release', '21', '-version'], {
@@ -158,7 +159,7 @@ test('Java 21 fixture canonicalize và ký Ed25519 được Node verifier chấp
 
 test('Java 21 fixture canonicalize observation-bound v2 khớp Node và vẫn non-release', {
   skip: !javaInteropAvailable
-}, () => {
+}, async () => {
   const workspace = mkdtempSync(path.join(tmpdir(), 'botchecker-java-observation-bound-'))
   try {
     const expectedBinding = binding()
@@ -198,9 +199,9 @@ test('Java 21 fixture canonicalize observation-bound v2 khớp Node và vẫn no
       provesLoadedBytecode: false as const,
       releaseEligible: false as const,
       assumptions: [
-        'standard-non-instrumented-anchor-classloader' as const,
-        'java-agent-absence-verified:false' as const
-      ],
+        'standard-non-instrumented-anchor-classloader',
+        'java-agent-absence-verified:false'
+      ] as const,
       declared: {
         role: 'candidate' as const,
         logicalId: 'candidate', logicalPath: 'plugins/Example.jar'
@@ -270,13 +271,26 @@ test('Java 21 fixture canonicalize observation-bound v2 khớp Node và vẫn no
     ], { cwd: path.resolve('.'), windowsHide: true, stdio: 'pipe' })
 
     const [canonicalBase64Url, signatureBase64Url] = requireOutput(outputPath)
-    assert.equal(Buffer.from(canonicalBase64Url, 'base64url').equals(
+    const javaCanonical = Buffer.from(canonicalBase64Url, 'base64url')
+    assert.equal(javaCanonical.equals(
       canonicalSignedProviderObservationBoundClaimV2({ claims, jvmArtifactObservation })
     ), true)
-    const result = verifier.verifyAndConsume({
-      schemaVersion: 2, profile: 'jvm-observation-bound-v2', claims,
-      jvmArtifactObservation, signatureBase64Url
+    const adapter = new SignedProviderOpaqueSigningAdapter({
+      trustStore,
+      descriptor: {
+        keyId: key.keyId,
+        provider: key.provider,
+        opaqueKeyHandleId: 'java-fixture-opaque-handle'
+      },
+      signer: () => Buffer.from(signatureBase64Url, 'base64url'),
+      timeoutMs: 1_000,
+      wallNowMs: () => clock.wall
     })
+    const envelope = await adapter.createObservationBoundEnvelope({
+      claims,
+      jvmArtifactObservation
+    })
+    const result = verifier.verifyAndConsume(envelope)
     assert.equal(result.observationBinding?.status, 'TARGET_FILE_MATCH_NON_AUTHORITATIVE')
     assert.equal(result.observationBinding?.provesLoadedBytecode, false)
     assert.equal(result.releaseEligible, false)

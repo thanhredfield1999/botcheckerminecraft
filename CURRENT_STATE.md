@@ -192,6 +192,14 @@ Last reviewed: 2026-08-27
 - Focused final gate `34/34`, `0` fail/skip. Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `440` tests, `436` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS. Opus final correction review trả `PASS`, `0` blocker/high/medium.
 - Capability `signed-provider-canonical-signature-verification` là `library-only`; không ký, không key custody/HSM/KMS, không Paper/server/report/release wiring và không tự chứng minh freshness/replay/runtime truth.
 
+## 2026-08-28 — Bounded opaque signing adapter
+
+- `VERIFIED offline/library-only`: `SignedProviderOpaqueSigningAdapter` nhận strict observation-bound content v2 và opaque safe handle, deep-snapshot/canonicalize nội bộ, preflight exact trust snapshot + key/provider/binding/trust/window, gọi sync/async callback bằng payload copy rồi recheck window và tự verify signature qua primitive canonical.
+- Adapter không nhận/read/sinh private key, PEM/PKCS/JKS/path/env; không persist/log raw payload, handle hoặc signature diagnostic. Callback error được sanitize. Result là deep-frozen v2 envelope nhưng vẫn chỉ non-release; adapter không consume nonce hoặc thiết lập freshness/replay/runtime/custody.
+- State machine chỉ cho một opaque operation mỗi instance. Reentrancy/concurrent call fail `REENTRANT`; timeout abort signal và trả lỗi bounded nhưng giữ instance khóa tới khi callback cũ settle, nên late result không thể overlap hoặc giải phóng operation khác.
+- Regression phủ sync/async, mutation/hostile getters, descriptor/trust/policy/key substitution, signature type/length/proxy/wrong key, timeout/late settlement/reuse, Java `--release 21` callback parity, no-leak và recursive no-runtime-wiring. Focused final `46/46`, `0` fail/skip. Opus review và correction review đều `PASS`, `0` blocker/high/medium.
+- Capability `signed-provider-opaque-signing-adapter` là `library-only`; chưa production signer transport, custody/HSM/KMS, Paper/server/report/release wiring hoặc controlled runtime evidence. Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `455` tests, `451` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS.
+
 Report contract update on 2026-08-16:
 
 - Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.

@@ -135,6 +135,15 @@ compiled Ed25519 public key remains private to the immutable trust-store snapsho
 Its metadata-only result explicitly reports that freshness, replay checking, and
 nonce consumption were not established; those remain verifier responsibilities.
 
+An optional opaque signing adapter can pass an adapter-owned copy of canonical v2
+bytes plus a bounded opaque handle to a caller-supplied callback. Before calling it,
+the adapter pins the exact built trust-store snapshot and checks key, provider,
+binding, trust identity, and key window; afterwards it rechecks time and verifies
+the returned Ed25519 signature independently. Timeout aborts the request and keeps
+the adapter locked until the callback actually settles, preventing overlapping
+opaque operations. This is callback orchestration only—not key custody, HSM/KMS,
+freshness, replay consumption, runtime attestation, or release admission.
+
 ## API
 
 ```http

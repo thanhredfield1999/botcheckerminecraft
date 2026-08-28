@@ -308,6 +308,14 @@ export function buildSignedProviderClaimTrustStore(input: unknown): SignedProvid
   return store
 }
 
+export function assertSignedProviderClaimTrustStoreSnapshot(
+  trustStore: SignedProviderClaimTrustStore
+): void {
+  if (!compiledTrustKeys.has(trustStore)) {
+    throw new Error('Trust store must be an exact built snapshot')
+  }
+}
+
 export function verifyCanonicalSignedProviderClaimSignature(
   input: CanonicalSignedProviderSignatureInput
 ): Readonly<CanonicalSignedProviderSignatureVerification> {

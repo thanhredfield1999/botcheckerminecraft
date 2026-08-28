@@ -163,7 +163,7 @@ export type SignedProviderClaimEnvelopeV1 = z.infer<typeof signedProviderEnvelop
 export interface SignedProviderClaimEnvelopeV2 {
   readonly schemaVersion: 2
   readonly profile: 'jvm-observation-bound-v2'
-  readonly claims: SignedProviderClaims
+  readonly claims: SignedProviderCanonicalClaims
   readonly jvmArtifactObservation: JvmArtifactObservationV1
   readonly signatureBase64Url: string
 }

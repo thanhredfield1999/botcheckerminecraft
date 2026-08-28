@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import test from 'node:test'
 import { buildCapabilityManifest, collectRuntimeCapabilityManifest } from '../src/capability-manifest.js'
 
@@ -111,6 +111,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
   assert.deepEqual(
     manifest.capabilities.find(capability => capability.name === 'signed-provider-canonical-signature-verification'),
     { name: 'signed-provider-canonical-signature-verification', mode: 'library-only' }
+  )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'signed-provider-opaque-signing-adapter'),
+    { name: 'signed-provider-opaque-signing-adapter', mode: 'library-only' }
   )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
@@ -241,6 +245,24 @@ test('Java production observation-bound builder không có key hoặc signing AP
   assert.match(source, /observation\.provesLoadedBytecode\(\)/)
   assert.match(source, /observation\.releaseEligible\(\)/)
   assert.match(capabilitySource, /javaSources\.some\(source => source\.path[\s\S]*JvmObservationBoundClaimBuilder/)
+})
+
+test('opaque signing adapter không có private-key loader hoặc runtime wiring', async () => {
+  const source = await readFile('src/signed-provider-signing-adapter.ts', 'utf8')
+  assert.doesNotMatch(source, /node:fs|process\.env|createPrivateKey|PrivateKey|PKCS|JKS|PEM|KeyStore/)
+  assert.doesNotMatch(source, /SignedProviderClaimVerifier|verifyAndConsume|runner|report|server|Paper|Bukkit/)
+  assert.match(source, /verifyCanonicalSignedProviderClaimSignature/)
+
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('signed-provider-signing-adapter.ts'))
+    .map(file => `src/${file}`)
+  for (const file of sourceFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    assert.doesNotMatch(
+      runtimeSource,
+      /(?:from\s+['"][^'"]*signed-provider-signing-adapter|(?:import|require)\(\s*['"][^'"]*signed-provider-signing-adapter)/
+    )
+  }
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {
