@@ -75,6 +75,14 @@ const signedProviderClaimsSchema = z.strictObject({
   loadedArtifacts: z.array(claimedArtifactSchema).min(1).max(128)
 })
 
+const signedProviderChallengeIdentitySchema = signedProviderClaimsSchema.omit({
+  challengeId: true,
+  observedAtMs: true,
+  claimedServerInstanceId: true,
+  claimedBootId: true,
+  loadedArtifacts: true
+})
+
 const signedProviderEnvelopeSchema = z.strictObject({
   schemaVersion: z.literal(1),
   claims: signedProviderClaimsSchema,
@@ -118,6 +126,28 @@ function canonicalClaimsObject(input: unknown): SignedProviderClaims {
         || compareText(left.logicalPath, right.logicalPath)
         || compareText(left.sha256, right.sha256))
   }
+}
+
+export function canonicalSignedProviderChallengeIdentityV1(input: unknown): Buffer {
+  const challenge = signedProviderChallengeIdentitySchema.parse(input)
+  return Buffer.from(JSON.stringify({
+    schemaVersion: 1,
+    domain: CLAIM_DOMAIN,
+    audience: challenge.audience,
+    verifierInstanceId: challenge.verifierInstanceId,
+    sequence: challenge.sequence,
+    nonceBase64Url: challenge.nonceBase64Url,
+    runId: challenge.runId,
+    keyId: challenge.keyId,
+    bindingId: challenge.bindingId,
+    targetBindingSha256: challenge.targetBindingSha256,
+    provider: { ...challenge.provider },
+    trustStoreId: challenge.trustStoreId,
+    trustStoreVersion: challenge.trustStoreVersion,
+    trustStoreSha256: challenge.trustStoreSha256,
+    issuedAtMs: challenge.issuedAtMs,
+    expiresAtMs: challenge.expiresAtMs
+  }), 'utf8')
 }
 
 export function canonicalSignedProviderClaimV1(input: unknown): Buffer {

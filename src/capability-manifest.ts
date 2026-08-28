@@ -254,6 +254,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
   'protocol-diagnostics': { module: 'protocol-diagnostic', mode: 'runtime-wired' },
   'route-oracle': { module: 'route-oracle', mode: 'runtime-wired' },
   'signed-provider-claim': { module: 'signed-provider-claim', mode: 'library-only' },
+  'signed-provider-shared-challenge-state': {
+    module: 'signed-provider-challenge-store',
+    mode: 'library-only'
+  },
   'target-artifact-binding': { module: 'target-binding', mode: 'runtime-wired' },
   transaction: { module: 'transaction-contract', mode: 'library-only' }
 }

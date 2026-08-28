@@ -100,6 +100,11 @@ test('runtime capability collector bind exact current repo snapshot mà không m
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'route-oracle')?.mode, 'runtime-wired')
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'multi-client')?.mode, 'library-only')
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'signed-provider-claim')?.mode, 'library-only')
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'signed-provider-shared-challenge-state'),
+    { name: 'signed-provider-shared-challenge-state', mode: 'library-only' }
+  )
+  assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.sources.length <= 256)
 })
@@ -123,6 +128,18 @@ test('runtime capability collector bracket toàn bộ file snapshot bằng Git H
   assert.ok(sourceRead < commitAfter && sourceRead < statusAfter)
   assert.match(collector, /commitAfter !== commitBefore/)
   assert.match(collector, /statusAfter !== statusBefore/)
+})
+
+test('package runtime floor hỗ trợ node:sqlite DatabaseSync security options', async () => {
+  const packageJson = JSON.parse(await readFile('package.json', 'utf8')) as {
+    engines?: { node?: string }
+  }
+  const storeSource = await readFile('src/signed-provider-challenge-store.ts', 'utf8')
+  assert.equal(packageJson.engines?.node, '>=22.18.0')
+  assert.match(storeSource, /assertSupportedNodeRuntime\(\)/)
+  assert.match(storeSource, /typeof .*isTransaction.*!== 'boolean'/)
+  assert.match(storeSource, /PRAGMA busy_timeout/)
+  assert.match(storeSource, /busyTimeout\.timeout !== this\.busyTimeoutMs/)
 })
 
 test('Java observation core được build và bind vào capability provenance', async () => {

@@ -47,16 +47,39 @@ those files and are not signatures.
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,
-single-process challenges. It can confirm that a fresh claim was signed by the
-configured key and that its declared provider and artifacts exactly match an
-expected artifact binding. Challenges are in memory, bounded, consumed once and
-invalid after restart or in another process.
+correlated claims. The default compatibility mode keeps bounded one-time
+challenges in memory. Callers on Node.js `22.18.0+` can instead inject the
+library-only SQLite challenge store to share sequence, expiry, capacity,
+invalid-signature burn and per-key/provider rate limits across processes that
+open the same local database. Two separate Node processes produce exactly one
+consume winner. A separate child-process writer-lock test verifies the configured
+busy-timeout smoke after the child reports holding the writer lock. Shared
+trust-store/rate/capacity policy is
+pinned, each loaded challenge is re-authorized against the consuming verifier,
+and global scopes plus rate-limit subjects are bounded and retained for a bounded
+period. A configured verifier instance whose idle scope has been reclaimed is
+retired fail-closed; restart it with a new `verifierInstanceId` instead of
+recreating the old sequence/policy namespace. If the bounded retired-scope budget
+is exhausted, reclamation stops and new scopes fail closed rather than forgetting
+a retired identity.
 
 This capability is not wired into the HTTP server, reports, Paper, a JVM probe or
 release admission. A successful result remains `artifact-bound` and
 `releaseEligible: false`. Claimed server and boot identifiers are signed claim
-contents, not independently verified runtime identities. Multiprocess use needs a
-shared transactional nonce store and separate rate limiting.
+contents, not independently verified runtime identities. The SQLite module is
+still experimental in Node.js, uses synchronous local-file I/O, and is not a
+distributed lock/consensus service or a supported network-filesystem/HA design.
+The database file, its `-wal`/`-shm` siblings and their parent directory are a
+security root: use a verifier-owned private directory. On POSIX the store requires
+the parent and database to be owned by the current uid, rejects group/other-writable
+parents and requires database mode `0600`; Windows still rejects symlinks and
+non-regular database files. These guards do not provide cryptographic integrity
+against an attacker who already has write access. Clock rollback/skew fails closed.
+The store compares caller time against a trusted wall-clock callback under the
+SQLite write lock (`Date.now` by default). A custom trusted clock is itself a
+security root and must not be controlled by request/provider input. After an
+unrecoverable clock jump, stop all workers and quarantine the entire local
+database/WAL/SHM set before starting a fresh store, which invalidates old challenges.
 
 ### JVM artifact observation (library only)
 

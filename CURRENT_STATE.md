@@ -5,7 +5,7 @@ Last reviewed: 2026-08-27
 ## Baseline
 
 - Package version: `0.1.0`.
-- Runtime: Node.js `22+`, TypeScript ESM.
+- Runtime: Node.js `22.18.0+`, TypeScript ESM.
 - Product: Mineflayer-based Minecraft player-journey and GUI tester exposed through
   a private HTTP API.
 
@@ -127,13 +127,24 @@ Last reviewed: 2026-08-27
 - `VERIFIED offline`: configured-key store strict/canonical Ed25519 SPKI, key ID là SHA-256 DER, immutable policy snapshot, exact provider/binding scope và key validity. Private/non-Ed25519/noncanonical key encodings bị từ chối; production module không nhận hoặc persist private key.
 - `VERIFIED offline`: challenge bind domain/audience/verifier instance/sequence/run/key/provider/target hash/trust-store fingerprint, dùng nonce 32 byte, TTL bounded, dual wall/monotonic clocks, capacity và invalid-attempt budget. Replay, cross-instance, exact-expiry, clock rollback/overflow và caller mutation fail-closed.
 - `VERIFIED offline`: canonical signed claim strict schema, safe integer/NFC/path guards, exact artifact set/role/path/hash, observed-time window và Ed25519 signature canonical base64url. Verify/consume đồng bộ; kết quả luôn `ACCEPTED_NON_RELEASE`, `artifact-bound`, `releaseEligible:false`; server/boot IDs chỉ là `claimed*` strings.
-- Capability `signed-provider-claim` là `library-only`. Không có report/bundle/server/Paper/JVM integration hoặc API tạo `runtime-bound`. Challenge store là single-process/in-memory; restart hoặc process khác reject challenge cũ. Multiprocess/network deployment cần shared transactional nonce store và rate limiting riêng.
+- Tại thời điểm slice này, capability `signed-provider-claim` là `library-only`, challenge store chỉ single-process/in-memory và multiprocess còn là gap. Trạng thái này đã được supersede bởi section `Shared signed-provider challenge state` bên dưới; boundary không report/server/Paper/JVM/release vẫn giữ nguyên.
 - Reviewer phát hiện capability-manifest package/source snapshot TOCTOU; đã RED→GREEN bằng cách bracket toàn bộ reads với Git HEAD + status trước/sau. Public claim canonicalizer cũng đã được siết logical-path traversal; wall-clock expiry prune capacity và monotonic rollback latch đều có regressions.
 - Final exact-tree ordered gate sau pre-commit corrections: `npm run typecheck && npm test && npm run build && git diff --cached --check` exit `0`; `374` tests, `372` pass, `0` fail, `2` intentional Windows signal skips.
 - Pre-commit correction review trả `PASS`, `0` blocker/high/medium sau khi RED→GREEN ba finding: credential-like `qa.authorization` bị reject trước manifest; multi-account exception/report message được redact/reject; LivingNPC evidence dùng `timestampMillis` thay vì biến tick counter thành epoch.
 - Opus 4.8 static correction review `0277f613-fb5f-4c19-8e87-c821b5b3cfcf` sau quota reset trả `PASS`, `0` blocker/high/medium cho đúng boundary library-only/non-release. Review xác nhận M1 capability snapshot TOCTOU và L2 public path-schema correction đã khép. LOW còn lại: có thể dời monotonic watermark sau input validation; network/multiprocess tương lai cần shared transactional nonce store + per-key/provider rate limiting.
 - Trạng thái vẫn chỉ là `VERIFIED offline`: static review không chứng minh key custody, physical probe, JVM-loaded state, truth của server/boot claims, Paper runtime, security vận hành hoặc release readiness. Sonnet/design attempts trước bị HTTP `429` không được tính là verdict.
 - Chưa mở Paper/listener, chưa deploy/reload/restart, chưa chạm production và chưa push.
+
+## 2026-08-28 — Shared signed-provider challenge state (supersedes single-process gap)
+
+- `VERIFIED offline/library-only`: optional `SqliteSignedProviderChallengeStore` dùng local file-backed `node:sqlite`, `BEGIN IMMEDIATE`, WAL và `synchronous=FULL`; shared sequence, expiry, atomic consume, invalid-signature burn và fixed-window rate limiting hoạt động qua nhiều connection/process. In-memory verifier vẫn là compatibility default.
+- Shared scope pin exact trust-store SHA-256, verifier capacity/invalid-attempt policy và rate policy. Consuming verifier re-authorize trust store, provider và exact target binding. Durable retired-scope tombstone từ chối cả object cũ lẫn process mới tái dùng `verifierInstanceId` đã reclaim; không reset sequence hoặc policy namespace.
+- Global scopes, retired tombstones và per-scope rate subjects đều bounded; expired challenges và idle scopes được reclaim transactionally. Khi tombstone budget đầy, store ngừng reclaim và từ chối scope mới thay vì quên retired identity; đây là fail-closed availability trade-off. Caller wall time được so với trusted wall-clock callback dưới SQLite write lock; durable high-water từ chối stale/rollback operation mà không poison worker khỏe.
+- Runtime tối thiểu là Node `22.18.0`. Node v22 docs xác nhận `DatabaseSync.timeout` và `isTransaction` có từ `22.16.0`, còn constructor security options dùng trong store có từ `22.18.0`. Constructor còn kiểm runtime version, `isTransaction`, exact `PRAGMA busy_timeout`, WAL và FULL sync; CI matrix chạy Node `22.18.0` và `24`.
+- Database, `-wal`, `-shm`, trusted clock và private parent directory là security roots. POSIX guard owner/mode, Windows/POSIX đều reject symlink/non-regular DB; chưa có keyed integrity MAC, distributed consensus, network-filesystem/HA support hoặc directory-fsync/archive proof. Corrupt/future schema và clock jump phải quarantine toàn bộ DB/WAL/SHM set; challenge cũ bị invalidated.
+- Focused post-review correction gate đạt `45` tests, `44` pass, `0` fail, `1` POSIX-permission skip trên Windows. Full exact-tree gate `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `422` tests, `418` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS.
+- Opus 4.8 correction review trả `PASS`, `0` blocker/high/medium; ba MEDIUM về retired-scope resurrection, runtime SQLite capability và CURRENT_STATE contradiction đều `CLOSED`. Reviewer không tự chạy gate do tool permission, nên verdict tĩnh được đối chiếu riêng với gate local ở dòng trên.
+- Capability `signed-provider-shared-challenge-state` là `library-only`; không import vào HTTP server/report/Paper/JVM/release admission. Không mở listener/Paper, không deploy/reload/restart, không chạm production và chưa push.
 
 ## 2026-08-28 — Java 21 signed-claim interoperability fixture
 

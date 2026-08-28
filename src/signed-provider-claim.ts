@@ -12,10 +12,12 @@ import {
   type ArtifactTargetBinding
 } from './target-binding.js'
 import {
+  canonicalSignedProviderChallengeIdentityV1,
   canonicalSignedProviderClaimV1,
   parseSignedProviderClaimEnvelope,
   type SignedProviderClaims
 } from './signed-provider-claim-schema.js'
+import type { SignedProviderChallengeStore } from './signed-provider-challenge-store.js'
 
 export { canonicalSignedProviderClaimV1, type SignedProviderClaims } from './signed-provider-claim-schema.js'
 
@@ -141,6 +143,7 @@ export interface SignedProviderClaimVerifierOptions {
   readonly randomBytes?: (size: number) => Uint8Array
   readonly maxPending?: number
   readonly maxInvalidAttempts?: number
+  readonly challengeStore?: SignedProviderChallengeStore
 }
 
 export interface SignedProviderClaimVerification {
@@ -260,7 +263,7 @@ function safeMonotonicNow(value: number): number {
 function freezeChallenge(input: Omit<SignedProviderClaimChallenge, 'challengeId'>): SignedProviderClaimChallenge {
   return Object.freeze({
     ...input,
-    challengeId: sha256(JSON.stringify(input)),
+    challengeId: sha256(canonicalSignedProviderChallengeIdentityV1(input)),
     provider: Object.freeze({ ...input.provider })
   })
 }
@@ -275,6 +278,7 @@ export class SignedProviderClaimVerifier {
   private readonly random: (size: number) => Uint8Array
   private readonly maxPending: number
   private readonly maxInvalidAttempts: number
+  private readonly challengeStore: SignedProviderChallengeStore | undefined
   private readonly pending = new Map<string, PendingChallenge>()
   private sequence = 0
   private lastMonotonicMs: number | undefined
@@ -295,6 +299,17 @@ export class SignedProviderClaimVerifier {
       .parse(options.maxPending ?? MAX_PENDING_CHALLENGES)
     this.maxInvalidAttempts = z.number().int().min(1).max(64)
       .parse(options.maxInvalidAttempts ?? 8)
+    this.challengeStore = options.challengeStore
+    if (this.challengeStore && (
+      this.challengeStore.audience !== this.audience
+      || this.challengeStore.verifierInstanceId !== this.verifierInstanceId
+    )) throw new Error('Shared challenge store scope does not match verifier scope')
+    this.challengeStore?.configureVerifierPolicy(
+      this.maxPending,
+      this.maxInvalidAttempts,
+      this.trustStore.trustStoreSha256,
+      this.wallNow
+    )
   }
 
   issueChallenge(input: {
@@ -331,30 +346,48 @@ export class SignedProviderClaimVerifier {
       && binding.targetBindingSha256 === targetBindingSha256)) {
       throw new Error('Trusted key is not authorized for exact target binding')
     }
+    const buildChallenge = (sequence: number, issuedWallNow: number): SignedProviderClaimChallenge => {
+      const nonce = Buffer.from(this.random(32))
+      if (nonce.byteLength !== 32) throw new Error('Challenge random source must return exactly 32 bytes')
+      return freezeChallenge({
+        schemaVersion: 1,
+        domain: CLAIM_DOMAIN,
+        audience: this.audience,
+        verifierInstanceId: this.verifierInstanceId,
+        sequence,
+        nonceBase64Url: nonce.toString('base64url'),
+        runId,
+        keyId,
+        bindingId: expectedBinding.bindingId,
+        targetBindingSha256,
+        provider: key.provider,
+        trustStoreId: this.trustStore.trustStoreId,
+        trustStoreVersion: this.trustStore.trustStoreVersion,
+        trustStoreSha256: this.trustStore.trustStoreSha256,
+        issuedAtMs: issuedWallNow,
+        expiresAtMs: issuedWallNow + ttlMs
+      })
+    }
+    if (this.challengeStore) {
+      return this.challengeStore.issue({
+        wallNowMs: this.wallNow,
+        maxPending: this.maxPending,
+        build: (sequence, issuedWallNow) => {
+          if (issuedWallNow < key.notBeforeMs || issuedWallNow > key.notAfterMs) {
+            throw new Error('Trusted key is not active at shared challenge issue time')
+          }
+          if (issuedWallNow + ttlMs > key.notAfterMs) {
+            throw new Error('Shared challenge exceeds trusted key validity window')
+          }
+          return { challenge: buildChallenge(sequence, issuedWallNow), expectedBinding }
+        }
+      }).challenge
+    }
     this.pruneExpired(monotonicNow, wallNow)
     if (this.pending.size >= this.maxPending) throw new Error('Signed provider challenge capacity exhausted')
     if (this.sequence >= Number.MAX_SAFE_INTEGER) throw new Error('Challenge sequence exhausted')
     this.sequence += 1
-    const nonce = Buffer.from(this.random(32))
-    if (nonce.byteLength !== 32) throw new Error('Challenge random source must return exactly 32 bytes')
-    const challenge = freezeChallenge({
-      schemaVersion: 1,
-      domain: CLAIM_DOMAIN,
-      audience: this.audience,
-      verifierInstanceId: this.verifierInstanceId,
-      sequence: this.sequence,
-      nonceBase64Url: nonce.toString('base64url'),
-      runId,
-      keyId,
-      bindingId: expectedBinding.bindingId,
-      targetBindingSha256,
-      provider: key.provider,
-      trustStoreId: this.trustStore.trustStoreId,
-      trustStoreVersion: this.trustStore.trustStoreVersion,
-      trustStoreSha256: this.trustStore.trustStoreSha256,
-      issuedAtMs: wallNow,
-      expiresAtMs: wallNow + ttlMs
-    })
+    const challenge = buildChallenge(this.sequence, wallNow)
     if (this.pending.has(challenge.challengeId)) throw new Error('Duplicate challenge identity')
     this.pending.set(challenge.challengeId, {
       challenge,
@@ -376,13 +409,18 @@ export class SignedProviderClaimVerifier {
       throw new Error('Monotonic clock moved backwards')
     }
     this.lastMonotonicMs = monotonicNow
-    this.pruneExpired(monotonicNow, wallNow)
+    if (!this.challengeStore) this.pruneExpired(monotonicNow, wallNow)
     const envelope = parseSignedProviderClaimEnvelope(input)
     const claims = envelope.claims
-    const pending = this.pending.get(claims.challengeId)
+    const sharedPending = this.challengeStore?.load(claims.challengeId, this.wallNow)
+    const localPending = this.challengeStore ? undefined : this.pending.get(claims.challengeId)
+    const pending = sharedPending ?? localPending
     if (!pending) throw new Error('Signed provider challenge is unavailable, expired, consumed, or replayed')
     const challenge = pending.challenge
-    if (monotonicNow >= pending.expiresMonotonicMs || wallNow >= challenge.expiresAtMs) {
+    if (
+      (localPending !== undefined && monotonicNow >= localPending.expiresMonotonicMs)
+      || wallNow >= challenge.expiresAtMs
+    ) {
       this.pending.delete(challenge.challengeId)
       throw new Error('Signed provider challenge expired')
     }
@@ -413,6 +451,19 @@ export class SignedProviderClaimVerifier {
     const key = this.trustStore.keys.find(candidate => candidate.keyId === challenge.keyId)
     const compiled = this.compiledKeys.get(challenge.keyId)
     if (!key || !compiled) throw new Error('Configured trust key is unavailable')
+    if (
+      challenge.trustStoreId !== this.trustStore.trustStoreId
+      || challenge.trustStoreVersion !== this.trustStore.trustStoreVersion
+      || challenge.trustStoreSha256 !== this.trustStore.trustStoreSha256
+    ) throw new Error('Challenge trust store does not match local verifier policy')
+    if (JSON.stringify(challenge.provider) !== JSON.stringify(key.provider)) {
+      throw new Error('Challenge provider does not match local verifier policy')
+    }
+    if (!key.allowedBindings.some(binding =>
+      binding.bindingId === challenge.bindingId
+      && binding.targetBindingSha256 === challenge.targetBindingSha256)) {
+      throw new Error('Challenge binding is not authorized by local verifier policy')
+    }
     if (wallNow < key.notBeforeMs || wallNow > key.notAfterMs) {
       throw new Error('Configured trust key is not active at verification time')
     }
@@ -427,11 +478,26 @@ export class SignedProviderClaimVerifier {
 
     const signature = Buffer.from(envelope.signatureBase64Url, 'base64url')
     if (!cryptoVerify(null, canonicalSignedProviderClaimV1(claims), compiled.publicKey, signature)) {
-      pending.invalidAttempts += 1
-      if (pending.invalidAttempts >= this.maxInvalidAttempts) this.pending.delete(challenge.challengeId)
+      if (this.challengeStore) {
+        this.challengeStore.recordInvalidAttempt(
+          challenge.challengeId,
+          this.wallNow,
+          this.maxInvalidAttempts
+        )
+      } else {
+        if (!localPending) throw new Error('Local challenge state is unavailable')
+        localPending.invalidAttempts += 1
+        if (localPending.invalidAttempts >= this.maxInvalidAttempts) this.pending.delete(challenge.challengeId)
+      }
       throw new Error('Signed provider claim signature is invalid')
     }
-    this.pending.delete(challenge.challengeId)
+    if (this.challengeStore) {
+      if (!this.challengeStore.consume(challenge.challengeId, this.wallNow)) {
+        throw new Error('Signed provider challenge is unavailable, consumed, or replayed')
+      }
+    } else {
+      this.pending.delete(challenge.challengeId)
+    }
     return Object.freeze({
       schemaVersion: 1,
       signatureValid: true,
