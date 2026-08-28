@@ -184,6 +184,14 @@ Last reviewed: 2026-08-27
 - Focused correction gate: `15/15` pass, `0` fail, `0` skip trên host Java/Javac `25.0.1`, mọi compile dùng `javac --release 21`. Opus correction review trả `PASS`, `0` blocker/high/medium. Full ordered gate hậu-correction `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `430` tests, `426` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS.
 - Capability `jvm-observation-bound-claim-builder` chỉ được công bố `library-only` khi exact Java source có trong auxiliary provenance; source/build/classes được fingerprint. Không production signer/custody/HSM/Paper/report/release wiring và chưa chạy controlled runtime.
 
+## 2026-08-28 — Canonical signed-content verification primitive
+
+- `VERIFIED offline/library-only`: `verifyCanonicalSignedProviderClaimSignature` nhận strict signed content v1/v2, tự snapshot/deep-freeze/canonicalize rồi trích key/provider/binding/trust metadata từ chính claims được ký. API không nhận raw canonical bytes hoặc policy metadata rời, nên arbitrary signed bytes không thể được gắn một binding khác.
+- Primitive chỉ dùng exact compiled Ed25519 `KeyObject` trong `WeakMap` của trust-store builder, copy signature bounded trước crypto và trả metadata frozen không chứa signature/content/SPKI/public key. Result pin `freshnessEstablished:false`, `replayChecked:false`, `nonceConsumed:false`.
+- Existing verifier dùng duy nhất primitive này; chỉ crypto-invalid mới dùng invalid-attempt budget, còn structural/policy mismatch không burn. Regression phủ v1/v2, cross-version confusion, observation/content mutation, hostile getter, deep snapshot, local/shared SQLite burn và one-time consume.
+- Focused final gate `34/34`, `0` fail/skip. Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `440` tests, `436` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS. Opus final correction review trả `PASS`, `0` blocker/high/medium.
+- Capability `signed-provider-canonical-signature-verification` là `library-only`; không ký, không key custody/HSM/KMS, không Paper/server/report/release wiring và không tự chứng minh freshness/replay/runtime truth.
+
 Report contract update on 2026-08-16:
 
 - Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.

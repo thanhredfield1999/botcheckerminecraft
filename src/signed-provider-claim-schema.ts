@@ -95,6 +95,19 @@ const signedProviderEnvelopeV1Schema = z.strictObject({
   signatureBase64Url: canonicalBase64Url(64)
 })
 
+const signedProviderCanonicalContentV1Schema = z.strictObject({
+  schemaVersion: z.literal(1),
+  claims: signedProviderClaimsSchema
+}).superRefine((value, context) => {
+  if (value.claims.requiredClaimProfile !== undefined) {
+    context.addIssue({
+      code: 'custom',
+      path: ['claims', 'requiredClaimProfile'],
+      message: 'Observation-bound claims require canonical signed-provider content v2'
+    })
+  }
+})
+
 const signedProviderEnvelopeV2Schema = z.strictObject({
   schemaVersion: z.literal(2),
   profile: z.literal('jvm-observation-bound-v2'),
@@ -107,6 +120,21 @@ const signedProviderEnvelopeV2Schema = z.strictObject({
       code: 'custom',
       path: ['claims', 'requiredClaimProfile'],
       message: 'Observation-bound envelope must be required by its challenge'
+    })
+  }
+})
+
+const signedProviderCanonicalContentV2Schema = z.strictObject({
+  schemaVersion: z.literal(2),
+  profile: z.literal('jvm-observation-bound-v2'),
+  claims: signedProviderClaimsSchema,
+  jvmArtifactObservation: z.unknown()
+}).superRefine((value, context) => {
+  if (value.claims.requiredClaimProfile !== 'jvm-observation-bound-v2') {
+    context.addIssue({
+      code: 'custom',
+      path: ['claims', 'requiredClaimProfile'],
+      message: 'Observation-bound content must be required by its challenge'
     })
   }
 })
@@ -125,6 +153,12 @@ const observationBoundCanonicalInputSchema = z.strictObject({
 })
 
 export type SignedProviderClaims = z.infer<typeof signedProviderClaimsSchema>
+export type SignedProviderCanonicalClaims = Readonly<
+  Omit<SignedProviderClaims, 'provider' | 'loadedArtifacts'> & {
+    readonly provider: Readonly<SignedProviderClaims['provider']>
+    readonly loadedArtifacts: ReadonlyArray<Readonly<SignedProviderClaims['loadedArtifacts'][number]>>
+  }
+>
 export type SignedProviderClaimEnvelopeV1 = z.infer<typeof signedProviderEnvelopeV1Schema>
 export interface SignedProviderClaimEnvelopeV2 {
   readonly schemaVersion: 2
@@ -134,6 +168,14 @@ export interface SignedProviderClaimEnvelopeV2 {
   readonly signatureBase64Url: string
 }
 export type SignedProviderClaimEnvelope = SignedProviderClaimEnvelopeV1 | SignedProviderClaimEnvelopeV2
+export type SignedProviderCanonicalContent =
+  | Readonly<{ schemaVersion: 1; claims: SignedProviderCanonicalClaims }>
+  | Readonly<{
+      schemaVersion: 2
+      profile: 'jvm-observation-bound-v2'
+      claims: SignedProviderCanonicalClaims
+      jvmArtifactObservation: JvmArtifactObservationV1
+    }>
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
@@ -172,6 +214,17 @@ function canonicalClaimsObject(input: unknown): SignedProviderClaims {
         || compareText(left.logicalPath, right.logicalPath)
         || compareText(left.sha256, right.sha256))
   }
+}
+
+function freezeCanonicalClaims(input: unknown): SignedProviderCanonicalClaims {
+  const claims = canonicalClaimsObject(input)
+  return Object.freeze({
+    ...claims,
+    provider: Object.freeze({ ...claims.provider }),
+    loadedArtifacts: Object.freeze(
+      claims.loadedArtifacts.map(artifact => Object.freeze({ ...artifact }))
+    )
+  })
 }
 
 export function canonicalSignedProviderChallengeIdentityV1(input: unknown): Buffer {
@@ -216,6 +269,25 @@ export function canonicalSignedProviderObservationBoundClaimV2(input: unknown): 
       + `"jvmArtifactObservation":${observation}}`,
     'utf8'
   )
+}
+
+export function parseSignedProviderCanonicalContent(input: unknown): SignedProviderCanonicalContent {
+  const content = z.union([
+    signedProviderCanonicalContentV1Schema,
+    signedProviderCanonicalContentV2Schema
+  ]).parse(input)
+  if (content.schemaVersion === 1) {
+    return Object.freeze({
+      schemaVersion: 1,
+      claims: freezeCanonicalClaims(content.claims)
+    })
+  }
+  return Object.freeze({
+    schemaVersion: 2,
+    profile: 'jvm-observation-bound-v2',
+    claims: freezeCanonicalClaims(content.claims),
+    jvmArtifactObservation: parseJvmArtifactObservationV1(content.jvmArtifactObservation)
+  })
 }
 
 export function parseSignedProviderClaimEnvelope(input: unknown): SignedProviderClaimEnvelope {

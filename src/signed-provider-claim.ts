@@ -15,7 +15,9 @@ import {
   canonicalSignedProviderChallengeIdentityV1,
   canonicalSignedProviderClaimV1,
   canonicalSignedProviderObservationBoundClaimV2,
+  parseSignedProviderCanonicalContent,
   parseSignedProviderClaimEnvelope,
+  type SignedProviderCanonicalContent,
   type SignedProviderClaims
 } from './signed-provider-claim-schema.js'
 import type { SignedProviderChallengeStore } from './signed-provider-challenge-store.js'
@@ -37,6 +39,7 @@ const MAX_BINDINGS_PER_KEY = 64
 const MAX_SPKI_BASE64_CHARS = 1024
 const MAX_PENDING_CHALLENGES = 1024
 const MAX_CHALLENGE_TTL_MS = 60_000
+const MAX_CANONICAL_CLAIM_BYTES = 256 * 1024
 const CLAIM_DOMAIN = 'botcheckerminecraft.signed-provider-claim.v1'
 
 const safeIdentifier = (label: string) => z.string().min(1).max(128).regex(SAFE_ID)
@@ -105,6 +108,27 @@ export interface SignedProviderClaimTrustStore {
   readonly trustStoreVersion: string
   readonly trustStoreSha256: string
   readonly keys: ReadonlyArray<SignedProviderClaimTrustKey>
+}
+
+export interface CanonicalSignedProviderSignatureInput {
+  readonly trustStore: SignedProviderClaimTrustStore
+  readonly verificationTimeMs: number
+  readonly signedContent: SignedProviderCanonicalContent
+  readonly signature: Uint8Array
+}
+
+export interface CanonicalSignedProviderSignatureVerification {
+  readonly signatureValid: true
+  readonly freshnessEstablished: false
+  readonly replayChecked: false
+  readonly nonceConsumed: false
+  readonly keyId: string
+  readonly trustStoreId: string
+  readonly trustStoreVersion: string
+  readonly trustStoreSha256: string
+  readonly provider: Readonly<z.infer<typeof providerSchema>>
+  readonly bindingId: string
+  readonly targetBindingSha256: string
 }
 
 interface CompiledTrustKey {
@@ -197,6 +221,16 @@ export interface SignedProviderClaimVerification {
 }
 
 const compiledTrustKeys = new WeakMap<SignedProviderClaimTrustStore, Map<string, CompiledTrustKey>>()
+const typedArrayByteLength = Object.getOwnPropertyDescriptor(
+  Object.getPrototypeOf(Uint8Array.prototype),
+  'byteLength'
+)?.get
+
+class CanonicalSignatureInvalidError extends Error {
+  constructor() {
+    super('Canonical signed provider claim signature is invalid')
+  }
+}
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
@@ -272,6 +306,79 @@ export function buildSignedProviderClaimTrustStore(input: unknown): SignedProvid
   })
   compiledTrustKeys.set(store, compiled)
   return store
+}
+
+export function verifyCanonicalSignedProviderClaimSignature(
+  input: CanonicalSignedProviderSignatureInput
+): Readonly<CanonicalSignedProviderSignatureVerification> {
+  if (!input || typeof input !== 'object') throw new Error('Canonical signature input is invalid')
+  const trustStore = input.trustStore
+  const compiled = compiledTrustKeys.get(trustStore)
+  if (!compiled) throw new Error('Trust store must be built by the verifier trust-store builder')
+  const verificationTimeMs = safeNow(input.verificationTimeMs, 'Signature verification time', true)
+  const signatureInput = input.signature
+  if (!(signatureInput instanceof Uint8Array)) {
+    throw new Error('Canonical signature must be a 64-byte Uint8Array')
+  }
+  if (!typedArrayByteLength || typedArrayByteLength.call(signatureInput) !== 64) {
+    throw new Error('Canonical signature must be a 64-byte Uint8Array')
+  }
+  const signature = Buffer.from(signatureInput.subarray(0, 64))
+  if (signature.byteLength !== 64) {
+    throw new Error('Canonical signature must be a 64-byte Uint8Array')
+  }
+  const signedContentInput = input.signedContent
+  const signedContent = parseSignedProviderCanonicalContent(signedContentInput)
+  const claims = signedContent.claims
+  const canonicalPayload = signedContent.schemaVersion === 1
+    ? canonicalSignedProviderClaimV1(claims)
+    : canonicalSignedProviderObservationBoundClaimV2({
+        claims,
+        jvmArtifactObservation: signedContent.jvmArtifactObservation
+      })
+  if (canonicalPayload.byteLength === 0 || canonicalPayload.byteLength > MAX_CANONICAL_CLAIM_BYTES) {
+    throw new Error('Canonical payload byte length is invalid')
+  }
+
+  const keyId = claims.keyId
+  const provider = claims.provider
+  const bindingId = claims.bindingId
+  const targetBindingSha256 = claims.targetBindingSha256
+  if (
+    claims.trustStoreId !== trustStore.trustStoreId
+    || claims.trustStoreVersion !== trustStore.trustStoreVersion
+    || claims.trustStoreSha256 !== trustStore.trustStoreSha256
+  ) throw new Error('Signed claim trust store does not match local verifier policy')
+  const key = trustStore.keys.find(candidate => candidate.keyId === keyId)
+  const compiledKey = compiled.get(keyId)
+  if (!key || !compiledKey) throw new Error('Configured trust key is unavailable')
+  if (JSON.stringify(provider) !== JSON.stringify(key.provider)) {
+    throw new Error('Provider does not match local verifier policy')
+  }
+  if (!key.allowedBindings.some(binding =>
+    binding.bindingId === bindingId
+    && binding.targetBindingSha256 === targetBindingSha256)) {
+    throw new Error('Binding is not authorized by local verifier policy')
+  }
+  if (verificationTimeMs < key.notBeforeMs || verificationTimeMs > key.notAfterMs) {
+    throw new Error('Configured trust key is not active at verification time')
+  }
+  if (!cryptoVerify(null, canonicalPayload, compiledKey.publicKey, signature)) {
+    throw new CanonicalSignatureInvalidError()
+  }
+  return Object.freeze({
+    signatureValid: true,
+    freshnessEstablished: false,
+    replayChecked: false,
+    nonceConsumed: false,
+    keyId,
+    trustStoreId: trustStore.trustStoreId,
+    trustStoreVersion: trustStore.trustStoreVersion,
+    trustStoreSha256: trustStore.trustStoreSha256,
+    provider: Object.freeze({ ...provider }),
+    bindingId,
+    targetBindingSha256
+  })
 }
 
 function safeNow(value: number, label: string, integer: boolean): number {
@@ -487,25 +594,11 @@ export class SignedProviderClaimVerifier {
       || claims.observedAtMs > wallNow
     ) throw new Error('Signed provider claim observation time is outside the fresh challenge window')
 
-    const key = this.trustStore.keys.find(candidate => candidate.keyId === challenge.keyId)
-    const compiled = this.compiledKeys.get(challenge.keyId)
-    if (!key || !compiled) throw new Error('Configured trust key is unavailable')
     if (
       challenge.trustStoreId !== this.trustStore.trustStoreId
       || challenge.trustStoreVersion !== this.trustStore.trustStoreVersion
       || challenge.trustStoreSha256 !== this.trustStore.trustStoreSha256
     ) throw new Error('Challenge trust store does not match local verifier policy')
-    if (JSON.stringify(challenge.provider) !== JSON.stringify(key.provider)) {
-      throw new Error('Challenge provider does not match local verifier policy')
-    }
-    if (!key.allowedBindings.some(binding =>
-      binding.bindingId === challenge.bindingId
-      && binding.targetBindingSha256 === challenge.targetBindingSha256)) {
-      throw new Error('Challenge binding is not authorized by local verifier policy')
-    }
-    if (wallNow < key.notBeforeMs || wallNow > key.notAfterMs) {
-      throw new Error('Configured trust key is not active at verification time')
-    }
     const expectedArtifacts = pending.expectedBinding.artifacts
     const claimedArtifacts = validateArtifactTargetBinding({
       ...pending.expectedBinding,
@@ -516,13 +609,22 @@ export class SignedProviderClaimVerifier {
     }
 
     const signature = Buffer.from(envelope.signatureBase64Url, 'base64url')
-    const canonicalClaim = envelope.schemaVersion === 1
-      ? canonicalSignedProviderClaimV1(claims)
-      : canonicalSignedProviderObservationBoundClaimV2({
-          claims,
-          jvmArtifactObservation: envelope.jvmArtifactObservation
-        })
-    if (!cryptoVerify(null, canonicalClaim, compiled.publicKey, signature)) {
+    try {
+      verifyCanonicalSignedProviderClaimSignature({
+        trustStore: this.trustStore,
+        verificationTimeMs: wallNow,
+        signedContent: envelope.schemaVersion === 1
+          ? { schemaVersion: 1, claims }
+          : {
+              schemaVersion: 2,
+              profile: envelope.profile,
+              claims,
+              jvmArtifactObservation: envelope.jvmArtifactObservation
+            },
+        signature
+      })
+    } catch (error) {
+      if (!(error instanceof CanonicalSignatureInvalidError)) throw error
       if (this.challengeStore) {
         this.challengeStore.recordInvalidAttempt(
           challenge.challengeId,

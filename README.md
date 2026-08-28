@@ -127,6 +127,14 @@ checks harden this producer; they do not establish observation freshness or expa
 the verifier's evidence posture. The builder has no signing, key, filesystem,
 environment, Paper, report, server, or release API.
 
+The Node library exposes canonical signed-content verification for legacy v1 and
+observation-bound v2. It accepts strict typed content rather than caller-supplied
+raw bytes or detached policy metadata, canonicalizes internally, and derives the
+key, provider, binding, and trust-store identity from the signed claims. The exact
+compiled Ed25519 public key remains private to the immutable trust-store snapshot.
+Its metadata-only result explicitly reports that freshness, replay checking, and
+nonce consumption were not established; those remain verifier responsibilities.
+
 ## API
 
 ```http

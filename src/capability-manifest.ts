@@ -254,6 +254,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
   'protocol-diagnostics': { module: 'protocol-diagnostic', mode: 'runtime-wired' },
   'route-oracle': { module: 'route-oracle', mode: 'runtime-wired' },
   'signed-provider-claim': { module: 'signed-provider-claim', mode: 'library-only' },
+  'signed-provider-canonical-signature-verification': {
+    module: 'signed-provider-claim',
+    mode: 'library-only'
+  },
   'signed-provider-observation-bound-claim': {
     module: 'signed-provider-claim',
     mode: 'library-only'
