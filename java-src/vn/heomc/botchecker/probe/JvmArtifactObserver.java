@@ -18,6 +18,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.ProtectionDomain;
+import java.text.Normalizer;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +42,18 @@ public final class JvmArtifactObserver {
             "java-agent-absence-verified:false"
     );
     private static final Pattern DECLARED_VALUE = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}");
-    private static final Pattern LOGICAL_PATH = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9._/+-]{0,199}");
+    private static final Pattern LOGICAL_PATH = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9._/-]{0,239}");
+    private static final Pattern LOGICAL_PATH_PART = Pattern.compile("[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}");
+    private static final Pattern CREDENTIAL = Pattern.compile(
+            "password|passwd|secret|token|credential|api[_-]?key|bearer",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern SHA256 = Pattern.compile("[a-f0-9]{64}");
+    private static final List<String> ALLOWED_ROLES = List.of("paper", "candidate", "probe");
+    private static final Pattern CLASS_BINARY_NAME = Pattern.compile(
+            "[\\p{L}_$][\\p{L}\\p{N}_$]*(?:\\.[\\p{L}_$][\\p{L}\\p{N}_$]*)*");
+    private static final String CLASS_RESOURCE_ORIGIN =
+            "anchor-class-getResourceAsStream;loader-mediated;parent-delegation-possible;"
+                    + "runtime-version-selection-unknown;may-differ-from-defined-bytecode;origin-not-proven";
     private static final long MAX_LIMIT = 64L * 1024 * 1024;
     private static final Semaphore OBSERVATION_PERMITS = new Semaphore(2, true);
 
@@ -51,11 +63,14 @@ public final class JvmArtifactObserver {
     public record DeclaredIdentity(String role, String logicalId, String logicalPath) {
         public DeclaredIdentity {
             role = requireDeclared(role, "role", DECLARED_VALUE);
+            if (!ALLOWED_ROLES.contains(role)) throw new IllegalArgumentException("Invalid declared role");
             logicalId = requireDeclared(logicalId, "logicalId", DECLARED_VALUE);
             logicalPath = requireDeclared(logicalPath, "logicalPath", LOGICAL_PATH);
             List<String> pathParts = List.of(logicalPath.split("/", -1));
             if (logicalPath.startsWith("/") || logicalPath.endsWith("/")
-                    || pathParts.stream().anyMatch(part -> part.isEmpty() || part.equals(".") || part.equals(".."))) {
+                    || pathParts.stream().anyMatch(part -> part.equals(".")
+                            || part.equals("..")
+                            || !LOGICAL_PATH_PART.matcher(part).matches())) {
                 throw new IllegalArgumentException("Invalid declared logicalPath");
             }
         }
@@ -98,8 +113,77 @@ public final class JvmArtifactObserver {
             boolean atomicSnapshot
     ) {
         public Observation {
-            assumptions = List.copyOf(assumptions);
+            if (!EVIDENCE_GRADE.equals(grade)
+                    || authoritative != AUTHORITATIVE
+                    || provesLoadedBytecode != PROVES_LOADED_BYTECODE
+                    || releaseEligible != RELEASE_ELIGIBLE
+                    || classResourceInformational != true
+                    || sameLoaderMediated != true
+                    || mayDifferFromDefinedBytecode != true
+                    || atomicSnapshot != false) {
+                throw new IllegalArgumentException("Invalid non-authoritative observation posture");
+            }
+            assumptions = List.copyOf(Objects.requireNonNull(assumptions, "assumptions"));
+            if (!assumptions.equals(ASSUMPTIONS)) {
+                throw new IllegalArgumentException("Invalid observation assumptions");
+            }
+            Objects.requireNonNull(declared, "declared");
+            requireObserved(observedClassBinaryName, "observedClassBinaryName", CLASS_BINARY_NAME, 512);
+            requireObserved(codeSourceUriFingerprint, "codeSourceUriFingerprint", SHA256, 64);
+            requireObserved(codeSourceFileSha256, "codeSourceFileSha256", SHA256, 64);
+            requireObserved(classResourceSha256, "classResourceSha256", SHA256, 64);
+            if (codeSourceFileBytes <= 0 || classResourceBytes <= 0
+                    || codeSourceFileBytes > MAX_LIMIT - classResourceBytes) {
+                throw new IllegalArgumentException("Invalid observation byte budget");
+            }
+            if (!CLASS_RESOURCE_ORIGIN.equals(classResourceOrigin)) {
+                throw new IllegalArgumentException("Invalid class resource origin");
+            }
+            Objects.requireNonNull(internalEntryConsistency, "internalEntryConsistency");
         }
+    }
+
+    public static String canonicalJsonV1(Observation observation) {
+        Objects.requireNonNull(observation, "observation");
+        StringBuilder json = new StringBuilder(1024);
+        json.append('{')
+                .append("\"schemaVersion\":1")
+                .append(",\"grade\":").append(jsonString(observation.grade()))
+                .append(",\"authoritative\":").append(observation.authoritative())
+                .append(",\"provesLoadedBytecode\":").append(observation.provesLoadedBytecode())
+                .append(",\"releaseEligible\":").append(observation.releaseEligible())
+                .append(",\"assumptions\":").append(jsonStringArray(observation.assumptions()))
+                .append(",\"declared\":{")
+                .append("\"role\":").append(jsonString(observation.declared().role()))
+                .append(",\"logicalId\":").append(jsonString(observation.declared().logicalId()))
+                .append(",\"logicalPath\":").append(jsonString(observation.declared().logicalPath()))
+                .append('}')
+                .append(",\"observedClassBinaryName\":")
+                .append(jsonString(observation.observedClassBinaryName()))
+                .append(",\"codeSourceUriFingerprint\":")
+                .append(jsonString(observation.codeSourceUriFingerprint()))
+                .append(",\"codeSourceFileSha256\":")
+                .append(jsonString(observation.codeSourceFileSha256()))
+                .append(",\"codeSourceFileBytes\":").append(observation.codeSourceFileBytes())
+                .append(",\"classResourceSha256\":")
+                .append(jsonString(observation.classResourceSha256()))
+                .append(",\"classResourceBytes\":").append(observation.classResourceBytes())
+                .append(",\"classResourceOrigin\":")
+                .append(jsonString(observation.classResourceOrigin()))
+                .append(",\"classResourceInformational\":")
+                .append(observation.classResourceInformational())
+                .append(",\"sameLoaderMediated\":").append(observation.sameLoaderMediated())
+                .append(",\"mayDifferFromDefinedBytecode\":")
+                .append(observation.mayDifferFromDefinedBytecode())
+                .append(",\"internalEntryConsistency\":")
+                .append(jsonString(observation.internalEntryConsistency().name()))
+                .append(",\"atomicSnapshot\":").append(observation.atomicSnapshot())
+                .append('}');
+        return json.toString();
+    }
+
+    public static byte[] canonicalJsonUtf8V1(Observation observation) {
+        return canonicalJsonV1(observation).getBytes(StandardCharsets.UTF_8);
     }
 
     public static Observation observe(Class<?> anchor, DeclaredIdentity declared, Limits limits)
@@ -340,6 +424,48 @@ public final class JvmArtifactObserver {
         return output.toByteArray();
     }
 
+    private static String jsonStringArray(List<String> values) {
+        Objects.requireNonNull(values, "values");
+        StringBuilder json = new StringBuilder();
+        json.append('[');
+        for (int index = 0; index < values.size(); index++) {
+            if (index > 0) json.append(',');
+            json.append(jsonString(values.get(index)));
+        }
+        return json.append(']').toString();
+    }
+
+    private static String jsonString(String value) {
+        Objects.requireNonNull(value, "value");
+        StringBuilder json = new StringBuilder(value.length() + 2);
+        json.append('"');
+        for (int index = 0; index < value.length(); index++) {
+            char item = value.charAt(index);
+            switch (item) {
+                case '"' -> json.append("\\\"");
+                case '\\' -> json.append("\\\\");
+                case '\b' -> json.append("\\b");
+                case '\f' -> json.append("\\f");
+                case '\n' -> json.append("\\n");
+                case '\r' -> json.append("\\r");
+                case '\t' -> json.append("\\t");
+                default -> {
+                    if (item < 0x20
+                            || (Character.isHighSurrogate(item)
+                            && (index + 1 >= value.length()
+                            || !Character.isLowSurrogate(value.charAt(index + 1))))
+                            || (Character.isLowSurrogate(item)
+                            && (index == 0 || !Character.isHighSurrogate(value.charAt(index - 1))))) {
+                        json.append(String.format("\\u%04x", (int) item));
+                    } else {
+                        json.append(item);
+                    }
+                }
+            }
+        }
+        return json.append('"').toString();
+    }
+
     private static String sha256(byte[] bytes) throws ObservationException {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
@@ -350,8 +476,21 @@ public final class JvmArtifactObserver {
 
     private static String requireDeclared(String value, String label, Pattern pattern) {
         Objects.requireNonNull(value, label);
-        if (!pattern.matcher(value).matches()) throw new IllegalArgumentException("Invalid declared " + label);
+        if (!Normalizer.isNormalized(value, Normalizer.Form.NFC)
+                || !pattern.matcher(value).matches()
+                || CREDENTIAL.matcher(value).find()) {
+            throw new IllegalArgumentException("Invalid declared " + label);
+        }
         return value;
+    }
+
+    private static void requireObserved(String value, String label, Pattern pattern, int maximumLength) {
+        Objects.requireNonNull(value, label);
+        if (value.length() > maximumLength
+                || !Normalizer.isNormalized(value, Normalizer.Form.NFC)
+                || !pattern.matcher(value).matches()) {
+            throw new IllegalArgumentException("Invalid " + label);
+        }
     }
 
     private static void requireLimit(long value, String label) {

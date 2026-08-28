@@ -67,11 +67,18 @@ URI fingerprint, file/resource hashes, explicit loader/MRJAR caveats and always
 sets `authoritative`, `provesLoadedBytecode`, `atomicSnapshot`, and
 `releaseEligible` to `false`.
 
-This observer has no signing or private-key API and is not connected to Paper,
-the HTTP server, reports, signed-provider claims, or release admission. It does
-not prove which bytecode the JVM defined or executed, the truth of caller-
-declared artifact roles, effective configuration, key custody, runtime behavior,
-or release readiness. Capability manifest schema v2 binds its Java source,
+A strict library-only Node assessment can parse canonical observation v1, bind
+its caller-declared identity and CodeSource file hash to an exact target binding,
+and retain hash/identity mismatches as structured counter-evidence. Java and Node
+produce identical canonical UTF-8 bytes for the tested ASCII and supplementary-
+Unicode vectors. `TARGET_FILE_MATCH_NON_AUTHORITATIVE` only describes the target
+file; class-resource/base-entry consistency remains explicitly informational.
+
+This observer and assessment have no signing or private-key API and are not
+connected to Paper, the HTTP server, reports, signed-provider claims, or release
+admission. They do not prove which bytecode the JVM defined or executed, the
+truth of caller-declared artifact roles, effective configuration, key custody,
+runtime behavior, or release readiness. Capability manifest schema v2 binds its Java source,
 build script and compiled classes; legacy manifests without auxiliary code
 remain schema v1.
 

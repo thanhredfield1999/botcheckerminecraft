@@ -246,6 +246,7 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
   gameplay: { module: 'gameplay-contract', mode: 'library-only' },
   'gui-journey': { module: 'runner', mode: 'runtime-wired' },
   'immutable-artifacts': { module: 'evidence-writer', mode: 'runtime-wired' },
+  'jvm-artifact-observation-assessment': { module: 'jvm-artifact-observation', mode: 'library-only' },
   'livingnpc-telemetry': { module: 'livingnpc-telemetry', mode: 'library-only' },
   'multi-account': { module: 'multi-account-runner', mode: 'library-only' },
   'multi-client': { module: 'multi-client-runner', mode: 'library-only' },

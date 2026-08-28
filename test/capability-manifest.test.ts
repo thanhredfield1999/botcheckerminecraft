@@ -147,6 +147,10 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observer'),
     { name: 'jvm-artifact-observer', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observation-assessment'),
+    { name: 'jvm-artifact-observation-assessment', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
