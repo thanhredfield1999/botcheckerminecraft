@@ -63,6 +63,17 @@ recreating the old sequence/policy namespace. If the bounded retired-scope budge
 is exhausted, reclamation stops and new scopes fail closed rather than forgetting
 a retired identity.
 
+Callers can explicitly require the library-only
+`jvm-observation-bound-v2` profile when issuing a challenge. The profile is part
+of the challenge identity and shared SQLite state, so a provider cannot downgrade
+that nonce to the legacy v1 envelope. The v2 signature covers the canonical claim
+and a strict canonical JVM observation. Verification independently reassesses the
+raw observation against the pending target binding and accepts only an exact
+`candidate` CodeSource-file match. It remains non-authoritative: the signed
+`observedAtMs` is self-asserted by the signer, observation freshness is explicitly
+`not-established`, and loader/class-resource evidence retains its non-atomic and
+informational limitations.
+
 This capability is not wired into the HTTP server, reports, Paper, a JVM probe or
 release admission. A successful result remains `artifact-bound` and
 `releaseEligible: false`. Claimed server and boot identifiers are signed claim
@@ -97,11 +108,13 @@ produce identical canonical UTF-8 bytes for the tested ASCII and supplementary-
 Unicode vectors. `TARGET_FILE_MATCH_NON_AUTHORITATIVE` only describes the target
 file; class-resource/base-entry consistency remains explicitly informational.
 
-This observer and assessment have no signing or private-key API and are not
-connected to Paper, the HTTP server, reports, signed-provider claims, or release
-admission. They do not prove which bytecode the JVM defined or executed, the
-truth of caller-declared artifact roles, effective configuration, key custody,
-runtime behavior, or release readiness. Capability manifest schema v2 binds its Java source,
+The observer and assessment still have no signing or private-key API. The optional
+signed-provider v2 profile can bind their canonical observation bytes to a fresh
+challenge, but no production probe/signer adapter exists and the profile is not
+connected to Paper, the HTTP server, reports, or release admission. It does not
+prove which bytecode the JVM defined or executed, the truth of caller-declared
+artifact roles or observation time, effective configuration, key custody, runtime
+behavior, or release readiness. Capability manifest schema v2 binds its Java source,
 build script and compiled classes; legacy manifests without auxiliary code
 remain schema v1.
 

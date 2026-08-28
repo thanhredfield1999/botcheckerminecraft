@@ -1,5 +1,10 @@
 import path from 'node:path'
 import { z } from 'zod'
+import {
+  canonicalJvmArtifactObservationV1,
+  parseJvmArtifactObservationV1,
+  type JvmArtifactObservationV1
+} from './jvm-artifact-observation.js'
 
 const CLAIM_DOMAIN = 'botcheckerminecraft.signed-provider-claim.v1'
 const SHA256_PATTERN = /^[a-f0-9]{64}$/
@@ -54,6 +59,7 @@ const claimedArtifactSchema = z.strictObject({
 const signedProviderClaimsSchema = z.strictObject({
   schemaVersion: z.literal(1),
   domain: z.literal(CLAIM_DOMAIN),
+  requiredClaimProfile: z.literal('jvm-observation-bound-v2').optional(),
   audience: safeIdentifier('audience'),
   verifierInstanceId: safeIdentifier('verifier instance ID'),
   sequence: z.number().int().safe().positive(),
@@ -83,14 +89,51 @@ const signedProviderChallengeIdentitySchema = signedProviderClaimsSchema.omit({
   loadedArtifacts: true
 })
 
-const signedProviderEnvelopeSchema = z.strictObject({
+const signedProviderEnvelopeV1Schema = z.strictObject({
   schemaVersion: z.literal(1),
   claims: signedProviderClaimsSchema,
   signatureBase64Url: canonicalBase64Url(64)
 })
 
+const signedProviderEnvelopeV2Schema = z.strictObject({
+  schemaVersion: z.literal(2),
+  profile: z.literal('jvm-observation-bound-v2'),
+  claims: signedProviderClaimsSchema,
+  jvmArtifactObservation: z.unknown(),
+  signatureBase64Url: canonicalBase64Url(64)
+}).superRefine((value, context) => {
+  if (value.claims.requiredClaimProfile !== 'jvm-observation-bound-v2') {
+    context.addIssue({
+      code: 'custom',
+      path: ['claims', 'requiredClaimProfile'],
+      message: 'Observation-bound envelope must be required by its challenge'
+    })
+  }
+})
+
+const observationBoundCanonicalInputSchema = z.strictObject({
+  claims: signedProviderClaimsSchema,
+  jvmArtifactObservation: z.unknown()
+}).superRefine((value, context) => {
+  if (value.claims.requiredClaimProfile !== 'jvm-observation-bound-v2') {
+    context.addIssue({
+      code: 'custom',
+      path: ['claims', 'requiredClaimProfile'],
+      message: 'Observation-bound canonical payload requires profile pin'
+    })
+  }
+})
+
 export type SignedProviderClaims = z.infer<typeof signedProviderClaimsSchema>
-export type SignedProviderClaimEnvelope = z.infer<typeof signedProviderEnvelopeSchema>
+export type SignedProviderClaimEnvelopeV1 = z.infer<typeof signedProviderEnvelopeV1Schema>
+export interface SignedProviderClaimEnvelopeV2 {
+  readonly schemaVersion: 2
+  readonly profile: 'jvm-observation-bound-v2'
+  readonly claims: SignedProviderClaims
+  readonly jvmArtifactObservation: JvmArtifactObservationV1
+  readonly signatureBase64Url: string
+}
+export type SignedProviderClaimEnvelope = SignedProviderClaimEnvelopeV1 | SignedProviderClaimEnvelopeV2
 
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
@@ -101,6 +144,9 @@ function canonicalClaimsObject(input: unknown): SignedProviderClaims {
   return {
     schemaVersion: 1,
     domain: CLAIM_DOMAIN,
+    ...(claims.requiredClaimProfile === 'jvm-observation-bound-v2'
+      ? { requiredClaimProfile: claims.requiredClaimProfile }
+      : {}),
     audience: claims.audience,
     verifierInstanceId: claims.verifierInstanceId,
     sequence: claims.sequence,
@@ -133,6 +179,9 @@ export function canonicalSignedProviderChallengeIdentityV1(input: unknown): Buff
   return Buffer.from(JSON.stringify({
     schemaVersion: 1,
     domain: CLAIM_DOMAIN,
+    ...(challenge.requiredClaimProfile
+      ? { requiredClaimProfile: challenge.requiredClaimProfile }
+      : {}),
     audience: challenge.audience,
     verifierInstanceId: challenge.verifierInstanceId,
     sequence: challenge.sequence,
@@ -151,9 +200,29 @@ export function canonicalSignedProviderChallengeIdentityV1(input: unknown): Buff
 }
 
 export function canonicalSignedProviderClaimV1(input: unknown): Buffer {
-  return Buffer.from(JSON.stringify(canonicalClaimsObject(input)), 'utf8')
+  const claims = signedProviderClaimsSchema.parse(input)
+  if (claims.requiredClaimProfile !== undefined) {
+    throw new Error('Observation-bound claims require canonical signed-provider payload v2')
+  }
+  return Buffer.from(JSON.stringify(canonicalClaimsObject(claims)), 'utf8')
+}
+
+export function canonicalSignedProviderObservationBoundClaimV2(input: unknown): Buffer {
+  const value = observationBoundCanonicalInputSchema.parse(input)
+  const claims = JSON.stringify(canonicalClaimsObject(value.claims))
+  const observation = canonicalJvmArtifactObservationV1(value.jvmArtifactObservation).toString('utf8')
+  return Buffer.from(
+    `{"schemaVersion":2,"profile":"jvm-observation-bound-v2","claims":${claims},`
+      + `"jvmArtifactObservation":${observation}}`,
+    'utf8'
+  )
 }
 
 export function parseSignedProviderClaimEnvelope(input: unknown): SignedProviderClaimEnvelope {
-  return signedProviderEnvelopeSchema.parse(input)
+  const envelope = z.union([signedProviderEnvelopeV1Schema, signedProviderEnvelopeV2Schema]).parse(input)
+  if (envelope.schemaVersion === 1) return envelope
+  return {
+    ...envelope,
+    jvmArtifactObservation: parseJvmArtifactObservationV1(envelope.jvmArtifactObservation)
+  }
 }

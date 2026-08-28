@@ -40,6 +40,7 @@ const providerSchema = z.strictObject({
 const challengeSchema = z.strictObject({
   schemaVersion: z.literal(1),
   domain: z.literal(CLAIM_DOMAIN),
+  requiredClaimProfile: z.literal('jvm-observation-bound-v2').optional(),
   audience: safeIdentifier('audience'),
   verifierInstanceId: safeIdentifier('verifier instance ID'),
   sequence: z.number().int().safe().positive(),

@@ -8,6 +8,7 @@ import { SqliteSignedProviderChallengeStore } from '../src/signed-provider-chall
 import {
   buildSignedProviderClaimTrustStore,
   canonicalSignedProviderClaimV1,
+  canonicalSignedProviderObservationBoundClaimV2,
   SignedProviderClaimVerifier
 } from '../src/signed-provider-claim.js'
 import { artifactTargetBindingSha256, buildArtifactTargetBinding } from '../src/target-binding.js'
@@ -131,6 +132,102 @@ test('shared SQLite store cho verifier khác process-scope verify và consume on
     assert.equal(second.verifyAndConsume(envelope).nonceConsumed, true)
     firstClock.wall = secondClock.wall
     assert.throws(() => first.verifyAndConsume(envelope), /challenge|replay|consumed|unavailable/i)
+  } finally {
+    secondStore.close()
+    firstStore.close()
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+test('shared SQLite store giữ observation-bound profile qua round-trip và chặn v1 downgrade', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'botchecker-shared-observation-bound-'))
+  const databasePath = path.join(directory, 'challenges.sqlite')
+  const f = fixture()
+  const scope = {
+    databasePath,
+    trustedWallNowMs: () => 10_025,
+    audience: 'shared-observation-bound-audience',
+    verifierInstanceId: 'shared-observation-bound-instance'
+  }
+  const firstStore = new SqliteSignedProviderChallengeStore(scope)
+  const secondStore = new SqliteSignedProviderChallengeStore(scope)
+  try {
+    const first = new SignedProviderClaimVerifier({
+      trustStore: f.trustStore,
+      audience: scope.audience,
+      verifierInstanceId: scope.verifierInstanceId,
+      wallNowMs: () => 10_000,
+      monotonicNowMs: () => 100,
+      randomBytes: size => Buffer.alloc(size, 18),
+      challengeStore: firstStore
+    })
+    const second = new SignedProviderClaimVerifier({
+      trustStore: f.trustStore,
+      audience: scope.audience,
+      verifierInstanceId: scope.verifierInstanceId,
+      wallNowMs: () => 10_050,
+      monotonicNowMs: () => 50,
+      challengeStore: secondStore
+    })
+    const challenge = first.issueChallenge({
+      runId: 'shared-observation-bound-run',
+      expectedBinding: f.expectedBinding,
+      keyId: f.keyId,
+      ttlMs: 5_000,
+      requiredClaimProfile: 'jvm-observation-bound-v2'
+    })
+    const loaded = secondStore.load(challenge.challengeId, () => 10_025)
+    assert.equal(loaded?.challenge.challengeId, challenge.challengeId)
+    assert.equal(loaded?.challenge.requiredClaimProfile, 'jvm-observation-bound-v2')
+    const claims = {
+      ...challenge,
+      observedAtMs: 10_025,
+      claimedServerInstanceId: 'claimed-paper-shared-observation',
+      claimedBootId: 'claimed-boot-shared-observation',
+      loadedArtifacts: f.expectedBinding.artifacts
+    }
+    assert.throws(() => second.verifyAndConsume({
+      schemaVersion: 1,
+      claims,
+      signatureBase64Url: Buffer.alloc(64).toString('base64url')
+    }), /profile|observation|challenge/i)
+    const jvmArtifactObservation = {
+      schemaVersion: 1 as const,
+      grade: 'codesource-file-and-class-resource-observed' as const,
+      authoritative: false as const,
+      provesLoadedBytecode: false as const,
+      releaseEligible: false as const,
+      assumptions: [
+        'standard-non-instrumented-anchor-classloader' as const,
+        'java-agent-absence-verified:false' as const
+      ],
+      declared: {
+        role: 'candidate' as const,
+        logicalId: 'candidate', logicalPath: 'plugins/Plugin.jar'
+      },
+      observedClassBinaryName: 'example.Plugin',
+      codeSourceUriFingerprint: '5'.repeat(64),
+      codeSourceFileSha256: '1'.repeat(64),
+      codeSourceFileBytes: 100,
+      classResourceSha256: '6'.repeat(64),
+      classResourceBytes: 100,
+      classResourceOrigin: 'anchor-class-getResourceAsStream;loader-mediated;parent-delegation-possible;runtime-version-selection-unknown;may-differ-from-defined-bytecode;origin-not-proven' as const,
+      classResourceInformational: true as const,
+      sameLoaderMediated: true as const,
+      mayDifferFromDefinedBytecode: true as const,
+      internalEntryConsistency: 'MATCH' as const,
+      atomicSnapshot: false as const
+    }
+    const signatureBase64Url = sign(null, canonicalSignedProviderObservationBoundClaimV2({
+      claims, jvmArtifactObservation
+    }), f.pair.privateKey).toString('base64url')
+    assert.equal(second.verifyAndConsume({
+      schemaVersion: 2,
+      profile: 'jvm-observation-bound-v2',
+      claims,
+      jvmArtifactObservation,
+      signatureBase64Url
+    }).nonceConsumed, true)
   } finally {
     secondStore.close()
     firstStore.close()

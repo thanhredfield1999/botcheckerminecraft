@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
+import vn.heomc.botchecker.probe.JvmArtifactObserver;
 
 /** Test-only Java 21 interoperability fixture. Never use this private-key loader in production. */
 public final class SignedProviderClaimInteropFixture {
@@ -18,12 +19,16 @@ public final class SignedProviderClaimInteropFixture {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 3) {
-            throw new IllegalArgumentException("Expected INPUT PKCS8_PRIVATE_KEY OUTPUT");
+        if (args.length != 3 && args.length != 4) {
+            throw new IllegalArgumentException("Expected INPUT PKCS8_PRIVATE_KEY OUTPUT [OBSERVATION]");
         }
         var lines = Files.readAllLines(Path.of(args[0]), StandardCharsets.UTF_8);
         var input = Input.parse(lines);
-        byte[] canonical = canonicalJson(input).getBytes(StandardCharsets.UTF_8);
+        String observation = args.length == 4
+            ? JvmArtifactObserver.canonicalJsonV1(parseObservation(
+                Files.readAllLines(Path.of(args[3]), StandardCharsets.UTF_8)))
+            : null;
+        byte[] canonical = canonicalPayload(input, observation).getBytes(StandardCharsets.UTF_8);
         PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(
             new PKCS8EncodedKeySpec(Files.readAllBytes(Path.of(args[1])))
         );
@@ -41,11 +46,58 @@ public final class SignedProviderClaimInteropFixture {
         Files.writeString(Path.of(args[2]), output, StandardCharsets.UTF_8);
     }
 
-    private static String canonicalJson(Input input) {
+    private static String canonicalPayload(Input input, String observation) {
+        String claims = canonicalClaimsJson(input, observation != null);
+        if (observation == null) return claims;
+        return "{\"schemaVersion\":2,\"profile\":\"jvm-observation-bound-v2\",\"claims\":"
+            + claims + ",\"jvmArtifactObservation\":" + observation + "}";
+    }
+
+    private static JvmArtifactObserver.Observation parseObservation(List<String> lines) {
+        if (lines.size() != 10) {
+            throw new IllegalArgumentException("Observation input must have 10 fields");
+        }
+        return new JvmArtifactObserver.Observation(
+            JvmArtifactObserver.EVIDENCE_GRADE,
+            false,
+            false,
+            false,
+            List.of("standard-non-instrumented-anchor-classloader", "java-agent-absence-verified:false"),
+            new JvmArtifactObserver.DeclaredIdentity(lines.get(0), lines.get(1), lines.get(2)),
+            lines.get(3),
+            lines.get(4),
+            lines.get(5),
+            parseObservationPositiveLong(lines.get(6), "codeSourceFileBytes"),
+            lines.get(7),
+            parseObservationPositiveLong(lines.get(8), "classResourceBytes"),
+            "anchor-class-getResourceAsStream;loader-mediated;parent-delegation-possible;"
+                + "runtime-version-selection-unknown;may-differ-from-defined-bytecode;origin-not-proven",
+            true,
+            true,
+            true,
+            JvmArtifactObserver.InternalEntryConsistency.valueOf(lines.get(9)),
+            false
+        );
+    }
+
+    private static long parseObservationPositiveLong(String value, String label) {
+        try {
+            long parsed = Long.parseLong(value);
+            if (parsed <= 0) throw new IllegalArgumentException(label + " must be positive");
+            return parsed;
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException("Invalid " + label, error);
+        }
+    }
+
+    private static String canonicalClaimsJson(Input input, boolean observationBound) {
         var out = new StringBuilder(2048);
         out.append('{');
         field(out, "schemaVersion", "1", false);
         field(out, "domain", quote(DOMAIN), true);
+        if (observationBound) {
+            field(out, "requiredClaimProfile", quote("jvm-observation-bound-v2"), true);
+        }
         field(out, "audience", quote(input.audience), true);
         field(out, "verifierInstanceId", quote(input.verifierInstanceId), true);
         field(out, "sequence", Long.toString(input.sequence), true);

@@ -14,12 +14,18 @@ import {
 import {
   canonicalSignedProviderChallengeIdentityV1,
   canonicalSignedProviderClaimV1,
+  canonicalSignedProviderObservationBoundClaimV2,
   parseSignedProviderClaimEnvelope,
   type SignedProviderClaims
 } from './signed-provider-claim-schema.js'
 import type { SignedProviderChallengeStore } from './signed-provider-challenge-store.js'
+import { assessJvmArtifactObservationAgainstBinding } from './jvm-artifact-observation.js'
 
-export { canonicalSignedProviderClaimV1, type SignedProviderClaims } from './signed-provider-claim-schema.js'
+export {
+  canonicalSignedProviderClaimV1,
+  canonicalSignedProviderObservationBoundClaimV2,
+  type SignedProviderClaims
+} from './signed-provider-claim-schema.js'
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/
 const SAFE_ID = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/
@@ -109,6 +115,7 @@ interface CompiledTrustKey {
 export interface SignedProviderClaimChallenge {
   readonly schemaVersion: 1
   readonly domain: typeof CLAIM_DOMAIN
+  readonly requiredClaimProfile?: 'jvm-observation-bound-v2'
   readonly audience: string
   readonly verifierInstanceId: string
   readonly sequence: number
@@ -165,6 +172,28 @@ export interface SignedProviderClaimVerification {
   readonly provider: Readonly<z.infer<typeof providerSchema>>
   readonly claimedServerInstanceId: string
   readonly claimedBootId: string
+  readonly observationBinding?: Readonly<{
+    status: 'TARGET_FILE_MATCH_NON_AUTHORITATIVE'
+    authoritative: false
+    provesLoadedBytecode: false
+    releaseEligible: false
+    role: 'paper' | 'candidate' | 'probe'
+    logicalId: string
+    logicalPath: string
+    observationSha256: string
+    codeSourceUriFingerprint: string
+    codeSourceFileSha256: string
+    internalEntryConsistency: 'MATCH' | 'MISMATCH' | 'NOT_A_JAR'
+    observedAtMs: number
+    observationTimeAttested: 'self-asserted-by-signer'
+    observationFreshness: 'not-established'
+    limitations: ReadonlyArray<
+      | 'declared-identity-is-caller-supplied'
+      | 'codesource-file-is-not-loaded-bytecode-proof'
+      | 'class-resource-is-loader-mediated-informational-evidence'
+      | 'snapshot-is-best-effort-non-atomic'
+    >
+  }>
 }
 
 const compiledTrustKeys = new WeakMap<SignedProviderClaimTrustStore, Map<string, CompiledTrustKey>>()
@@ -317,6 +346,7 @@ export class SignedProviderClaimVerifier {
     readonly expectedBinding: ArtifactTargetBinding
     readonly keyId: string
     readonly ttlMs: number
+    readonly requiredClaimProfile?: 'jvm-observation-bound-v2'
   }): SignedProviderClaimChallenge {
     const wallNow = safeNow(this.wallNow(), 'Wall clock', true)
     const monotonicNow = safeMonotonicNow(this.monotonicNow())
@@ -330,6 +360,8 @@ export class SignedProviderClaimVerifier {
     const ttlMs = z.number().int().min(1).max(MAX_CHALLENGE_TTL_MS).parse(input.ttlMs)
     const runId = safeIdentifier('run ID').parse(input.runId)
     const keyId = z.string().regex(SHA256_PATTERN).parse(input.keyId)
+    const requiredClaimProfile = z.literal('jvm-observation-bound-v2')
+      .optional().parse(input.requiredClaimProfile)
     const expectedBinding = validateArtifactTargetBinding(input.expectedBinding)
     if (expectedBinding.artifacts.filter(artifact => artifact.role === 'probe').length !== 1) {
       throw new Error('Signed provider challenge requires exactly one declared probe artifact')
@@ -352,6 +384,7 @@ export class SignedProviderClaimVerifier {
       return freezeChallenge({
         schemaVersion: 1,
         domain: CLAIM_DOMAIN,
+        ...(requiredClaimProfile ? { requiredClaimProfile } : {}),
         audience: this.audience,
         verifierInstanceId: this.verifierInstanceId,
         sequence,
@@ -427,6 +460,8 @@ export class SignedProviderClaimVerifier {
     const exactChallengeFields =
       claims.schemaVersion === challenge.schemaVersion
       && claims.domain === challenge.domain
+      && (claims.requiredClaimProfile ?? 'legacy-v1')
+        === (challenge.requiredClaimProfile ?? 'legacy-v1')
       && claims.audience === challenge.audience
       && claims.verifierInstanceId === challenge.verifierInstanceId
       && claims.sequence === challenge.sequence
@@ -442,6 +477,10 @@ export class SignedProviderClaimVerifier {
       && claims.issuedAtMs === challenge.issuedAtMs
       && claims.expiresAtMs === challenge.expiresAtMs
     if (!exactChallengeFields) throw new Error('Signed provider claim does not match challenge')
+    const envelopeProfile = envelope.schemaVersion === 1 ? 'legacy-v1' : envelope.profile
+    if (envelopeProfile !== (challenge.requiredClaimProfile ?? 'legacy-v1')) {
+      throw new Error('Signed provider claim profile does not match challenge requirement')
+    }
     if (
       claims.observedAtMs < challenge.issuedAtMs
       || claims.observedAtMs > challenge.expiresAtMs
@@ -477,7 +516,13 @@ export class SignedProviderClaimVerifier {
     }
 
     const signature = Buffer.from(envelope.signatureBase64Url, 'base64url')
-    if (!cryptoVerify(null, canonicalSignedProviderClaimV1(claims), compiled.publicKey, signature)) {
+    const canonicalClaim = envelope.schemaVersion === 1
+      ? canonicalSignedProviderClaimV1(claims)
+      : canonicalSignedProviderObservationBoundClaimV2({
+          claims,
+          jvmArtifactObservation: envelope.jvmArtifactObservation
+        })
+    if (!cryptoVerify(null, canonicalClaim, compiled.publicKey, signature)) {
       if (this.challengeStore) {
         this.challengeStore.recordInvalidAttempt(
           challenge.challengeId,
@@ -490,6 +535,36 @@ export class SignedProviderClaimVerifier {
         if (localPending.invalidAttempts >= this.maxInvalidAttempts) this.pending.delete(challenge.challengeId)
       }
       throw new Error('Signed provider claim signature is invalid')
+    }
+    let observationBinding: SignedProviderClaimVerification['observationBinding']
+    if (envelope.schemaVersion === 2) {
+      const assessment = assessJvmArtifactObservationAgainstBinding(
+        envelope.jvmArtifactObservation,
+        pending.expectedBinding
+      )
+      if (
+        assessment.status !== 'TARGET_FILE_MATCH_NON_AUTHORITATIVE'
+        || assessment.artifact.role !== 'candidate'
+      ) {
+        throw new Error('Signed provider JVM candidate observation does not exactly match target binding')
+      }
+      observationBinding = Object.freeze({
+        status: assessment.status,
+        authoritative: false,
+        provesLoadedBytecode: false,
+        releaseEligible: false,
+        role: assessment.artifact.role,
+        logicalId: assessment.artifact.logicalId,
+        logicalPath: assessment.artifact.logicalPath,
+        observationSha256: assessment.observationSha256,
+        codeSourceUriFingerprint: assessment.codeSourceUriFingerprint,
+        codeSourceFileSha256: assessment.codeSourceFileSha256,
+        internalEntryConsistency: assessment.internalEntryConsistency,
+        observedAtMs: claims.observedAtMs,
+        observationTimeAttested: 'self-asserted-by-signer',
+        observationFreshness: 'not-established',
+        limitations: assessment.limitations
+      })
     }
     if (this.challengeStore) {
       if (!this.challengeStore.consume(challenge.challengeId, this.wallNow)) {
@@ -516,7 +591,8 @@ export class SignedProviderClaimVerifier {
       targetBindingSha256: challenge.targetBindingSha256,
       provider: Object.freeze({ ...challenge.provider }),
       claimedServerInstanceId: claims.claimedServerInstanceId,
-      claimedBootId: claims.claimedBootId
+      claimedBootId: claims.claimedBootId,
+      ...(observationBinding ? { observationBinding } : {})
     })
   }
 
