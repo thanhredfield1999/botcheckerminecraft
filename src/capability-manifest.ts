@@ -409,7 +409,11 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
       ...Object.entries(CAPABILITY_MODULES)
         .filter(([, capability]) => sourcePaths.has(`${codeRoot}/${capability.module}${codeRoot === 'src' ? '.ts' : '.js'}`))
         .map(([name, capability]) => [name, capability.mode] as const),
-      ['jvm-artifact-observer', 'library-only'] as const
+      ['jvm-artifact-observer', 'library-only'] as const,
+      ...(javaSources.some(source => source.path
+        === 'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java')
+        ? [['jvm-observation-bound-claim-builder', 'library-only'] as const]
+        : [])
     ]),
     sources,
     auxiliaryCode: [{

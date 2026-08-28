@@ -176,6 +176,14 @@ Last reviewed: 2026-08-27
 - Opus correction review trả `PASS`, `0` blocker/high/medium. LOW còn lại: signed semantic mismatch có thể retry trong TTL; result chỉ surface observation summary; chưa có một số negative vectors cho hướng profile/hash/class-resource; `MISMATCH|NOT_A_JAR` vẫn được chấp nhận nhưng disclosure nguyên trạng vì class-resource consistency chỉ informational.
 - Capability `signed-provider-observation-bound-claim` vẫn `library-only`; không production signer/key loader, key custody/provisioning, Paper/Bukkit adapter, effective-config/boot truth, report/server/release wiring hoặc controlled runtime evidence. Không mở Paper/listener, không deploy/reload/restart, không chạm production và chưa push.
 
+## 2026-08-28 — Java observation-bound canonical claim builder
+
+- `VERIFIED offline/library-only`: `JvmObservationBoundClaimBuilder` tạo canonical UTF-8 bytes v2 từ strict claim records và `JvmArtifactObserver.Observation`; không ký, không nhận/đọc key, path, environment, Paper, report, server hoặc release state.
+- Builder snapshot + sort danh sách artifact, giới hạn safe integer/base64url/hash/path/credential-like text, ép cardinality producer-side, cửa sổ challenge và exact candidate identity/path/whole-file hash. Posture non-authoritative được kiểm lại defense-in-depth; đây không phải observation freshness, loaded-bytecode/runtime/boot truth hoặc release proof.
+- Java↔Node parity phủ supplementary Unicode, `provider.instanceId` cả absent/present và immutable input/output; test-only signer fixture v1/v2 dùng production builder cho v2 nhưng private-key loader vẫn chỉ nằm trong fixture temp-key path.
+- Focused correction gate: `15/15` pass, `0` fail, `0` skip trên host Java/Javac `25.0.1`, mọi compile dùng `javac --release 21`. Opus correction review trả `PASS`, `0` blocker/high/medium. Full ordered gate hậu-correction `npm run typecheck && npm test && npm run build && git diff --check` exit `0`: `430` tests, `426` pass, `0` fail, `4` skip; TypeScript/Java build và diff-check PASS.
+- Capability `jvm-observation-bound-claim-builder` chỉ được công bố `library-only` khi exact Java source có trong auxiliary provenance; source/build/classes được fingerprint. Không production signer/custody/HSM/Paper/report/release wiring và chưa chạy controlled runtime.
+
 Report contract update on 2026-08-16:
 
 - Mỗi step và report tổng có verdict kiểu `PASS | FAIL | INCONCLUSIVE`; oracle mang mã lỗi `INCONCLUSIVE_*` và step optional không còn bị gộp vào lỗi sản phẩm.

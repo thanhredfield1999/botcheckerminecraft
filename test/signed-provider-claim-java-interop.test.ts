@@ -127,8 +127,12 @@ test('Java 21 fixture canonicalize và ký Ed25519 được Node verifier chấp
     const observerSourcePath = path.resolve(
       'java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java'
     )
+    const builderSourcePath = path.resolve(
+      'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java'
+    )
     execFileSync('javac', [
-      '--release', '21', '-d', classesPath, observerSourcePath, sourcePath
+      '--release', '21', '-d', classesPath,
+      observerSourcePath, builderSourcePath, sourcePath
     ], {
       cwd: path.resolve('.'), windowsHide: true, stdio: 'pipe'
     })
@@ -251,8 +255,12 @@ test('Java 21 fixture canonicalize observation-bound v2 khớp Node và vẫn no
     const observerSourcePath = path.resolve(
       'java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java'
     )
+    const builderSourcePath = path.resolve(
+      'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java'
+    )
     execFileSync('javac', [
-      '--release', '21', '-d', classesPath, observerSourcePath, sourcePath
+      '--release', '21', '-d', classesPath,
+      observerSourcePath, builderSourcePath, sourcePath
     ], {
       cwd: path.resolve('.'), windowsHide: true, stdio: 'pipe'
     })

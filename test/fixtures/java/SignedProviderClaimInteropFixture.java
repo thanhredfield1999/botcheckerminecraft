@@ -10,6 +10,7 @@ import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import vn.heomc.botchecker.probe.JvmArtifactObserver;
+import vn.heomc.botchecker.probe.JvmObservationBoundClaimBuilder;
 
 /** Test-only Java 21 interoperability fixture. Never use this private-key loader in production. */
 public final class SignedProviderClaimInteropFixture {
@@ -24,11 +25,10 @@ public final class SignedProviderClaimInteropFixture {
         }
         var lines = Files.readAllLines(Path.of(args[0]), StandardCharsets.UTF_8);
         var input = Input.parse(lines);
-        String observation = args.length == 4
-            ? JvmArtifactObserver.canonicalJsonV1(parseObservation(
-                Files.readAllLines(Path.of(args[3]), StandardCharsets.UTF_8)))
+        JvmArtifactObserver.Observation observation = args.length == 4
+            ? parseObservation(Files.readAllLines(Path.of(args[3]), StandardCharsets.UTF_8))
             : null;
-        byte[] canonical = canonicalPayload(input, observation).getBytes(StandardCharsets.UTF_8);
+        byte[] canonical = canonicalPayload(input, observation);
         PrivateKey privateKey = KeyFactory.getInstance("Ed25519").generatePrivate(
             new PKCS8EncodedKeySpec(Files.readAllBytes(Path.of(args[1])))
         );
@@ -46,11 +46,45 @@ public final class SignedProviderClaimInteropFixture {
         Files.writeString(Path.of(args[2]), output, StandardCharsets.UTF_8);
     }
 
-    private static String canonicalPayload(Input input, String observation) {
-        String claims = canonicalClaimsJson(input, observation != null);
-        if (observation == null) return claims;
-        return "{\"schemaVersion\":2,\"profile\":\"jvm-observation-bound-v2\",\"claims\":"
-            + claims + ",\"jvmArtifactObservation\":" + observation + "}";
+    private static byte[] canonicalPayload(
+            Input input,
+            JvmArtifactObserver.Observation observation
+    ) {
+        if (observation == null) return canonicalClaimsJson(input, false).getBytes(StandardCharsets.UTF_8);
+        var artifacts = input.artifacts.stream()
+            .map(artifact -> new JvmObservationBoundClaimBuilder.Artifact(
+                artifact.logicalId, artifact.role, artifact.logicalPath, artifact.sha256))
+            .toList();
+        var claims = new JvmObservationBoundClaimBuilder.Claims(
+            1,
+            DOMAIN,
+            JvmObservationBoundClaimBuilder.PROFILE,
+            input.audience,
+            input.verifierInstanceId,
+            input.sequence,
+            input.challengeId,
+            input.nonceBase64Url,
+            input.runId,
+            input.keyId,
+            input.bindingId,
+            input.targetBindingSha256,
+            new JvmObservationBoundClaimBuilder.Provider(
+                "server-probe",
+                input.providerId,
+                input.providerVersion,
+                input.providerInstanceId),
+            input.trustStoreId,
+            input.trustStoreVersion,
+            input.trustStoreSha256,
+            input.issuedAtMs,
+            input.expiresAtMs,
+            input.observedAtMs,
+            input.claimedServerInstanceId,
+            input.claimedBootId,
+            artifacts
+        );
+        return JvmObservationBoundClaimBuilder.canonicalJsonUtf8V2(
+            new JvmObservationBoundClaimBuilder.Input(claims, observation));
     }
 
     private static JvmArtifactObserver.Observation parseObservation(List<String> lines) {

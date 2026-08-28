@@ -172,12 +172,19 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observation-assessment'),
     { name: 'jvm-artifact-observation-assessment', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'jvm-observation-bound-claim-builder'),
+    { name: 'jvm-observation-bound-claim-builder', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
   assert.equal(java?.mode, 'source-only')
   assert.ok(java?.sources.some(source =>
     source.path === 'java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java'
+    && sha256.test(source.sha256)))
+  assert.ok(java?.sources.some(source =>
+    source.path === 'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java'
     && sha256.test(source.sha256)))
   assert.deepEqual(java?.compiled, [])
 })
@@ -213,6 +220,23 @@ test('compiled capability collector bind Java class output, source và build scr
   assert.equal(java?.buildScript.path, 'scripts/build-java.mjs')
   assert.ok(java?.sources.some(source => source.path.endsWith('/JvmArtifactObserver.java')))
   assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmArtifactObserver.class')))
+  assert.ok(java?.sources.some(source => source.path.endsWith('/JvmObservationBoundClaimBuilder.java')))
+  assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmObservationBoundClaimBuilder.class')))
+})
+
+test('Java production observation-bound builder không có key hoặc signing API', async () => {
+  const source = await readFile(
+    'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java',
+    'utf8'
+  )
+  const capabilitySource = await readFile('src/capability-manifest.ts', 'utf8')
+  assert.doesNotMatch(source, /java\.security|PrivateKey|KeyFactory|Signature|PKCS|PEM|JKS|KeyStore/)
+  assert.doesNotMatch(source, /Files\.|Path\.|System\.getenv|System\.getProperty/)
+  assert.match(source, /JvmArtifactObserver\.EVIDENCE_GRADE\.equals\(observation\.grade\(\)\)/)
+  assert.match(source, /observation\.authoritative\(\)/)
+  assert.match(source, /observation\.provesLoadedBytecode\(\)/)
+  assert.match(source, /observation\.releaseEligible\(\)/)
+  assert.match(capabilitySource, /javaSources\.some\(source => source\.path[\s\S]*JvmObservationBoundClaimBuilder/)
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {

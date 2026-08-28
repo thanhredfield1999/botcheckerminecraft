@@ -118,6 +118,15 @@ behavior, or release readiness. Capability manifest schema v2 binds its Java sou
 build script and compiled classes; legacy manifests without auxiliary code
 remain schema v1.
 
+The Java auxiliary library also contains a production canonical-byte builder for
+the `jvm-observation-bound-v2` profile. It snapshots and deterministically sorts
+claim artifacts, mirrors the bounded Node field validation, requires an exact
+candidate observation/hash and applies additional producer-side role-cardinality
+and challenge-window checks before producing fresh UTF-8 bytes. Those additional
+checks harden this producer; they do not establish observation freshness or expand
+the verifier's evidence posture. The builder has no signing, key, filesystem,
+environment, Paper, report, server, or release API.
+
 ## API
 
 ```http
