@@ -63,7 +63,9 @@ correction.[3]
 - returns immutable hash/resource evidence but no PEM, certificate or statement
   bytes;
 - catches and sanitizes all boundary failures;
-- remains `library-only` with no runtime/network/manual-CLI importer.
+- remains `library-only`; after D4c-c its sole direct importer is the KMS signing
+  backend, while the manual CLI does not call the bridge/compositor API and no
+  server/report/Paper path calls it.
 
 ## Claim boundary
 

@@ -8,9 +8,8 @@ import {
   parseCaviumV2AttestationStatement,
   verifyCaviumV2GeneratedEd25519Attributes
 } from './cavium-v2-attestation-statement-parser.js'
+import { isGoogleCloudKmsCryptoKeyVersionName } from './google-cloud-kms-resource-name.js'
 
-const PROJECT = '(?:[a-z][a-z0-9-]{4,28}[a-z0-9]|[1-9][0-9]{0,18})'
-const RESOURCE = new RegExp(`^projects\/${PROJECT}\/locations\/[a-z0-9-]{1,63}\/keyRings\/[a-zA-Z0-9_-]{1,63}\/cryptoKeys\/[a-zA-Z0-9_-]{1,63}\/cryptoKeyVersions\/[1-9][0-9]{0,18}$`)
 const SHA256 = /^[a-f0-9]{64}$/
 const SINGLE_PUBLIC_KEY_PEM = /^-----BEGIN PUBLIC KEY-----\r?\n(?:[A-Za-z0-9+/=]+\r?\n)+-----END PUBLIC KEY-----\r?\n?$/
 const ED25519_SPKI_PREFIX = Buffer.from('302a300506032b6570032100', 'hex')
@@ -97,13 +96,8 @@ export function verifyGoogleCloudKmsHsmAttestationBinding(
     const expectedPublicKeyPem = input.expectedPublicKeyPem
     const expectedPublicKeySpkiSha256 = input.expectedPublicKeySpkiSha256
     const envelope = input.envelope
-    if (typeof cryptoKeyVersionName !== 'string' || !RESOURCE.test(cryptoKeyVersionName)
+    if (!isGoogleCloudKmsCryptoKeyVersionName(cryptoKeyVersionName)
       || !envelope || typeof envelope !== 'object') throw new Error()
-    const project = cryptoKeyVersionName.slice(
-      'projects/'.length,
-      cryptoKeyVersionName.indexOf('/locations/')
-    )
-    if (/^[0-9]+$/.test(project) && BigInt(project) > 9_223_372_036_854_775_807n) throw new Error()
     const attestationGzip = copyAttestationGzip(envelope.attestationGzip)
     const envelopeInput: GoogleCloudKmsHsmAttestationVerificationInput = {
       attestationFormat: envelope.attestationFormat,

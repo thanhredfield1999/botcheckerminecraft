@@ -7,7 +7,7 @@ import {
   parseGoogleCloudKmsLivePreflightArgs
 } from '../src/google-cloud-kms-live-preflight.js'
 
-const RESOURCE = 'projects/proj1/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1/cryptoKeyVersions/7'
+const RESOURCE = 'projects/proj12/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1/cryptoKeyVersions/7'
 const KEY_ID = 'a'.repeat(64)
 
 test('live KMS preflight parser nhận đúng exact public identifiers và timeout', () => {
@@ -22,6 +22,22 @@ test('live KMS preflight parser nhận đúng exact public identifiers và timeo
   })
 })
 
+test('live KMS preflight parser dùng shared resource validator cho numeric project', () => {
+  const numericResource = 'projects/123/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1/cryptoKeyVersions/7'
+  assert.equal(parseGoogleCloudKmsLivePreflightArgs([
+    '--key-version', numericResource,
+    '--expected-key-id', KEY_ID,
+    '--timeout-ms', '5000'
+  ]).cryptoKeyVersionName, numericResource)
+  for (const invalidProject of ['abcde-', '9223372036854775808']) {
+    assert.throws(() => parseGoogleCloudKmsLivePreflightArgs([
+      '--key-version', `projects/${invalidProject}/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1/cryptoKeyVersions/7`,
+      '--expected-key-id', KEY_ID,
+      '--timeout-ms', '5000'
+    ]), /arguments are invalid/i)
+  }
+})
+
 test('live KMS preflight parser reject unknown duplicate credential và malformed flags', () => {
   const invalid = [
     [],
@@ -29,7 +45,8 @@ test('live KMS preflight parser reject unknown duplicate credential và malforme
     ['--key-version', RESOURCE, '--expected-key-id', KEY_ID, '--timeout-ms', '5000', '--unknown', 'x'],
     ['--key-version', RESOURCE, '--key-version', RESOURCE, '--timeout-ms', '5000'],
     ['--key-version', RESOURCE, '--expected-key-id', KEY_ID, '--timeout-ms', '5000', '--credentials', 'secret.json'],
-    ['--key-version', 'projects/proj1/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1', '--expected-key-id', KEY_ID, '--timeout-ms', '5000'],
+    ['--key-version', 'projects/proj12/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1', '--expected-key-id', KEY_ID, '--timeout-ms', '5000'],
+    ['--key-version', 'projects/proj1/locations/us-central1/keyRings/ring_1/cryptoKeys/key-1/cryptoKeyVersions/7', '--expected-key-id', KEY_ID, '--timeout-ms', '5000'],
     ['--key-version', RESOURCE, '--expected-key-id', KEY_ID.toUpperCase(), '--timeout-ms', '5000'],
     ['--key-version', RESOURCE, '--expected-key-id', KEY_ID, '--timeout-ms', '99']
   ]

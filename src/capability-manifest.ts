@@ -260,6 +260,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'google-cloud-kms-hsm-attestation-binding-verifier',
     mode: 'library-only'
   },
+  'google-cloud-kms-hsm-attestation-snapshot-bridge': {
+    module: 'google-cloud-kms-signing-backend',
+    mode: 'library-only'
+  },
   'google-cloud-kms-hsm-live-preflight': {
     module: 'google-cloud-kms-live-preflight',
     mode: 'library-only'

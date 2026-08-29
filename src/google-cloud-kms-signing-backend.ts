@@ -1,8 +1,12 @@
 import { createHash, createPublicKey, verify as cryptoVerify, type KeyObject } from 'node:crypto'
 import { KeyManagementServiceClient } from '@google-cloud/kms'
 import crc32c from 'fast-crc32c'
+import {
+  verifyGoogleCloudKmsHsmAttestationBinding,
+  type GoogleCloudKmsHsmAttestationBindingVerification
+} from './google-cloud-kms-hsm-attestation-binding-verifier.js'
+import { isGoogleCloudKmsCryptoKeyVersionName } from './google-cloud-kms-resource-name.js'
 
-const RESOURCE = /^projects\/[a-z][a-z0-9-]{4,62}\/locations\/[a-z0-9-]{1,63}\/keyRings\/[a-zA-Z0-9_-]{1,63}\/cryptoKeys\/[a-zA-Z0-9_-]{1,63}\/cryptoKeyVersions\/[1-9][0-9]{0,18}$/
 const SHA256 = /^[a-f0-9]{64}$/
 const MAX_CANONICAL_PAYLOAD_BYTES = 256 * 1024
 // Local allocation-abuse cap, not a claim about the Cloud KMS service maximum.
@@ -15,12 +19,23 @@ const typedArrayBuffer = Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype),
   'buffer'
 )?.get
+interface GoogleCloudKmsPrivateAttestationBindingSnapshot {
+  readonly attestationGzip: Buffer
+  readonly publicKeyPem: string
+  readonly certificateChains: Readonly<{
+    readonly caviumCerts: readonly string[]
+    readonly googleCardCerts: readonly string[]
+    readonly googlePartitionCerts: readonly string[]
+  }>
+}
+
 const attestedClients = new WeakMap<object, {
   readonly client: GoogleCloudKmsClientPort
   readonly asymmetricSign: GoogleCloudKmsClientPort['asymmetricSign']
   readonly publicKey: KeyObject
   readonly cryptoKeyVersionName: string
   readonly keyId: string
+  readonly bindingSnapshot?: GoogleCloudKmsPrivateAttestationBindingSnapshot
 }>()
 
 export interface GoogleCloudKmsClientPort {
@@ -57,7 +72,45 @@ export interface GoogleCloudKmsAttestationInput {
   readonly cryptoKeyVersionName: string
   readonly expectedKeyId: string
   readonly requiredKeyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
+  readonly requiredAttestationBinding?: 'CALLER_PINNED_CAVIUM_V2'
 }
+
+export interface GoogleCloudKmsHsmEd25519KeyAttestationBindingInput {
+  readonly client: GoogleCloudKmsClientPort
+  readonly attestation: Readonly<GoogleCloudKmsHsmEd25519Attestation>
+  readonly verificationTimeMs: number
+  readonly trustAnchors: Readonly<{
+    readonly manufacturerRootPem: string
+    readonly manufacturerRootCertificateSha256: string
+    readonly ownerRootPem: string
+    readonly ownerRootCertificateSha256: string
+  }>
+}
+
+export interface GoogleCloudKmsHsmEd25519KeyAttestAndVerifyInput {
+  readonly client: GoogleCloudKmsClientPort
+  readonly cryptoKeyVersionName: string
+  readonly expectedKeyId: string
+  readonly verificationTimeMs: number
+  readonly trustAnchors: GoogleCloudKmsHsmEd25519KeyAttestationBindingInput['trustAnchors']
+}
+
+export type GoogleCloudKmsHsmEd25519KeyAttestationBindingVerification = Readonly<
+  GoogleCloudKmsHsmAttestationBindingVerification & {
+    readonly backendBridgeSchemaVersion: 1
+    readonly attestationGzipSha256: string
+    readonly attestationCryptographicallyVerifiedAgainstCallerPinnedRoots: true
+    readonly backendPrivateSnapshotMatched: true
+    readonly keyOriginMetadataObserved: 'GENERATED_NOT_IMPORTED'
+    readonly keyOriginMetadataCryptographicallyBoundToAttestation: false
+    readonly signingOperationObserved: false
+    readonly liveGoogleCloudKmsVerified: false
+    readonly resourceExistenceVerified: false
+    readonly iamLeastPrivilegeVerified: false
+    readonly provisioningPolicyVerified: false
+    readonly runtimeWiringVerified: false
+  }
+>
 
 export interface GoogleCloudKmsHsmSignerBinding {
   readonly keyId: string
@@ -204,14 +257,30 @@ function validProtobufTimestamp(input: unknown): boolean {
   }
 }
 
-function copyHsmAttestation(input: unknown): Readonly<{
+function copyCertificateArray(input: unknown, expectedLength: number): readonly string[] {
+  if (!Array.isArray(input)) throw new Error()
+  const initialLength = input.length
+  if (initialLength !== expectedLength) throw new Error()
+  const copied: string[] = []
+  for (let index = 0; index < expectedLength; index += 1) {
+    const value = input[index]
+    if (typeof value !== 'string' || value.length < 1 || value.length > 16 * 1024) throw new Error()
+    copied.push(value)
+  }
+  if (input.length !== initialLength) throw new Error()
+  return Object.freeze(copied)
+}
+
+function copyHsmAttestation(input: unknown, includeBindingSnapshot: boolean): Readonly<{
   format: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
   sha256: string
+  bindingSnapshot?: Omit<GoogleCloudKmsPrivateAttestationBindingSnapshot, 'publicKeyPem'>
 }> {
   try {
     const attestation = record(input, 'HSM attestation')
     const formatRaw = attestation.format
     const contentRaw = attestation.content
+    const certChainsRaw = includeBindingSnapshot ? attestation.certChains : undefined
     const format = formatRaw === 3 || formatRaw === 'CAVIUM_V1_COMPRESSED'
       ? 'CAVIUM_V1_COMPRESSED'
       : formatRaw === 4 || formatRaw === 'CAVIUM_V2_COMPRESSED'
@@ -224,7 +293,22 @@ function copyHsmAttestation(input: unknown): Readonly<{
       || bytes > MAX_HSM_ATTESTATION_BYTES) throw new Error()
     const content = Buffer.from(contentRaw as Uint8Array)
     if (content.byteLength !== bytes) throw new Error()
-    return Object.freeze({ format, sha256: createHash('sha256').update(content).digest('hex') })
+    const sha256 = createHash('sha256').update(content).digest('hex')
+    if (!includeBindingSnapshot) return Object.freeze({ format, sha256 })
+    if (format !== 'CAVIUM_V2_COMPRESSED') throw new Error()
+    const certChains = record(certChainsRaw, 'HSM attestation certificate chains')
+    return Object.freeze({
+      format,
+      sha256,
+      bindingSnapshot: Object.freeze({
+        attestationGzip: Buffer.from(content),
+        certificateChains: Object.freeze({
+          caviumCerts: copyCertificateArray(certChains.caviumCerts, 2),
+          googleCardCerts: copyCertificateArray(certChains.googleCardCerts, 1),
+          googlePartitionCerts: copyCertificateArray(certChains.googlePartitionCerts, 1)
+        })
+      })
+    })
   } catch {
     throw new Error('Google Cloud KMS HSM attestation metadata is invalid')
   }
@@ -241,20 +325,28 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     readonly cryptoKeyVersionName: string
     readonly expectedKeyId: string
     readonly requiredKeyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
+    readonly requiredAttestationBinding?: 'CALLER_PINNED_CAVIUM_V2'
   }
   let getCryptoKeyVersion: GoogleCloudKmsClientPort['getCryptoKeyVersion']
   let getPublicKey: GoogleCloudKmsClientPort['getPublicKey']
   let asymmetricSign: GoogleCloudKmsClientPort['asymmetricSign']
   try {
+    const requiredKeyOriginMetadata = input.requiredKeyOriginMetadata
+    const requiredAttestationBinding = requiredKeyOriginMetadata === 'GENERATED_NOT_IMPORTED'
+      ? input.requiredAttestationBinding
+      : undefined
     inputSnapshot = {
       client: input.client,
       cryptoKeyVersionName: input.cryptoKeyVersionName,
       expectedKeyId: input.expectedKeyId,
-      requiredKeyOriginMetadata: input.requiredKeyOriginMetadata
+      requiredKeyOriginMetadata,
+      requiredAttestationBinding
     }
     if (!inputSnapshot.client) throw new Error()
     if (inputSnapshot.requiredKeyOriginMetadata !== undefined
       && inputSnapshot.requiredKeyOriginMetadata !== 'GENERATED_NOT_IMPORTED') throw new Error()
+    if (inputSnapshot.requiredAttestationBinding !== undefined
+      && inputSnapshot.requiredAttestationBinding !== 'CALLER_PINNED_CAVIUM_V2') throw new Error()
     getCryptoKeyVersion = inputSnapshot.client.getCryptoKeyVersion.bind(inputSnapshot.client)
     getPublicKey = inputSnapshot.client.getPublicKey.bind(inputSnapshot.client)
     asymmetricSign = inputSnapshot.client.asymmetricSign.bind(inputSnapshot.client)
@@ -262,7 +354,7 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     throw new Error('Google Cloud KMS attestation input is invalid')
   }
   const name = inputSnapshot.cryptoKeyVersionName
-  if (typeof name !== 'string' || !RESOURCE.test(name)) {
+  if (!isGoogleCloudKmsCryptoKeyVersionName(name)) {
     throw new Error('Google Cloud KMS key version resource is invalid')
   }
   if (typeof inputSnapshot.expectedKeyId !== 'string' || !SHA256.test(inputSnapshot.expectedKeyId)) {
@@ -319,6 +411,10 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     hsmAttestationSha256: string
     attestationCryptographicallyVerified: false
   }> | undefined
+  let bindingSnapshotWithoutPublicKey: Omit<
+    GoogleCloudKmsPrivateAttestationBindingSnapshot,
+    'publicKeyPem'
+  > | undefined
   if (inputSnapshot.requiredKeyOriginMetadata === 'GENERATED_NOT_IMPORTED') {
     const importJobAbsent = versionSnapshot.importJob === undefined
       || versionSnapshot.importJob === null || versionSnapshot.importJob === ''
@@ -328,7 +424,11 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
       || !importTimeAbsent || versionSnapshot.reimportEligible !== false) {
       throw new Error('Google Cloud KMS key origin metadata is invalid')
     }
-    const hsmAttestation = copyHsmAttestation(versionSnapshot.attestation)
+    const hsmAttestation = copyHsmAttestation(
+      versionSnapshot.attestation,
+      inputSnapshot.requiredAttestationBinding === 'CALLER_PINNED_CAVIUM_V2'
+    )
+    bindingSnapshotWithoutPublicKey = hsmAttestation.bindingSnapshot
     originMetadata = Object.freeze({
       keyOriginMetadata: 'GENERATED_NOT_IMPORTED',
       hsmAttestationPresent: true,
@@ -398,9 +498,118 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     asymmetricSign,
     publicKey: parsedPublicKey.key,
     cryptoKeyVersionName: name,
-    keyId
+    keyId,
+    ...(bindingSnapshotWithoutPublicKey
+      ? {
+          bindingSnapshot: Object.freeze({
+            ...bindingSnapshotWithoutPublicKey,
+            publicKeyPem: publicKeySnapshot.pem
+          })
+        }
+      : {})
   })
   return attestation
+}
+
+export function verifyGoogleCloudKmsHsmEd25519KeyAttestationBinding(
+  input: GoogleCloudKmsHsmEd25519KeyAttestationBindingInput
+): GoogleCloudKmsHsmEd25519KeyAttestationBindingVerification {
+  try {
+    if (!input || typeof input !== 'object') throw new Error()
+    const client = input.client
+    const attestation = input.attestation
+    const verificationTimeMs = input.verificationTimeMs
+    const trustAnchors = input.trustAnchors
+    if (!client || !attestation || !Number.isSafeInteger(verificationTimeMs)
+      || verificationTimeMs <= 0 || !trustAnchors || typeof trustAnchors !== 'object') throw new Error()
+    const privateSnapshot = attestedClients.get(attestation)
+    if (!privateSnapshot || privateSnapshot.client !== client || !privateSnapshot.bindingSnapshot
+      || attestation.keyOriginMetadata !== 'GENERATED_NOT_IMPORTED'
+      || attestation.hsmAttestationFormat !== 'CAVIUM_V2_COMPRESSED'
+      || typeof attestation.hsmAttestationSha256 !== 'string') throw new Error()
+    const bindingSnapshot = privateSnapshot.bindingSnapshot
+    const verification = verifyGoogleCloudKmsHsmAttestationBinding({
+      cryptoKeyVersionName: privateSnapshot.cryptoKeyVersionName,
+      expectedPublicKeyPem: bindingSnapshot.publicKeyPem,
+      expectedPublicKeySpkiSha256: privateSnapshot.keyId,
+      envelope: {
+        attestationFormat: 'CAVIUM_V2_COMPRESSED',
+        attestationGzip: Buffer.from(bindingSnapshot.attestationGzip),
+        expectedAttestationGzipSha256: attestation.hsmAttestationSha256,
+        verificationTimeMs,
+        trustAnchors,
+        certificateChains: bindingSnapshot.certificateChains
+      }
+    })
+    return Object.freeze({
+      ...verification,
+      backendBridgeSchemaVersion: 1,
+      attestationGzipSha256: attestation.hsmAttestationSha256,
+      attestationCryptographicallyVerifiedAgainstCallerPinnedRoots: true,
+      backendPrivateSnapshotMatched: true,
+      keyOriginMetadataObserved: 'GENERATED_NOT_IMPORTED',
+      keyOriginMetadataCryptographicallyBoundToAttestation: false,
+      signingOperationObserved: false,
+      liveGoogleCloudKmsVerified: false,
+      resourceExistenceVerified: false,
+      iamLeastPrivilegeVerified: false,
+      provisioningPolicyVerified: false,
+      runtimeWiringVerified: false
+    })
+  } catch {
+    throw new Error('Google Cloud KMS HSM key attestation binding verification failed')
+  }
+}
+
+export async function attestAndVerifyGoogleCloudKmsHsmEd25519KeyBinding(
+  input: GoogleCloudKmsHsmEd25519KeyAttestAndVerifyInput
+): Promise<GoogleCloudKmsHsmEd25519KeyAttestationBindingVerification> {
+  let inputSnapshot: GoogleCloudKmsHsmEd25519KeyAttestAndVerifyInput
+  try {
+    if (!input || typeof input !== 'object') throw new Error()
+    const trustAnchors = input.trustAnchors
+    if (!trustAnchors || typeof trustAnchors !== 'object') throw new Error()
+    inputSnapshot = {
+      client: input.client,
+      cryptoKeyVersionName: input.cryptoKeyVersionName,
+      expectedKeyId: input.expectedKeyId,
+      verificationTimeMs: input.verificationTimeMs,
+      trustAnchors: Object.freeze({
+        manufacturerRootPem: trustAnchors.manufacturerRootPem,
+        manufacturerRootCertificateSha256: trustAnchors.manufacturerRootCertificateSha256,
+        ownerRootPem: trustAnchors.ownerRootPem,
+        ownerRootCertificateSha256: trustAnchors.ownerRootCertificateSha256
+      })
+    }
+    if (!inputSnapshot.client
+      || !isGoogleCloudKmsCryptoKeyVersionName(inputSnapshot.cryptoKeyVersionName)
+      || !SHA256.test(inputSnapshot.expectedKeyId)
+      || !Number.isSafeInteger(inputSnapshot.verificationTimeMs)
+      || inputSnapshot.verificationTimeMs <= 0
+      || typeof inputSnapshot.trustAnchors.manufacturerRootPem !== 'string'
+      || inputSnapshot.trustAnchors.manufacturerRootPem.length < 1
+      || inputSnapshot.trustAnchors.manufacturerRootPem.length > 16 * 1024
+      || !SHA256.test(inputSnapshot.trustAnchors.manufacturerRootCertificateSha256)
+      || typeof inputSnapshot.trustAnchors.ownerRootPem !== 'string'
+      || inputSnapshot.trustAnchors.ownerRootPem.length < 1
+      || inputSnapshot.trustAnchors.ownerRootPem.length > 16 * 1024
+      || !SHA256.test(inputSnapshot.trustAnchors.ownerRootCertificateSha256)) throw new Error()
+  } catch {
+    throw new Error('Google Cloud KMS HSM key attest-and-verify input is invalid')
+  }
+  const attestation = await attestGoogleCloudKmsHsmEd25519Key({
+    client: inputSnapshot.client,
+    cryptoKeyVersionName: inputSnapshot.cryptoKeyVersionName,
+    expectedKeyId: inputSnapshot.expectedKeyId,
+    requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED',
+    requiredAttestationBinding: 'CALLER_PINNED_CAVIUM_V2'
+  })
+  return verifyGoogleCloudKmsHsmEd25519KeyAttestationBinding({
+    client: inputSnapshot.client,
+    attestation,
+    verificationTimeMs: inputSnapshot.verificationTimeMs,
+    trustAnchors: inputSnapshot.trustAnchors
+  })
 }
 
 export function createGoogleCloudKmsHsmEd25519SignerBinding(

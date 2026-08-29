@@ -4,8 +4,8 @@ import {
   createGoogleCloudKmsAdcClient,
   createGoogleCloudKmsHsmEd25519SignerBinding
 } from './google-cloud-kms-signing-backend.js'
+import { isGoogleCloudKmsCryptoKeyVersionName } from './google-cloud-kms-resource-name.js'
 
-const RESOURCE = /^projects\/[a-z][a-z0-9-]{4,62}\/locations\/[a-z0-9-]{1,63}\/keyRings\/[a-zA-Z0-9_-]{1,63}\/cryptoKeys\/[a-zA-Z0-9_-]{1,63}\/cryptoKeyVersions\/[1-9][0-9]{0,18}$/
 const SHA256 = /^[a-f0-9]{64}$/
 const EXPECTED_FLAGS = Object.freeze([
   '--expected-key-id',
@@ -66,7 +66,7 @@ export function parseGoogleCloudKmsLivePreflightArgs(
   const cryptoKeyVersionName = values.get('--key-version')
   const expectedKeyId = values.get('--expected-key-id')
   const timeoutRaw = values.get('--timeout-ms')
-  if (!cryptoKeyVersionName || !RESOURCE.test(cryptoKeyVersionName)
+  if (!isGoogleCloudKmsCryptoKeyVersionName(cryptoKeyVersionName)
     || !expectedKeyId || !SHA256.test(expectedKeyId)
     || !timeoutRaw || !/^[1-9][0-9]{2,4}$/.test(timeoutRaw)) {
     invalidArguments()

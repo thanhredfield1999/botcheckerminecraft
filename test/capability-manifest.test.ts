@@ -136,6 +136,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-attestation-binding-verifier'),
     { name: 'google-cloud-kms-hsm-attestation-binding-verifier', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-attestation-snapshot-bridge'),
+    { name: 'google-cloud-kms-hsm-attestation-snapshot-bridge', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -314,6 +318,10 @@ test('Google Cloud KMS signer không nhận private key, credential hoặc runti
 test('Google Cloud KMS live preflight chỉ là manual CLI, không có app runtime wiring', async () => {
   const preflight = await readFile('src/google-cloud-kms-live-preflight.ts', 'utf8')
   assert.doesNotMatch(preflight, /runner|report|server|Paper|Bukkit|verifyAndConsume|node:fs|process\.env/)
+  assert.doesNotMatch(
+    preflight,
+    /attestAndVerifyGoogleCloudKmsHsmEd25519KeyBinding|verifyGoogleCloudKmsHsmEd25519KeyAttestationBinding|requiredAttestationBinding|CALLER_PINNED_CAVIUM_V2/
+  )
 
   const sourceFiles = (await readdir('src', { recursive: true }))
     .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-live-preflight.ts'))
@@ -384,7 +392,7 @@ test('Cavium V2 statement parser chỉ là library, không có runtime hoặc ne
   assert.deepEqual(importers, [])
 })
 
-test('D4c-b attestation binding compositor chỉ là library và không có runtime importer', async () => {
+test('D4c-b attestation binding compositor chỉ có exact signing-backend importer', async () => {
   const source = await readFile('src/google-cloud-kms-hsm-attestation-binding-verifier.ts', 'utf8')
   const fixture = await readFile(
     'test/fixtures/google-cloud-kms-attestation-d4cb-fixture.ts',
@@ -413,7 +421,26 @@ test('D4c-b attestation binding compositor chỉ là library và không có runt
       importers.push(file)
     }
   }
-  assert.deepEqual(importers, [])
+  assert.deepEqual(importers, ['src/google-cloud-kms-signing-backend.ts'])
+})
+
+test('Google Cloud KMS resource-name validator chỉ được exact KMS libraries import', async () => {
+  const source = await readFile('src/google-cloud-kms-resource-name.ts', 'utf8')
+  assert.doesNotMatch(source, /node:fs|node:child_process|fetch\(|https?:|process\.env/)
+  const importers: string[] = []
+  for (const file of (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-resource-name.ts'))
+    .map(file => `src/${file}`)) {
+    const runtimeSource = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*google-cloud-kms-resource-name|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-resource-name)/.test(runtimeSource)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers.sort(), [
+    'src/google-cloud-kms-hsm-attestation-binding-verifier.ts',
+    'src/google-cloud-kms-live-preflight.ts',
+    'src/google-cloud-kms-signing-backend.ts'
+  ])
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {

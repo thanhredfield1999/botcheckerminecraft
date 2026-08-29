@@ -187,7 +187,7 @@ RSA PKCS#1 v1.5/SHA-256 attestation signature. It does not pin production
 Google/Marvell roots and does not verify trusted time, revocation, full RFC 5280
 policy, canonical envelope encoding, statement/PKCS#11 parsing, KMS
 resource/public-key binding, key creation inside an HSM,
-non-extractability, or custody. The live preflight does not import this
+non-extractability, or custody. The live preflight does not request/call this
 primitive and continues to report `attestationCryptographicallyVerified=false`.
 See `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4A_2026-08-29.md` for the exact
 claim boundary and production blocker.
@@ -218,6 +218,21 @@ Success is scoped only to caller-pinned roots and selected attributes; it is
 not production-root, trusted-time, revocation, custody, live-KMS or deployment
 evidence. See
 `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_B_2026-08-29.md`.
+
+Checkpoint D4c-c adds an injected-client, single-call `library-only` bridge that
+copies the exact SDK attestation gzip, certificate arrays and public PEM into a
+private in-process snapshot before invoking D4c-b. The bridge accepts only the
+exact D1-minted attestation object and client identity; it does not accept a
+caller-forged preflight report. D1, D2 and D4c-b also share one bounded
+CryptoKeyVersion validator, including short nonzero numeric projects such as
+`projects/123` and signed-`int64` overflow rejection.
+
+D4c-c is not wired into the manual ADC preflight because production trust-root
+provenance and pinning policy remain blocked. Success is relative only to roots
+supplied to that library invocation; live KMS/resource existence, signing,
+origin/non-extractability, custody, IAM/provisioning, trusted time/revocation,
+runtime and deployment remain unverified. See
+`docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_C_2026-08-29.md`.
 
 ## API
 

@@ -11,6 +11,39 @@ Last reviewed: 2026-08-29
 
 ## Implemented Behavior
 
+## 2026-08-29 — Private SDK attestation snapshot bridge checkpoint D4c-c
+
+- `VERIFIED offline/library-only` at source/test/build level: the injected-client
+  `attestAndVerifyGoogleCloudKmsHsmEd25519KeyBinding` API snapshots the exact D1/D3
+  SDK attestation gzip, `2/1/1` certificate arrays and public PEM, then invokes
+  D4c-b internally. It does not accept a caller-materialized D2/D3 report.
+- A private `WeakMap` binds the exact D1-minted attestation object and exact client
+  identity to the copied snapshot. Clone/forged objects, wrong clients, missing
+  snapshots, chain cardinality mutation, hostile getters, shared backing and
+  post-response mutation fail closed.
+- Top-level input and all four caller-pinned-root fields are snapshotted before the
+  first `await`; malformed resource/key/time/root bounds reject before RPC. Legacy
+  D1 does not read D3/D4c-c getters, and D3 without D4c-c does not read chains.
+- D1, D2 and D4c-b now share one CryptoKeyVersion validator: project IDs remain
+  6–30 characters with letter prefix/alphanumeric suffix; numeric projects accept
+  nonzero signed-`int64`, including `projects/123`, and reject overflow.
+- Output distinguishes `backendPrivateSnapshotMatched=true` from cryptographic
+  binding. D3 origin metadata is only observed and explicitly not cryptographically
+  bound; live KMS/resource existence/sign operation, production roots, trusted
+  time/revocation, origin/non-extractability, custody, IAM/provisioning and runtime
+  remain false/`NOT VERIFIED`.
+- Capability manifest records the bridge as `library-only`. The existing manual ADC
+  preflight intentionally does not request/call D4c-c and continues to report
+  `attestationCryptographicallyVerified=false`; no production root pinning policy
+  has been selected.
+- Focused D1–D4c/capability gate `87/87` PASS. Exact-current full ordered gate:
+  `531` total / `527` pass / `0` fail / `4` skip; typecheck, TypeScript/Java build
+  and diff-check PASS. Two independent implementation/claim reviews and final
+  D4c-c code/test + claim correction review `deleg_659db8d0` returned `PASS`, `0`
+  blocker/high/medium/low. The correction review confirms the exact request/call
+  boundary after the import-wording and capability-guard corrections.
+- Evidence: `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_C_2026-08-29.md`.
+
 ## 2026-08-29 — Signed Cavium V2 resource/SPKI binding checkpoint D4c-b
 
 - `VERIFIED offline/library-only` at focused-test level: one fail-closed API
@@ -30,9 +63,10 @@ Last reviewed: 2026-08-29
   in-HSM, non-extractability, production roots, trusted time, revocation and
   custody remain false/`NOT VERIFIED`.
 - Capability manifest records
-  `google-cloud-kms-hsm-attestation-binding-verifier=library-only`; only this
-  compositor imports D4b/D4c-a, and no runtime/network/preflight/server/report
-  importer imports the compositor.
+  `google-cloud-kms-hsm-attestation-binding-verifier=library-only`; the compositor
+  remains the only direct importer of D4b/D4c-a. After D4c-c, its sole direct
+  importer is the KMS signing backend; the manual preflight does not call the
+  bridge/compositor API and no server/report/Paper path calls it.
 - Public-only signed fixture contains certificates, public Ed25519 SPKI and
   signed bytes; temporary generation private keys are not stored in the repo.
 - TDD RED covered missing compositor, raw-point correction and numeric-project
@@ -111,8 +145,9 @@ Last reviewed: 2026-08-29
   exact resource/public-key binding, key-created-in-HSM, non-extractability and
   custody unverified/false.
 - Capability `google-cloud-kms-hsm-attestation-envelope-verifier` remains
-  `library-only`; no source module imports it. It has no filesystem, network,
-  process, credential, private-key, server, report, runner or Paper edge.
+  `library-only`. At checkpoint D4a no source module imported it; D4c-b later
+  became its sole direct importer. It has no filesystem, network, process,
+  credential, private-key, server, report, runner or Paper edge.
 - Offline fixture contains only public test certificates and signed gzip bytes;
   temporary private fixture keys were deleted and no key file exists in repo.
 - Production integration is `BLOCKED / NOT VERIFIED`: the official Marvell root

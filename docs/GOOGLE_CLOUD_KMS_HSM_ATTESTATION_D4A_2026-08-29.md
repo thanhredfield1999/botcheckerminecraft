@@ -71,7 +71,7 @@ Google sample tải manufacturer root từ URL Marvell tại runtime và embed G
 owner root. Trong môi trường nghiên cứu, URL manufacturer chính thức trả HTTP
 `403`; không có byte/fingerprint production root nào được pin từ mirror.
 Vì vậy D4a chỉ nhận opaque caller-pinned roots và capability vẫn `library-only`.
-Manual live preflight D3 không import D4a và tiếp tục báo
+Manual live preflight D3 không request/call D4a và tiếp tục báo
 `attestationCryptographicallyVerified=false`.
 
 Để mở D4b cần đồng thời:
