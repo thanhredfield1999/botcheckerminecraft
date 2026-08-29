@@ -165,13 +165,18 @@ npm run verify:kms-hsm -- --key-version <EXACT_KEY_VERSION_RESOURCE> --expected-
 ```
 
 The CLI accepts only those three public arguments; it never accepts credential,
-token, key-file, or private-key options. Exit `0` with `status=OBSERVED` means the
-exact metadata posture and one random 32-byte signing operation were observed and
-the signature was verified locally. It does **not** establish key custody, IAM
-least privilege, provisioning policy, runtime wiring, Paper behavior, or release
-admission. Any parse, ADC, IAM, metadata, integrity, signing, or close failure
-returns a bounded `NOT_VERIFIED` report and exit `1` without echoing the resource
-or underlying error.
+token, key-file, or private-key options. Report schema `2` additionally requires
+bounded metadata consistent with generated-not-imported key material: a valid
+`generateTime`, no import metadata, `reimportEligible=false`, and a supported HSM
+attestation format/content whose SHA-256 is recorded. Exit `0` with
+`status=OBSERVED` means that metadata posture plus one random 32-byte signing
+operation were observed and the signature was verified locally. The attestation
+certificate chain and PKCS#11 attributes are **not** verified, so the report keeps
+`attestationCryptographicallyVerified=false`. It does **not** establish key
+custody, IAM least privilege, provisioning policy, runtime wiring, Paper behavior,
+or release admission. Any parse, ADC, IAM, metadata, integrity, signing, or close
+failure returns a bounded `NOT_VERIFIED` report and exit `1` without echoing the
+resource or underlying error.
 
 ## API
 

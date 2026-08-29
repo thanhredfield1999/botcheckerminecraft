@@ -5,9 +5,15 @@ import crc32c from 'fast-crc32c'
 const RESOURCE = /^projects\/[a-z][a-z0-9-]{4,62}\/locations\/[a-z0-9-]{1,63}\/keyRings\/[a-zA-Z0-9_-]{1,63}\/cryptoKeys\/[a-zA-Z0-9_-]{1,63}\/cryptoKeyVersions\/[1-9][0-9]{0,18}$/
 const SHA256 = /^[a-f0-9]{64}$/
 const MAX_CANONICAL_PAYLOAD_BYTES = 256 * 1024
+// Local allocation-abuse cap, not a claim about the Cloud KMS service maximum.
+const MAX_HSM_ATTESTATION_BYTES = 64 * 1024
 const typedArrayByteLength = Object.getOwnPropertyDescriptor(
   Object.getPrototypeOf(Uint8Array.prototype),
   'byteLength'
+)?.get
+const typedArrayBuffer = Object.getOwnPropertyDescriptor(
+  Object.getPrototypeOf(Uint8Array.prototype),
+  'buffer'
 )?.get
 const attestedClients = new WeakMap<object, {
   readonly client: GoogleCloudKmsClientPort
@@ -39,12 +45,18 @@ export interface GoogleCloudKmsHsmEd25519Attestation {
   readonly keyProtectionMetadataVerified: true
   readonly signingOperationObserved: false
   readonly custodyEstablished: false
+  readonly keyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
+  readonly hsmAttestationPresent?: true
+  readonly hsmAttestationFormat?: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
+  readonly hsmAttestationSha256?: string
+  readonly attestationCryptographicallyVerified?: false
 }
 
 export interface GoogleCloudKmsAttestationInput {
   readonly client: GoogleCloudKmsClientPort
   readonly cryptoKeyVersionName: string
   readonly expectedKeyId: string
+  readonly requiredKeyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
 }
 
 export interface GoogleCloudKmsHsmSignerBinding {
@@ -165,6 +177,59 @@ function copyExactSignature(input: unknown): Buffer {
   }
 }
 
+function validProtobufTimestamp(input: unknown): boolean {
+  try {
+    const timestamp = record(input, 'generation timestamp')
+    const seconds = timestamp.seconds
+    const nanos = timestamp.nanos
+    let normalizedSeconds: number
+    if (typeof seconds === 'number') {
+      normalizedSeconds = seconds
+    } else if (typeof seconds === 'string' && /^(0|[1-9][0-9]{0,15})$/.test(seconds)) {
+      normalizedSeconds = Number(seconds)
+    } else {
+      const long = record(seconds, 'generation timestamp seconds')
+      const low = long.low
+      const high = long.high
+      if (!Number.isInteger(low) || !Number.isInteger(high)
+        || (low as number) < -0x8000_0000 || (low as number) > 0x7fff_ffff
+        || (high as number) < 0 || (high as number) > 0x1f_ffff) return false
+      normalizedSeconds = (high as number) * 0x1_0000_0000 + ((low as number) >>> 0)
+    }
+    return Number.isSafeInteger(normalizedSeconds)
+      && normalizedSeconds >= 0 && normalizedSeconds <= 253_402_300_799
+      && Number.isInteger(nanos) && (nanos as number) >= 0 && (nanos as number) <= 999_999_999
+  } catch {
+    return false
+  }
+}
+
+function copyHsmAttestation(input: unknown): Readonly<{
+  format: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
+  sha256: string
+}> {
+  try {
+    const attestation = record(input, 'HSM attestation')
+    const formatRaw = attestation.format
+    const contentRaw = attestation.content
+    const format = formatRaw === 3 || formatRaw === 'CAVIUM_V1_COMPRESSED'
+      ? 'CAVIUM_V1_COMPRESSED'
+      : formatRaw === 4 || formatRaw === 'CAVIUM_V2_COMPRESSED'
+        ? 'CAVIUM_V2_COMPRESSED'
+        : undefined
+    const bytes = typedArrayByteLength?.call(contentRaw) as number
+    const backing = typedArrayBuffer?.call(contentRaw)
+    if (!format || !(backing instanceof ArrayBuffer)
+      || !Number.isSafeInteger(bytes) || bytes <= 0
+      || bytes > MAX_HSM_ATTESTATION_BYTES) throw new Error()
+    const content = Buffer.from(contentRaw as Uint8Array)
+    if (content.byteLength !== bytes) throw new Error()
+    return Object.freeze({ format, sha256: createHash('sha256').update(content).digest('hex') })
+  } catch {
+    throw new Error('Google Cloud KMS HSM attestation metadata is invalid')
+  }
+}
+
 export async function attestGoogleCloudKmsHsmEd25519Key(
   input: GoogleCloudKmsAttestationInput
 ): Promise<Readonly<GoogleCloudKmsHsmEd25519Attestation>> {
@@ -175,6 +240,7 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     readonly client: GoogleCloudKmsClientPort
     readonly cryptoKeyVersionName: string
     readonly expectedKeyId: string
+    readonly requiredKeyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
   }
   let getCryptoKeyVersion: GoogleCloudKmsClientPort['getCryptoKeyVersion']
   let getPublicKey: GoogleCloudKmsClientPort['getPublicKey']
@@ -183,9 +249,12 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     inputSnapshot = {
       client: input.client,
       cryptoKeyVersionName: input.cryptoKeyVersionName,
-      expectedKeyId: input.expectedKeyId
+      expectedKeyId: input.expectedKeyId,
+      requiredKeyOriginMetadata: input.requiredKeyOriginMetadata
     }
     if (!inputSnapshot.client) throw new Error()
+    if (inputSnapshot.requiredKeyOriginMetadata !== undefined
+      && inputSnapshot.requiredKeyOriginMetadata !== 'GENERATED_NOT_IMPORTED') throw new Error()
     getCryptoKeyVersion = inputSnapshot.client.getCryptoKeyVersion.bind(inputSnapshot.client)
     getPublicKey = inputSnapshot.client.getPublicKey.bind(inputSnapshot.client)
     asymmetricSign = inputSnapshot.client.asymmetricSign.bind(inputSnapshot.client)
@@ -206,15 +275,35 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
   } catch {
     throw new Error('Google Cloud KMS attestation failed')
   }
-  let versionSnapshot: Record<'name' | 'state' | 'algorithm' | 'protectionLevel', unknown>
+  let versionSnapshot: Readonly<{
+    name: unknown
+    state: unknown
+    algorithm: unknown
+    protectionLevel: unknown
+    generateTime?: unknown
+    importJob?: unknown
+    importTime?: unknown
+    reimportEligible?: unknown
+    attestation?: unknown
+  }>
   try {
     const version = record(versionRaw, 'key version')
-    versionSnapshot = {
+    const baseSnapshot = {
       name: version.name,
       state: version.state,
       algorithm: version.algorithm,
       protectionLevel: version.protectionLevel
     }
+    versionSnapshot = inputSnapshot.requiredKeyOriginMetadata === 'GENERATED_NOT_IMPORTED'
+      ? {
+          ...baseSnapshot,
+          generateTime: version.generateTime,
+          importJob: version.importJob,
+          importTime: version.importTime,
+          reimportEligible: version.reimportEligible,
+          attestation: version.attestation
+        }
+      : baseSnapshot
   } catch {
     throw new Error('Google Cloud KMS key version response is invalid')
   }
@@ -222,6 +311,31 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     || !isEnum(versionSnapshot.algorithm, 'EC_SIGN_ED25519', 40)
     || !isEnum(versionSnapshot.protectionLevel, 'HSM', 2)) {
     throw new Error('Google Cloud KMS key version posture is invalid')
+  }
+  let originMetadata: Readonly<{
+    keyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+    hsmAttestationPresent: true
+    hsmAttestationFormat: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
+    hsmAttestationSha256: string
+    attestationCryptographicallyVerified: false
+  }> | undefined
+  if (inputSnapshot.requiredKeyOriginMetadata === 'GENERATED_NOT_IMPORTED') {
+    const importJobAbsent = versionSnapshot.importJob === undefined
+      || versionSnapshot.importJob === null || versionSnapshot.importJob === ''
+    const importTimeAbsent = versionSnapshot.importTime === undefined
+      || versionSnapshot.importTime === null
+    if (!validProtobufTimestamp(versionSnapshot.generateTime) || !importJobAbsent
+      || !importTimeAbsent || versionSnapshot.reimportEligible !== false) {
+      throw new Error('Google Cloud KMS key origin metadata is invalid')
+    }
+    const hsmAttestation = copyHsmAttestation(versionSnapshot.attestation)
+    originMetadata = Object.freeze({
+      keyOriginMetadata: 'GENERATED_NOT_IMPORTED',
+      hsmAttestationPresent: true,
+      hsmAttestationFormat: hsmAttestation.format,
+      hsmAttestationSha256: hsmAttestation.sha256,
+      attestationCryptographicallyVerified: false
+    })
   }
 
   let publicRaw: unknown
@@ -276,7 +390,8 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
     state: 'ENABLED',
     keyProtectionMetadataVerified: true,
     signingOperationObserved: false,
-    custodyEstablished: false
+    custodyEstablished: false,
+    ...(originMetadata ?? {})
   })
   attestedClients.set(attestation, {
     client: inputSnapshot.client,

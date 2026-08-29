@@ -1,6 +1,6 @@
 # BotChecker Current State
 
-Last reviewed: 2026-08-27
+Last reviewed: 2026-08-29
 
 ## Baseline
 
@@ -10,6 +10,39 @@ Last reviewed: 2026-08-27
   a private HTTP API.
 
 ## Implemented Behavior
+
+## 2026-08-29 — Google Cloud KMS key-origin metadata posture checkpoint D3
+
+- `VERIFIED offline/manual-tool`: optional strict D3 bootstrap requires a valid
+  protobuf `generateTime`, absent `importJob`/`importTime`,
+  `reimportEligible=false`, and bounded non-shared HSM attestation content in
+  `CAVIUM_V1_COMPRESSED` or `CAVIUM_V2_COMPRESSED` format. It records only the
+  format and SHA-256, never raw attestation content or certificate chains.
+- Official Cloud KMS contract says import metadata is present for imported key
+  material. However, independently proving creation inside the HSM requires
+  cryptographic verification of the attestation chain and its PKCS#11 attributes.
+  D3 does not implement that verification; therefore
+  `attestationCryptographicallyVerified=false`, `custodyEstablished=false`, IAM
+  least privilege and provisioning policy remain false.
+- Manual preflight now always requires this generated-not-imported metadata before
+  signing. Its report schema is bumped from `1` to `2`; `OBSERVED` additionally
+  binds `keyOriginMetadata`, attestation format/hash, while still proving only
+  metadata posture plus one independently verified signing operation.
+- Regression hardening covers imported/reimportable/missing/malformed metadata,
+  exact protobuf timestamp bounds/Long shape, `SharedArrayBuffer` rejection and
+  D1 compatibility: callers that do not request D3 never read the new SDK getters.
+- Focused D1–D3/adapter/capability gate: `58/58` PASS. Local executable with missing
+  identifiers returns exit `1`, exactly one schema-2 `NOT_VERIFIED` JSON line and
+  all origin/attestation evidence flags false.
+- Independent Sonnet review trả `PASS`, không blocker/high/medium. Hai LOW đã đóng:
+  regression phủ từng hostile getter D3; `64 KiB` được ghi rõ là local
+  allocation-abuse cap, không phải Cloud KMS service maximum và chỉ fail-closed.
+- Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check`
+  PASS: `487` tests, `483` pass, `0` fail, `4` skip; TypeScript/Java build và
+  diff-check đều PASS.
+- Real HSM signing operation, attestation-chain verification, IAM least privilege,
+  provisioning policy and custody remain `BLOCKED / NOT VERIFIED`; no key/IAM was
+  provisioned or modified and no resource-fake network request was attempted.
 
 ## 2026-08-29 — Google Cloud KMS HSM live preflight checkpoint D2
 

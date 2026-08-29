@@ -62,6 +62,116 @@ test('Google Cloud KMS bootstrap attest exact HSM Ed25519 version và public key
   assert.equal(Object.isFrozen(result), true)
 })
 
+test('Google Cloud KMS attest generated-not-imported origin metadata nhưng không claim custody', async () => {
+  const value = fixture()
+  const attestationContent = new Uint8Array([1, 2, 3, 4, 5])
+  value.client.getCryptoKeyVersion = async () => [{
+    name: RESOURCE,
+    state: 'ENABLED',
+    algorithm: 'EC_SIGN_ED25519',
+    protectionLevel: 'HSM',
+    generateTime: { seconds: { low: 1_788_000_000, high: 0 }, nanos: 123_000_000 },
+    importJob: '',
+    importTime: null,
+    reimportEligible: false,
+    attestation: { format: 4, content: attestationContent }
+  }]
+
+  const result = await attestGoogleCloudKmsHsmEd25519Key({
+    client: value.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: value.keyId,
+    requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+  })
+
+  assert.equal(result.keyOriginMetadata, 'GENERATED_NOT_IMPORTED')
+  assert.equal(result.hsmAttestationPresent, true)
+  assert.equal(result.hsmAttestationFormat, 'CAVIUM_V2_COMPRESSED')
+  assert.equal(
+    result.hsmAttestationSha256,
+    createHash('sha256').update(attestationContent).digest('hex')
+  )
+  assert.equal(result.attestationCryptographicallyVerified, false)
+  assert.equal(result.custodyEstablished, false)
+})
+
+test('Google Cloud KMS origin posture reject unknown requirement và imported/malformed metadata', async () => {
+  const unknown = fixture()
+  await assert.rejects(
+    () => attestGoogleCloudKmsHsmEd25519Key({
+      client: unknown.client,
+      cryptoKeyVersionName: RESOURCE,
+      expectedKeyId: unknown.keyId,
+      requiredKeyOriginMetadata: 'UNKNOWN' as 'GENERATED_NOT_IMPORTED'
+    }),
+    /attestation input is invalid/i
+  )
+
+  const cases = [
+    { importJob: 'projects/p/locations/l/keyRings/r/importJobs/i' },
+    { importTime: { seconds: 1, nanos: 0 } },
+    { reimportEligible: true },
+    { generateTime: { seconds: -1, nanos: 0 } },
+    { generateTime: { seconds: 253_402_300_800, nanos: 0 } },
+    { generateTime: { seconds: { low: 4_294_967_297, high: 0 }, nanos: 0 } },
+    { attestation: { format: 4, content: new Uint8Array(new SharedArrayBuffer(1)) } },
+    { attestation: undefined }
+  ]
+  for (const override of cases) {
+    const value = fixture()
+    value.client.getCryptoKeyVersion = async () => [{
+      name: RESOURCE,
+      state: 'ENABLED',
+      algorithm: 'EC_SIGN_ED25519',
+      protectionLevel: 'HSM',
+      generateTime: { seconds: 1_788_000_000, nanos: 0 },
+      importJob: '',
+      importTime: null,
+      reimportEligible: false,
+      attestation: { format: 'CAVIUM_V1_COMPRESSED', content: new Uint8Array([1]) },
+      ...override
+    }]
+    await assert.rejects(
+      () => attestGoogleCloudKmsHsmEd25519Key({
+        client: value.client,
+        cryptoKeyVersionName: RESOURCE,
+        expectedKeyId: value.keyId,
+        requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+      }),
+      /key origin|HSM attestation/i
+    )
+  }
+})
+
+test('Google Cloud KMS D1 không đọc origin metadata khi caller không yêu cầu D3', async () => {
+  const value = fixture()
+  let originReads = 0
+  const forbidden = () => {
+    originReads += 1
+    throw new Error('private_key=origin-getter-must-not-run')
+  }
+  value.client.getCryptoKeyVersion = async () => [{
+    name: RESOURCE,
+    state: 'ENABLED',
+    algorithm: 'EC_SIGN_ED25519',
+    protectionLevel: 'HSM',
+    get generateTime() { return forbidden() },
+    get importJob() { return forbidden() },
+    get importTime() { return forbidden() },
+    get reimportEligible() { return forbidden() },
+    get attestation() { return forbidden() }
+  }]
+
+  const result = await attestGoogleCloudKmsHsmEd25519Key({
+    client: value.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: value.keyId
+  })
+
+  assert.equal(result.keyId, value.keyId)
+  assert.equal(originReads, 0)
+})
+
 test('Google Cloud KMS signer gửi exact raw bytes + CRC32C và kiểm response integrity', async () => {
   const pair = generateKeyPairSync('ed25519')
   const publicKeyPem = pair.publicKey.export({ type: 'spki', format: 'pem' }).toString()
@@ -652,4 +762,47 @@ test('Google Cloud KMS sanitize hostile getters ở SDK response boundaries', as
     opaqueKeyHandleId: checksumBinding.opaqueKeyHandleId,
     signal: new AbortController().signal
   }))
+})
+
+test('Google Cloud KMS sanitize hostile getters ở D3 origin metadata boundaries', async () => {
+  const sensitive = () => { throw new Error('private_key=getter-sensitive-marker') }
+  const validOrigin = () => ({
+    name: RESOURCE,
+    state: 'ENABLED',
+    algorithm: 'EC_SIGN_ED25519',
+    protectionLevel: 'HSM',
+    generateTime: { seconds: 1_788_000_000, nanos: 0 },
+    importJob: '',
+    importTime: null,
+    reimportEligible: false,
+    attestation: { format: 4, content: new Uint8Array([1]) }
+  })
+
+  for (const field of [
+    'generateTime', 'importJob', 'importTime', 'reimportEligible', 'attestation'
+  ] as const) {
+    const value = fixture()
+    const version: Record<string, unknown> = validOrigin()
+    Object.defineProperty(version, field, { get: sensitive })
+    value.client.getCryptoKeyVersion = async () => [version]
+    await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+      client: value.client,
+      cryptoKeyVersionName: RESOURCE,
+      expectedKeyId: value.keyId,
+      requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+    }))
+  }
+
+  for (const field of ['format', 'content'] as const) {
+    const value = fixture()
+    const version = validOrigin()
+    Object.defineProperty(version.attestation, field, { get: sensitive })
+    value.client.getCryptoKeyVersion = async () => [version]
+    await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+      client: value.client,
+      cryptoKeyVersionName: RESOURCE,
+      expectedKeyId: value.keyId,
+      requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+    }))
+  }
 })

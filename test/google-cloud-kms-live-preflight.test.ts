@@ -41,10 +41,12 @@ test('live KMS preflight parser reject unknown duplicate credential và malforme
 test('live KMS preflight failure report bounded và không overclaim hoặc leak detail', () => {
   const report = createGoogleCloudKmsLiveFailureReport()
   assert.deepEqual(report, {
-    schemaVersion: 1,
+    schemaVersion: 2,
     status: 'NOT_VERIFIED',
     keyProtectionMetadataVerified: false,
     signingOperationObserved: false,
+    keyOriginMetadataVerified: false,
+    attestationCryptographicallyVerified: false,
     custodyEstablished: false,
     iamLeastPrivilegeVerified: false,
     provisioningPolicyVerified: false,
@@ -66,6 +68,13 @@ test('live KMS preflight observed report chỉ được tạo sau verified sign 
   assert.match(source, /algorithm: attestation\.algorithm/)
   assert.match(source, /protectionLevel: attestation\.protectionLevel/)
   assert.match(source, /state: attestation\.state/)
+  assert.match(source, /requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'/)
+  assert.match(source, /keyOriginMetadata: attestation\.keyOriginMetadata/)
+  assert.match(source, /hsmAttestationFormat: attestation\.hsmAttestationFormat/)
+  assert.match(source, /hsmAttestationSha256: attestation\.hsmAttestationSha256/)
+  assert.match(source, /keyOriginMetadataVerified: true/)
+  assert.match(source, /attestationCryptographicallyVerified: false/)
+  assert.doesNotMatch(source, /certChains|attestation\.content|getIamPolicy|testIamPermissions/)
   assert.match(source, /custodyEstablished: false/)
   assert.match(source, /iamLeastPrivilegeVerified: false/)
   assert.match(source, /provisioningPolicyVerified: false/)

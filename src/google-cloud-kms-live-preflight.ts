@@ -20,10 +20,12 @@ export interface GoogleCloudKmsLivePreflightInput {
 }
 
 export interface GoogleCloudKmsLivePreflightReport {
-  readonly schemaVersion: 1
+  readonly schemaVersion: 2
   readonly status: 'NOT_VERIFIED' | 'OBSERVED'
   readonly keyProtectionMetadataVerified: boolean
   readonly signingOperationObserved: boolean
+  readonly keyOriginMetadataVerified: boolean
+  readonly attestationCryptographicallyVerified: false
   readonly custodyEstablished: false
   readonly iamLeastPrivilegeVerified: false
   readonly provisioningPolicyVerified: false
@@ -35,6 +37,9 @@ export interface GoogleCloudKmsLivePreflightReport {
   readonly algorithm?: 'EC_SIGN_ED25519'
   readonly protectionLevel?: 'HSM'
   readonly state?: 'ENABLED'
+  readonly keyOriginMetadata?: 'GENERATED_NOT_IMPORTED'
+  readonly hsmAttestationFormat?: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
+  readonly hsmAttestationSha256?: string
 }
 
 function invalidArguments(): never {
@@ -75,10 +80,12 @@ export function parseGoogleCloudKmsLivePreflightArgs(
 
 export function createGoogleCloudKmsLiveFailureReport(): Readonly<GoogleCloudKmsLivePreflightReport> {
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
     status: 'NOT_VERIFIED',
     keyProtectionMetadataVerified: false,
     signingOperationObserved: false,
+    keyOriginMetadataVerified: false,
+    attestationCryptographicallyVerified: false,
     custodyEstablished: false,
     iamLeastPrivilegeVerified: false,
     provisioningPolicyVerified: false,
@@ -94,12 +101,17 @@ function createObservedReport(input: Readonly<{
   readonly algorithm: 'EC_SIGN_ED25519'
   readonly protectionLevel: 'HSM'
   readonly state: 'ENABLED'
+  readonly keyOriginMetadata: 'GENERATED_NOT_IMPORTED'
+  readonly hsmAttestationFormat: 'CAVIUM_V1_COMPRESSED' | 'CAVIUM_V2_COMPRESSED'
+  readonly hsmAttestationSha256: string
 }>): Readonly<GoogleCloudKmsLivePreflightReport> {
   return Object.freeze({
-    schemaVersion: 1,
+    schemaVersion: 2,
     status: 'OBSERVED',
     keyProtectionMetadataVerified: true,
     signingOperationObserved: true,
+    keyOriginMetadataVerified: true,
+    attestationCryptographicallyVerified: false,
     custodyEstablished: false,
     iamLeastPrivilegeVerified: false,
     provisioningPolicyVerified: false,
@@ -117,8 +129,14 @@ async function runGoogleCloudKmsLivePreflight(
       const attestation = await attestGoogleCloudKmsHsmEd25519Key({
         client,
         cryptoKeyVersionName: input.cryptoKeyVersionName,
-        expectedKeyId: input.expectedKeyId
+        expectedKeyId: input.expectedKeyId,
+        requiredKeyOriginMetadata: 'GENERATED_NOT_IMPORTED'
       })
+      if (attestation.keyOriginMetadata !== 'GENERATED_NOT_IMPORTED'
+        || !attestation.hsmAttestationFormat || !attestation.hsmAttestationSha256
+        || attestation.attestationCryptographicallyVerified !== false) {
+        return createGoogleCloudKmsLiveFailureReport()
+      }
       const binding = createGoogleCloudKmsHsmEd25519SignerBinding({ client, attestation })
       const probe = randomBytes(32)
       await binding.sign({
@@ -133,7 +151,10 @@ async function runGoogleCloudKmsLivePreflight(
         probeBytes: probe.byteLength,
         algorithm: attestation.algorithm,
         protectionLevel: attestation.protectionLevel,
-        state: attestation.state
+        state: attestation.state,
+        keyOriginMetadata: attestation.keyOriginMetadata,
+        hsmAttestationFormat: attestation.hsmAttestationFormat,
+        hsmAttestationSha256: attestation.hsmAttestationSha256
       })
     } finally {
       await client.close?.()
