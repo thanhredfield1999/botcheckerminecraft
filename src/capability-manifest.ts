@@ -248,6 +248,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'google-cloud-kms-signing-backend',
     mode: 'library-only'
   },
+  'google-cloud-kms-hsm-live-preflight': {
+    module: 'google-cloud-kms-live-preflight',
+    mode: 'library-only'
+  },
   'gui-journey': { module: 'runner', mode: 'runtime-wired' },
   'immutable-artifacts': { module: 'evidence-writer', mode: 'runtime-wired' },
   'jvm-artifact-observation-assessment': { module: 'jvm-artifact-observation', mode: 'library-only' },

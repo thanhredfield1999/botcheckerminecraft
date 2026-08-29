@@ -120,6 +120,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-ed25519-signer'),
     { name: 'google-cloud-kms-hsm-ed25519-signer', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-live-preflight'),
+    { name: 'google-cloud-kms-hsm-live-preflight', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -285,11 +289,28 @@ test('Google Cloud KMS signer không nhận private key, credential hoặc runti
   const sourceFiles = (await readdir('src', { recursive: true }))
     .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-signing-backend.ts'))
     .map(file => `src/${file}`)
+  const importers: string[] = []
+  for (const file of sourceFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*google-cloud-kms-signing-backend|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-signing-backend)/.test(runtimeSource)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, ['src/google-cloud-kms-live-preflight.ts'])
+})
+
+test('Google Cloud KMS live preflight chỉ là manual CLI, không có app runtime wiring', async () => {
+  const preflight = await readFile('src/google-cloud-kms-live-preflight.ts', 'utf8')
+  assert.doesNotMatch(preflight, /runner|report|server|Paper|Bukkit|verifyAndConsume|node:fs|process\.env/)
+
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-live-preflight.ts'))
+    .map(file => `src/${file}`)
   for (const file of sourceFiles) {
     const runtimeSource = await readFile(file, 'utf8')
     assert.doesNotMatch(
       runtimeSource,
-      /(?:from\s+['"][^'"]*google-cloud-kms-signing-backend|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-signing-backend)/
+      /(?:from\s+['"][^'"]*google-cloud-kms-live-preflight|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-live-preflight)/
     )
   }
 })

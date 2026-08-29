@@ -11,6 +11,33 @@ Last reviewed: 2026-08-27
 
 ## Implemented Behavior
 
+## 2026-08-29 — Google Cloud KMS HSM live preflight checkpoint D2
+
+- `VERIFIED offline/manual-tool`: strict CLI nhận đúng exact key-version resource,
+  lowercase Ed25519 SPKI SHA-256 và timeout bounded; reject unknown, duplicate,
+  missing, malformed hoặc credential-like flags. Production flow tự tạo official
+  ADC client và không expose raw runner/client injection seam.
+- Sau D1 metadata attestation, CLI ký probe ngẫu nhiên `32` byte, kiểm CRC32C và
+  Ed25519 signature độc lập rồi mới có thể trả `OBSERVED`. Report chỉ giữ hash
+  resource, public-key ID, probe hash/length và exact algorithm/HSM/state; không
+  echo resource, argv, credential hay lỗi gốc.
+- `OBSERVED` chỉ nghĩa là exact metadata + một HSM signing operation được quan sát.
+  `custodyEstablished`, IAM least privilege, provisioning policy và runtime wiring
+  luôn `false`; tool không import vào server/runner/report/Paper và capability vẫn
+  `library-only`.
+- Focused D2+D1 gate: `54/54` PASS. Executable build thật với thiếu identifiers
+  trả exit `1`, bounded `NOT_VERIFIED`, mọi evidence flags false và không false-green.
+- Full ordered gate `npm run typecheck && npm test && npm run build && git diff --check`
+  PASS: `483` tests, `479` pass, `0` fail, `4` skip; TypeScript/Java build và
+  diff-check đều PASS.
+- Independent review D2 trả `PASS`, không blocker/high/medium. Hai LOW không chặn:
+  close failure cố ý hạ kết quả về `NOT_VERIFIED`; duplicate-flag fixture đã được
+  chỉnh thành đúng 3 pairs để đi qua exact duplicate branch.
+- Live KMS operation vẫn `BLOCKED / NOT_VERIFIED`: máy không có `gcloud`, standard
+  ADC file vắng mặt, ADC/project env unset và repo không chứa exact key-version
+  resource/fingerprint thật. Không thử resource giả qua network và không provision
+  key hoặc sửa IAM.
+
 ## 2026-08-29 — Google Cloud KMS HSM Ed25519 backend checkpoint D1
 
 - `VERIFIED offline/library-only`: production backend dùng official

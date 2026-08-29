@@ -156,6 +156,23 @@ only. No real ADC account, IAM policy, HSM key provisioning, or live signing
 operation has been verified, and the backend remains `library-only` with no
 Paper, HTTP server, report, or release-admission wiring.
 
+A manual live preflight CLI is available after an operator has independently
+provisioned an exact HSM key version and configured Application Default
+Credentials outside this repository:
+
+```text
+npm run verify:kms-hsm -- --key-version <EXACT_KEY_VERSION_RESOURCE> --expected-key-id <LOWERCASE_SPKI_SHA256> --timeout-ms 5000
+```
+
+The CLI accepts only those three public arguments; it never accepts credential,
+token, key-file, or private-key options. Exit `0` with `status=OBSERVED` means the
+exact metadata posture and one random 32-byte signing operation were observed and
+the signature was verified locally. It does **not** establish key custody, IAM
+least privilege, provisioning policy, runtime wiring, Paper behavior, or release
+admission. Any parse, ADC, IAM, metadata, integrity, signing, or close failure
+returns a bounded `NOT_VERIFIED` report and exit `1` without echoing the resource
+or underlying error.
+
 ## API
 
 ```http
