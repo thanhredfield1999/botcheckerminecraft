@@ -252,6 +252,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'google-cloud-kms-hsm-attestation-verifier',
     mode: 'library-only'
   },
+  'google-cloud-kms-hsm-cavium-v2-statement-parser': {
+    module: 'cavium-v2-attestation-statement-parser',
+    mode: 'library-only'
+  },
   'google-cloud-kms-hsm-live-preflight': {
     module: 'google-cloud-kms-live-preflight',
     mode: 'library-only'

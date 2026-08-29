@@ -201,6 +201,14 @@ reproducible, while the manufacturer ZIP referenced by Google's pinned sample
 returned HTTP `403`. See
 `docs/GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_PROVENANCE_D4B_2026-08-29.md`.
 
+Checkpoint D4c-a adds a separate strict `library-only` Cavium V2 statement/TLV
+parser and generated-Ed25519 PKCS #11 attribute-policy matcher. It rejects
+unknown/duplicate/truncated/trailing attributes and inconsistent sizes/offsets,
+but is intentionally not imported by the D4b envelope verifier. Its result
+therefore keeps signature, HSM origin, resource/public-key binding and custody
+unverified. See
+`docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_A_2026-08-29.md`.
+
 ## API
 
 ```http

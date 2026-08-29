@@ -11,6 +11,27 @@ Last reviewed: 2026-08-29
 
 ## Implemented Behavior
 
+## 2026-08-29 — Cavium V2 statement parser checkpoint D4c-a
+
+- `VERIFIED offline/library-only`: strict bounded Cavium V2 big-endian response,
+  info, object and TLV parser; reject inconsistent sizes/offsets, unknown or
+  duplicate attributes, malformed booleans, truncation and trailing bytes.
+- Generated-Ed25519 policy matcher covers class/type, token/private/sign/verify,
+  Ed25519 OID/public-point shape, local/sensitive/non-extractable history and
+  exact lowercase-ASCII 128-character hex key ID. Output is immutable and sanitized.
+- Parser is deliberately separate from D4b signature verification. Signature,
+  HSM origin/non-extractability proof, resource/public-key binding, custody,
+  live KMS and production remain `NOT VERIFIED`.
+- Capability manifest records
+  `google-cloud-kms-hsm-cavium-v2-statement-parser=library-only`; no
+  runtime/network/preflight/server/runner/report importer.
+- Focused parser/capability gate sau correction `24/24` PASS. Exact-final full
+  ordered gate PASS: `509` total / `505` pass / `0` fail / `4` skip;
+  TypeScript/Java build và diff-check PASS. Independent correction review
+  `PASS`, `0` high / `0` medium / `0` low; H1 high-bit CKA_ID alias, M1 missing
+  public point và exact-prefix correction đều `CLOSED`.
+- Evidence: `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_A_2026-08-29.md`.
+
 ## 2026-08-29 — Google Cloud KMS HSM attestation hardening D4b
 
 - `VERIFIED offline/library-only`: result schema `2` reject root SPKI reuse và
