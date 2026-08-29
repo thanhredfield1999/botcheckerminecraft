@@ -12,6 +12,7 @@ import {
   TEST_OWNER_PARTITION_PEM,
   TEST_OWNER_ROOT_PEM
 } from './fixtures/google-cloud-kms-attestation-fixture.js'
+import * as d4bFixtures from './fixtures/google-cloud-kms-attestation-d4b-negative-fixture.js'
 
 function certificateSha256(pem: string): string {
   return createHash('sha256').update(new X509Certificate(pem).raw).digest('hex')
@@ -38,15 +39,46 @@ function validInput() {
   }
 }
 
+function publicFixtureInput(fixture: Readonly<{
+  attestationGzipBase64: string
+  manufacturerRootPem: string
+  ownerRootPem: string
+  manufacturerCardPem: string
+  manufacturerPartitionPem: string
+  ownerCardPem: string
+  ownerPartitionPem: string
+}>) {
+  const attestationGzip = Buffer.from(fixture.attestationGzipBase64, 'base64')
+  return {
+    attestationFormat: 'CAVIUM_V2_COMPRESSED' as const,
+    attestationGzip,
+    expectedAttestationGzipSha256: createHash('sha256').update(attestationGzip).digest('hex'),
+    verificationTimeMs: Date.UTC(2027, 0, 1),
+    trustAnchors: {
+      manufacturerRootPem: fixture.manufacturerRootPem,
+      manufacturerRootCertificateSha256: certificateSha256(fixture.manufacturerRootPem),
+      ownerRootPem: fixture.ownerRootPem,
+      ownerRootCertificateSha256: certificateSha256(fixture.ownerRootPem)
+    },
+    certificateChains: {
+      caviumCerts: [fixture.manufacturerPartitionPem, fixture.manufacturerCardPem],
+      googleCardCerts: [fixture.ownerCardPem],
+      googlePartitionCerts: [fixture.ownerPartitionPem]
+    }
+  }
+}
+
 test('D4a verify caller-pinned dual chains và cross-certified attestation signature không overclaim', () => {
   const result = verifyGoogleCloudKmsHsmAttestationEnvelope(validInput())
 
-  assert.equal(result.schemaVersion, 1)
+  assert.equal(result.schemaVersion, 2)
   assert.equal(result.attestationFormat, 'CAVIUM_V2_COMPRESSED')
   assert.equal(result.callerPinnedTrustAnchorFingerprintsMatched, true)
   assert.equal(result.certificateChainSignaturesVerified, true)
   assert.equal(result.cardPublicKeyCrossCertified, true)
   assert.equal(result.partitionPublicKeyCrossCertified, true)
+  assert.equal(result.distinctTrustAnchorPublicKeysVerified, true)
+  assert.equal(result.distinctCardAndPartitionPublicKeysVerified, true)
   assert.equal(result.certificateValidityAtCallerTimeVerified, true)
   assert.equal(result.verificationTimeSource, 'CALLER_SUPPLIED')
   assert.equal(result.verificationTimeMs, Date.UTC(2027, 0, 1))
@@ -60,6 +92,13 @@ test('D4a verify caller-pinned dual chains và cross-certified attestation signa
   assert.match(result.attestationStatementSha256, /^[a-f0-9]{64}$/)
   assert.match(result.manufacturerRootCertificateSha256, /^[a-f0-9]{64}$/)
   assert.match(result.ownerRootCertificateSha256, /^[a-f0-9]{64}$/)
+  assert.match(result.manufacturerRootPublicKeySpkiSha256, /^[a-f0-9]{64}$/)
+  assert.match(result.ownerRootPublicKeySpkiSha256, /^[a-f0-9]{64}$/)
+  assert.notEqual(result.manufacturerRootPublicKeySpkiSha256, result.ownerRootPublicKeySpkiSha256)
+  assert.match(result.manufacturerPartitionCertificateSha256, /^[a-f0-9]{64}$/)
+  assert.match(result.ownerPartitionCertificateSha256, /^[a-f0-9]{64}$/)
+  assert.notEqual(result.manufacturerPartitionCertificateSha256, result.ownerPartitionCertificateSha256)
+  assert.match(result.partitionPublicKeySpkiSha256, /^[a-f0-9]{64}$/)
   assert.equal(result.productionGoogleTrustAnchorsVerified, false)
   assert.equal(result.attestationAttributesVerified, false)
   assert.equal(result.keyCreatedInsideHsmVerified, false)
@@ -187,6 +226,89 @@ test('D4a reject cross-domain certificate dù partition SPKI trùng', () => {
       caviumCerts: [TEST_MANUFACTURER_CARD_PEM, TEST_OWNER_PARTITION_PEM]
     }
   })
+})
+
+test('D4b reject hai root certificate khác nhau nhưng dùng cùng SPKI', () => {
+  rejectsVerification(publicFixtureInput({
+    attestationGzipBase64: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_ATTESTATION_GZIP_BASE64,
+    manufacturerRootPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_MANUFACTURER_ROOT_PEM,
+    ownerRootPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_OWNER_ROOT_PEM,
+    manufacturerCardPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_MANUFACTURER_CARD_PEM,
+    manufacturerPartitionPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_MANUFACTURER_PARTITION_PEM,
+    ownerCardPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_OWNER_CARD_PEM,
+    ownerPartitionPem: d4bFixtures.TEST_D4B_ROOT_SPKI_COLLISION_OWNER_PARTITION_PEM
+  }))
+})
+
+test('D4b reject card và partition dùng cùng key dù signature do key đó tạo', () => {
+  rejectsVerification(publicFixtureInput({
+    attestationGzipBase64: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_ATTESTATION_GZIP_BASE64,
+    manufacturerRootPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_MANUFACTURER_ROOT_PEM,
+    ownerRootPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_OWNER_ROOT_PEM,
+    manufacturerCardPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_MANUFACTURER_CARD_PEM,
+    manufacturerPartitionPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_MANUFACTURER_PARTITION_PEM,
+    ownerCardPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_OWNER_CARD_PEM,
+    ownerPartitionPem: d4bFixtures.TEST_D4B_CARD_KEY_COLLISION_OWNER_PARTITION_PEM
+  }))
+})
+
+test('D4b reject attestation do distinct card key ký thay partition key', () => {
+  rejectsVerification(publicFixtureInput({
+    attestationGzipBase64: d4bFixtures.TEST_D4B_BOUNDS_CARD_SIGNED_ATTESTATION_GZIP_BASE64,
+    manufacturerRootPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_ROOT_PEM,
+    ownerRootPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_ROOT_PEM,
+    manufacturerCardPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_CARD_PEM,
+    manufacturerPartitionPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_PARTITION_PEM,
+    ownerCardPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_CARD_PEM,
+    ownerPartitionPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_PARTITION_PEM
+  }))
+})
+
+test('D4b enforce compressed, decompressed và truncated envelope bounds', () => {
+  const source = validInput()
+  const maxCompressed = Buffer.alloc(64 * 1024)
+  source.attestationGzip.copy(maxCompressed)
+  const maxCompressedResult = verifyGoogleCloudKmsHsmAttestationEnvelope({
+    ...source,
+    attestationGzip: maxCompressed,
+    expectedAttestationGzipSha256: createHash('sha256').update(maxCompressed).digest('hex')
+  })
+  assert.equal(maxCompressedResult.attestationSignatureVerified, true)
+
+  const oversizedCompressed = Buffer.concat([maxCompressed, Buffer.of(0)])
+  rejectsVerification({
+    ...source,
+    attestationGzip: oversizedCompressed,
+    expectedAttestationGzipSha256: createHash('sha256').update(oversizedCompressed).digest('hex')
+  })
+
+  const boundsFixture = {
+    attestationGzipBase64: d4bFixtures.TEST_D4B_BOUNDS_MAX_DECOMPRESSED_ATTESTATION_GZIP_BASE64,
+    manufacturerRootPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_ROOT_PEM,
+    ownerRootPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_ROOT_PEM,
+    manufacturerCardPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_CARD_PEM,
+    manufacturerPartitionPem: d4bFixtures.TEST_D4B_BOUNDS_MANUFACTURER_PARTITION_PEM,
+    ownerCardPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_CARD_PEM,
+    ownerPartitionPem: d4bFixtures.TEST_D4B_BOUNDS_OWNER_PARTITION_PEM
+  }
+  assert.equal(
+    verifyGoogleCloudKmsHsmAttestationEnvelope(publicFixtureInput(boundsFixture))
+      .attestationSignatureVerified,
+    true
+  )
+  rejectsVerification(publicFixtureInput({
+    ...boundsFixture,
+    attestationGzipBase64: d4bFixtures.TEST_D4B_BOUNDS_OVERSIZED_DECOMPRESSED_ATTESTATION_GZIP_BASE64
+  }))
+
+  const truncatedCompressed = source.attestationGzip.subarray(0, -1)
+  for (const truncated of [Buffer.alloc(0), gzipSync(Buffer.alloc(256)), truncatedCompressed]) {
+    rejectsVerification({
+      ...source,
+      attestationGzip: truncated,
+      expectedAttestationGzipSha256: createHash('sha256').update(truncated).digest('hex')
+    })
+  }
 })
 
 test('D4a reject certificate array Proxy đổi cardinality giữa validation và snapshot', () => {

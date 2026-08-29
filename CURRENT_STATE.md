@@ -11,6 +11,26 @@ Last reviewed: 2026-08-29
 
 ## Implemented Behavior
 
+## 2026-08-29 — Google Cloud KMS HSM attestation hardening D4b
+
+- `VERIFIED offline/library-only`: result schema `2` reject root SPKI reuse và
+  card/partition key reuse; trả SHA-256 identity cho root SPKI, manufacturer/
+  owner partition certificate và partition SPKI.
+- Public-only vectors phủ same-root-SPKI, same-card/partition-key, distinct
+  card-key signature, compressed `64 KiB`, decompressed `256 KiB`, oversized
+  và truncated envelope; fixture không chứa private key.
+- Production trust roots vẫn `BLOCKED / NOT VERIFIED`: Google owner root HTTP
+  `200` và exact DER khớp pinned sample; Marvell ZIP vẫn HTTP `403`. Không pin
+  mirror/root vào `src`, chưa có rotation/cardinality contract đủ tin cậy.
+- Capability vẫn `library-only`; không preflight/server/runner/report importer,
+  live KMS/Paper, IAM/key provisioning, custody hoặc production operation.
+- Focused D1–D4b/adapter/capability `71/71` PASS. Full ordered gate PASS:
+  `500` total / `496` pass / `0` fail / `4` skip; TypeScript/Java build và
+  diff-check PASS. Hai independent read-only review đều `PASS`, không có
+  blocker/high/medium/low; Claude Sonnet không chạy được vì session quota.
+- Provenance boundary:
+  `docs/GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_PROVENANCE_D4B_2026-08-29.md`.
+
 ## 2026-08-29 — Google Cloud KMS HSM attestation envelope checkpoint D4a
 
 - `VERIFIED offline/library-only`: exact `CAVIUM_V2_COMPRESSED` envelope is

@@ -192,6 +192,15 @@ primitive and continues to report `attestationCryptographicallyVerified=false`.
 See `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4A_2026-08-29.md` for the exact
 claim boundary and production blocker.
 
+Checkpoint D4b hardens that same `library-only` boundary by rejecting distinct
+root certificates that reuse one SPKI, rejecting card/partition key reuse,
+returning partition certificate/SPKI identities in result schema `2`, and
+covering exact compressed/decompressed/truncated bounds. Production trust roots
+remain unverified and are not embedded: the official Google owner root was
+reproducible, while the manufacturer ZIP referenced by Google's pinned sample
+returned HTTP `403`. See
+`docs/GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_PROVENANCE_D4B_2026-08-29.md`.
+
 ## API
 
 ```http

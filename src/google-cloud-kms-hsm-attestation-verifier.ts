@@ -35,12 +35,14 @@ export interface GoogleCloudKmsHsmAttestationVerificationInput {
 }
 
 export interface GoogleCloudKmsHsmAttestationEnvelopeVerification {
-  readonly schemaVersion: 1
+  readonly schemaVersion: 2
   readonly attestationFormat: 'CAVIUM_V2_COMPRESSED'
   readonly callerPinnedTrustAnchorFingerprintsMatched: true
   readonly certificateChainSignaturesVerified: true
   readonly cardPublicKeyCrossCertified: true
   readonly partitionPublicKeyCrossCertified: true
+  readonly distinctTrustAnchorPublicKeysVerified: true
+  readonly distinctCardAndPartitionPublicKeysVerified: true
   readonly certificateValidityAtCallerTimeVerified: true
   readonly verificationTimeSource: 'CALLER_SUPPLIED'
   readonly verificationTimeMs: number
@@ -54,6 +56,11 @@ export interface GoogleCloudKmsHsmAttestationEnvelopeVerification {
   readonly attestationStatementSha256: string
   readonly manufacturerRootCertificateSha256: string
   readonly ownerRootCertificateSha256: string
+  readonly manufacturerRootPublicKeySpkiSha256: string
+  readonly ownerRootPublicKeySpkiSha256: string
+  readonly manufacturerPartitionCertificateSha256: string
+  readonly ownerPartitionCertificateSha256: string
+  readonly partitionPublicKeySpkiSha256: string
   readonly productionGoogleTrustAnchorsVerified: false
   readonly attestationAttributesVerified: false
   readonly keyCreatedInsideHsmVerified: false
@@ -81,6 +88,11 @@ function samePublicKey(left: X509Certificate, right: X509Certificate): boolean {
   const leftDer = left.publicKey.export({ type: 'spki', format: 'der' })
   const rightDer = right.publicKey.export({ type: 'spki', format: 'der' })
   return Buffer.from(leftDer).equals(Buffer.from(rightDer))
+}
+
+function publicKeySpkiSha256(certificate: X509Certificate): string {
+  const der = certificate.publicKey.export({ type: 'spki', format: 'der' })
+  return createHash('sha256').update(der).digest('hex')
 }
 
 function exactCertificateArray(input: unknown, expectedLength: number): readonly string[] {
@@ -134,9 +146,12 @@ export function verifyGoogleCloudKmsHsmAttestationEnvelope(
     const ownerRoot = parseCertificate(trustAnchors.ownerRootPem)
     const manufacturerRootSha256 = certificateSha256(manufacturerRoot)
     const ownerRootSha256 = certificateSha256(ownerRoot)
+    const manufacturerRootSpkiSha256 = publicKeySpkiSha256(manufacturerRoot)
+    const ownerRootSpkiSha256 = publicKeySpkiSha256(ownerRoot)
     if (trustAnchors.manufacturerRootCertificateSha256 !== manufacturerRootSha256
       || trustAnchors.ownerRootCertificateSha256 !== ownerRootSha256
       || manufacturerRootSha256 === ownerRootSha256
+      || samePublicKey(manufacturerRoot, ownerRoot)
       || !SHA256.test(manufacturerRootSha256) || !SHA256.test(ownerRootSha256)
       || !manufacturerRoot.ca || !ownerRoot.ca
       || !manufacturerRoot.verify(manufacturerRoot.publicKey)
@@ -159,7 +174,8 @@ export function verifyGoogleCloudKmsHsmAttestationEnvelope(
       || !issuedBy(ownerCard, ownerRoot)
       || !issuedBy(ownerPartition, ownerRoot)
       || !samePublicKey(manufacturerCard, ownerCard)
-      || !samePublicKey(manufacturerPartition, ownerPartition)) throw new Error()
+      || !samePublicKey(manufacturerPartition, ownerPartition)
+      || samePublicKey(manufacturerCard, manufacturerPartition)) throw new Error()
     for (const certificate of [
       manufacturerRoot, ownerRoot, manufacturerCard, manufacturerPartition,
       ownerCard, ownerPartition
@@ -179,12 +195,14 @@ export function verifyGoogleCloudKmsHsmAttestationEnvelope(
       }, signature)) throw new Error()
 
     return Object.freeze({
-      schemaVersion: 1,
+      schemaVersion: 2,
       attestationFormat,
       callerPinnedTrustAnchorFingerprintsMatched: true,
       certificateChainSignaturesVerified: true,
       cardPublicKeyCrossCertified: true,
       partitionPublicKeyCrossCertified: true,
+      distinctTrustAnchorPublicKeysVerified: true,
+      distinctCardAndPartitionPublicKeysVerified: true,
       certificateValidityAtCallerTimeVerified: true,
       verificationTimeSource: 'CALLER_SUPPLIED',
       verificationTimeMs,
@@ -198,6 +216,11 @@ export function verifyGoogleCloudKmsHsmAttestationEnvelope(
       attestationStatementSha256: createHash('sha256').update(statement).digest('hex'),
       manufacturerRootCertificateSha256: manufacturerRootSha256,
       ownerRootCertificateSha256: ownerRootSha256,
+      manufacturerRootPublicKeySpkiSha256: manufacturerRootSpkiSha256,
+      ownerRootPublicKeySpkiSha256: ownerRootSpkiSha256,
+      manufacturerPartitionCertificateSha256: certificateSha256(manufacturerPartition),
+      ownerPartitionCertificateSha256: certificateSha256(ownerPartition),
+      partitionPublicKeySpkiSha256: publicKeySpkiSha256(manufacturerPartition),
       productionGoogleTrustAnchorsVerified: false,
       attestationAttributesVerified: false,
       keyCreatedInsideHsmVerified: false,

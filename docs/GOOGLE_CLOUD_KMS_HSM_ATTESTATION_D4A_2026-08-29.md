@@ -86,6 +86,13 @@ Manual live preflight D3 không import D4a và tiếp tục báo
 7. Bổ sung card-key negative vector cùng compressed/decompressed/truncated
    envelope bounds regressions.
 
+D4b đã hoàn tất các hardening cơ học ở mục 6–7: distinct root SPKI,
+distinct card/partition SPKI, partition certificate/SPKI identity trong result
+schema `2`, và các bounds regression. Production trust-root set vẫn
+`BLOCKED / NOT VERIFIED`; provenance, fingerprint quan sát được và rotation
+policy fail-closed được ghi tại
+`GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_PROVENANCE_D4B_2026-08-29.md`.
+
 ## Offline fixture
 
 Fixture test chỉ chứa public certificates và signed gzip bytes. Private fixture

@@ -321,9 +321,14 @@ test('Google Cloud KMS live preflight chỉ là manual CLI, không có app runti
 
 test('Google Cloud KMS HSM attestation verifier không có runtime, network hoặc private-key wiring', async () => {
   const source = await readFile('src/google-cloud-kms-hsm-attestation-verifier.ts', 'utf8')
+  const d4bFixture = await readFile(
+    'test/fixtures/google-cloud-kms-attestation-d4b-negative-fixture.ts',
+    'utf8'
+  )
   assert.doesNotMatch(source, /node:fs|node:child_process|fetch\(|https?:|process\.env/)
   assert.doesNotMatch(source, /createPrivateKey|generateKeyPair|BEGIN PRIVATE KEY/)
   assert.doesNotMatch(source, /google-cloud-kms-live-preflight|server|runner|report|Paper|Bukkit/)
+  assert.doesNotMatch(d4bFixture, /BEGIN PRIVATE KEY|BEGIN ENCRYPTED PRIVATE KEY/)
 
   const productionFiles = [
     ...(await readdir('src', { recursive: true }))
