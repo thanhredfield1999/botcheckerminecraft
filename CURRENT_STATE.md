@@ -11,6 +11,42 @@ Last reviewed: 2026-08-29
 
 ## Implemented Behavior
 
+## 2026-08-29 — Google Cloud KMS HSM attestation envelope checkpoint D4a
+
+- `VERIFIED offline/library-only`: exact `CAVIUM_V2_COMPRESSED` envelope is
+  bounded, gunzipped and split into statement + one `256`-byte signature. The
+  verifier checks caller-pinned SHA-256 root fingerprints, distinct CA roots
+  whose certificate signatures verify under their embedded public keys,
+  manufacturer/owner chain signatures, card/partition public-key
+  cross-certification and RSA PKCS#1 v1.5/SHA-256 attestation signature.
+- Certificate validity is checked only at a caller-supplied timestamp. Result
+  explicitly keeps trusted time, revocation, full RFC 5280 policy, canonical
+  envelope encoding, statement/PKCS#11 parsing, production Google/Marvell roots,
+  exact resource/public-key binding, key-created-in-HSM, non-extractability and
+  custody unverified/false.
+- Capability `google-cloud-kms-hsm-attestation-envelope-verifier` remains
+  `library-only`; no source module imports it. It has no filesystem, network,
+  process, credential, private-key, server, report, runner or Paper edge.
+- Offline fixture contains only public test certificates and signed gzip bytes;
+  temporary private fixture keys were deleted and no key file exists in repo.
+- Production integration is `BLOCKED / NOT VERIFIED`: the official Marvell root
+  download returned HTTP `403`, so no production root was pinned from an
+  unverified mirror. D3 manual preflight therefore still reports
+  `attestationCryptographicallyVerified=false`.
+- Exact contract and official-source links are recorded in
+  `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4A_2026-08-29.md`.
+- Focused D1–D4/adapter/capability gate: `67/67` PASS. Full ordered gate
+  `npm run typecheck && npm test && npm run build && git diff --check` PASS:
+  `496` tests, `492` pass, `0` fail, `4` skip; TypeScript/Java build và
+  diff-check đều PASS.
+- Independent Sonnet review tree cũ trả `FAIL` vì MEDIUM M1: tamper test chỉ
+  fail tại gzip hash. Correction thêm statement/signature mutation sau re-gzip
+  và recompute hash, strict single-PEM, cross-domain/validity/Proxy regressions
+  và explicit false claims. Exact correction review trả `PASS`, không
+  blocker/high/medium và xác nhận M1 đã đóng. Residual LOW được chuyển sang D4b:
+  distinct trust-root SPKI, card-key negative vector, thêm bounds coverage,
+  partition identity binding và production chain-cardinality adaptation.
+
 ## 2026-08-29 — Google Cloud KMS key-origin metadata posture checkpoint D3
 
 - `VERIFIED offline/manual-tool`: optional strict D3 bootstrap requires a valid

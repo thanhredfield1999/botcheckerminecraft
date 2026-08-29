@@ -124,6 +124,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-live-preflight'),
     { name: 'google-cloud-kms-hsm-live-preflight', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-attestation-envelope-verifier'),
+    { name: 'google-cloud-kms-hsm-attestation-envelope-verifier', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -313,6 +317,30 @@ test('Google Cloud KMS live preflight chỉ là manual CLI, không có app runti
       /(?:from\s+['"][^'"]*google-cloud-kms-live-preflight|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-live-preflight)/
     )
   }
+})
+
+test('Google Cloud KMS HSM attestation verifier không có runtime, network hoặc private-key wiring', async () => {
+  const source = await readFile('src/google-cloud-kms-hsm-attestation-verifier.ts', 'utf8')
+  assert.doesNotMatch(source, /node:fs|node:child_process|fetch\(|https?:|process\.env/)
+  assert.doesNotMatch(source, /createPrivateKey|generateKeyPair|BEGIN PRIVATE KEY/)
+  assert.doesNotMatch(source, /google-cloud-kms-live-preflight|server|runner|report|Paper|Bukkit/)
+
+  const productionFiles = [
+    ...(await readdir('src', { recursive: true }))
+      .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-hsm-attestation-verifier.ts'))
+      .map(file => `src/${file}`),
+    ...(await readdir('scripts', { recursive: true }))
+      .filter(file => /\.(?:[cm]?js|ts)$/.test(file))
+      .map(file => `scripts/${file}`)
+  ]
+  const importers: string[] = []
+  for (const file of productionFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*google-cloud-kms-hsm-attestation-verifier|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-hsm-attestation-verifier)/.test(runtimeSource)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, [])
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {

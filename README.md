@@ -178,6 +178,20 @@ or release admission. Any parse, ADC, IAM, metadata, integrity, signing, or clos
 failure returns a bounded `NOT_VERIFIED` report and exit `1` without echoing the
 resource or underlying error.
 
+Checkpoint D4a additionally provides a `library-only` verifier for a
+`CAVIUM_V2_COMPRESSED` attestation envelope against two caller-pinned root
+certificate fingerprints. Offline tests verify root/chain signatures,
+manufacturer/owner card and partition public-key cross-certification,
+certificate validity at a caller-supplied time, bounded gunzip, and the single
+RSA PKCS#1 v1.5/SHA-256 attestation signature. It does not pin production
+Google/Marvell roots and does not verify trusted time, revocation, full RFC 5280
+policy, canonical envelope encoding, statement/PKCS#11 parsing, KMS
+resource/public-key binding, key creation inside an HSM,
+non-extractability, or custody. The live preflight does not import this
+primitive and continues to report `attestationCryptographicallyVerified=false`.
+See `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4A_2026-08-29.md` for the exact
+claim boundary and production blocker.
+
 ## API
 
 ```http
