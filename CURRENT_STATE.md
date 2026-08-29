@@ -1,6 +1,6 @@
 # BotChecker Current State
 
-Last reviewed: 2026-08-29
+Last reviewed: 2026-08-30
 
 ## Baseline
 
@@ -10,6 +10,40 @@ Last reviewed: 2026-08-29
   a private HTTP API.
 
 ## Implemented Behavior
+
+## 2026-08-30 — Caller-supplied trust-root policy checkpoint D4d
+
+- `VERIFIED offline/library-only` at source/test/build level: a strict schema-v1
+  resolver snapshots a caller-supplied policy and selects the exact caller-pinned
+  `ACTIVE` root-set ID within `[notBeforeMs, notAfterMs)` at or above the caller's
+  minimum revision.
+- Unknown fields, malformed IDs/pins/windows, duplicate root-set IDs, retired or
+  unknown sets, revision rollback below the caller floor, hostile getters and
+  changing collection cardinality fail closed. Rotation overlap is supported only
+  by an exact active root-set ID pin.
+- Initial implementation review found one HIGH: a valid PEM paired with a different
+  well-shaped SHA-256 pin passed selection and reached KMS RPCs before D4c-c rejected
+  it. RED reproduced this; the resolver now strict-parses every single-certificate
+  PEM and requires its exact DER SHA-256 before composition.
+- Canonical policy SHA-256 is deterministic across root-set ordering and ambient
+  locale. It is a caller-policy content hash, not a signature, authenticated source
+  or durable rollback proof.
+- The D4d single-call compositor accepts raw policy rather than a caller-forged
+  resolution, resolves it synchronously before KMS RPC, then delegates the selected
+  frozen roots to D4c-c. Public output carries policy ID/revision/root-set ID/hash but
+  no PEM.
+- Capability manifest records both D4d modules as `library-only`. Resolver sole
+  direct importer is the compositor; the compositor has no downstream source
+  importer and no filesystem/network/ADC/signing/runtime wiring.
+- Pre-correction focused D1–D4d/capability gate `68/68` PASS; exact-current focused
+  correction gate `34/34` PASS. Exact-current full ordered gate: `547` total / `543`
+  pass / `0` fail / `4` skip; typecheck, TypeScript/Java build and diff-check PASS.
+  Claim/import review `deleg_6381866a` PASS `0/0/0/0`; final correction review
+  `deleg_1fe99168` PASS `0/0/0/0` and confirms `D4D-HIGH-001` CLOSED.
+- Policy signature/source authenticity, durable rollback protection, trusted time,
+  authoritative production roots, revocation, live KMS/IAM/custody/runtime and
+  deployment remain false/`BLOCKED / NOT VERIFIED`.
+- Evidence: `docs/GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_POLICY_D4D_2026-08-30.md`.
 
 ## 2026-08-29 — Private SDK attestation snapshot bridge checkpoint D4c-c
 

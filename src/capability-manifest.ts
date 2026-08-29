@@ -264,6 +264,14 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'google-cloud-kms-signing-backend',
     mode: 'library-only'
   },
+  'google-cloud-kms-hsm-trust-root-policy': {
+    module: 'google-cloud-kms-hsm-trust-root-policy',
+    mode: 'library-only'
+  },
+  'google-cloud-kms-hsm-policy-attestation-bridge': {
+    module: 'google-cloud-kms-hsm-trust-root-policy-attestation',
+    mode: 'library-only'
+  },
   'google-cloud-kms-hsm-live-preflight': {
     module: 'google-cloud-kms-live-preflight',
     mode: 'library-only'

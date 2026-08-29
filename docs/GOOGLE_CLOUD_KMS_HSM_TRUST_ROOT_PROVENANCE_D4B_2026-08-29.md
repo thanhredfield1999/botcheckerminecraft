@@ -61,6 +61,14 @@ Production integration chỉ được mở khi có cả:
    guarantee;
 6. trusted-time/revocation policy riêng hoặc giữ các claim đó `false`.
 
+D4d đã triển khai cơ học local cho schema-v1 caller-supplied allowlist: exact policy
+ID/root-set ID/minimum revision, half-open active windows, explicit retirement,
+rotation overlap bằng exact root-set pin, deterministic policy hash và fail-closed
+input snapshot. Mỗi root PEM được strict-parse và phải khớp exact DER SHA-256 pin
+trước RPC. D4d không xác thực nguồn/update, không verify policy signature, không lưu
+durable rollback high-water và không cung cấp production root bytes; vì vậy các điều
+kiện 1–4 và 6 ở trên vẫn chưa được đóng.
+
 ## Boundary giữ nguyên
 
 - Không có production root PEM/fingerprint trong `src/`.

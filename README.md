@@ -234,6 +234,22 @@ origin/non-extractability, custody, IAM/provisioning, trusted time/revocation,
 runtime and deployment remain unverified. See
 `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_C_2026-08-29.md`.
 
+Checkpoint D4d adds a strict `library-only` resolver for versioned caller-supplied
+root policies and a separate policy-aware D4c-c compositor. The caller must pin an
+exact policy ID, active root-set ID and minimum revision. Unknown/retired sets,
+invalid half-open time windows, revision rollback below that caller floor, unknown
+fields, duplicate IDs and changing input snapshots fail closed; explicit root-set
+pinning permits safe rotation overlap. The compositor resolves raw policy before any
+KMS RPC and does not accept a caller-materialized resolution. Every policy root must
+be one strict certificate PEM whose exact parsed DER SHA-256 matches its declared pin
+before any KMS RPC.
+
+The returned policy SHA-256 is only a deterministic caller-policy content hash.
+D4d does not verify policy signatures/source authenticity, persist rollback state,
+supply trusted time, pin authoritative production roots, or enable manual preflight,
+report/runtime/Paper/deployment wiring. See
+`docs/GOOGLE_CLOUD_KMS_HSM_TRUST_ROOT_POLICY_D4D_2026-08-30.md`.
+
 ## API
 
 ```http

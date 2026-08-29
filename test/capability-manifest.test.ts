@@ -140,6 +140,14 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-attestation-snapshot-bridge'),
     { name: 'google-cloud-kms-hsm-attestation-snapshot-bridge', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-trust-root-policy'),
+    { name: 'google-cloud-kms-hsm-trust-root-policy', mode: 'library-only' }
+  )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-policy-attestation-bridge'),
+    { name: 'google-cloud-kms-hsm-policy-attestation-bridge', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -312,7 +320,10 @@ test('Google Cloud KMS signer không nhận private key, credential hoặc runti
       importers.push(file)
     }
   }
-  assert.deepEqual(importers, ['src/google-cloud-kms-live-preflight.ts'])
+  assert.deepEqual(importers, [
+    'src/google-cloud-kms-hsm-trust-root-policy-attestation.ts',
+    'src/google-cloud-kms-live-preflight.ts'
+  ])
 })
 
 test('Google Cloud KMS live preflight chỉ là manual CLI, không có app runtime wiring', async () => {
@@ -441,6 +452,37 @@ test('Google Cloud KMS resource-name validator chỉ được exact KMS librarie
     'src/google-cloud-kms-live-preflight.ts',
     'src/google-cloud-kms-signing-backend.ts'
   ])
+})
+
+test('D4d trust-root policy và compositor giữ exact library-only import graph', async () => {
+  const policySource = await readFile('src/google-cloud-kms-hsm-trust-root-policy.ts', 'utf8')
+  const compositorSource = await readFile(
+    'src/google-cloud-kms-hsm-trust-root-policy-attestation.ts',
+    'utf8'
+  )
+  for (const source of [policySource, compositorSource]) {
+    assert.doesNotMatch(source, /node:fs|node:child_process|fetch\(|https?:|process\.env/)
+    assert.doesNotMatch(source, /createPrivateKey|generateKeyPair|BEGIN PRIVATE KEY/)
+    assert.doesNotMatch(source, /createGoogleCloudKmsAdcClient|asymmetricSign\(/)
+  }
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts'))
+    .map(file => `src/${file}`)
+  const policyImporters: string[] = []
+  const compositorImporters: string[] = []
+  for (const file of sourceFiles) {
+    const source = await readFile(file, 'utf8')
+    if (file !== 'src/google-cloud-kms-hsm-trust-root-policy.ts'
+      && /from ['"][^'"]*google-cloud-kms-hsm-trust-root-policy\.js['"]/.test(source)) {
+      policyImporters.push(file)
+    }
+    if (file !== 'src/google-cloud-kms-hsm-trust-root-policy-attestation.ts'
+      && /from ['"][^'"]*google-cloud-kms-hsm-trust-root-policy-attestation\.js['"]/.test(source)) {
+      compositorImporters.push(file)
+    }
+  }
+  assert.deepEqual(policyImporters, ['src/google-cloud-kms-hsm-trust-root-policy-attestation.ts'])
+  assert.deepEqual(compositorImporters, [])
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {
