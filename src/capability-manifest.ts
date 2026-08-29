@@ -244,6 +244,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
   'evidence-bundle': { module: 'evidence-bundle', mode: 'runtime-wired' },
   'failure-envelope': { module: 'failure-envelope', mode: 'runtime-wired' },
   gameplay: { module: 'gameplay-contract', mode: 'library-only' },
+  'google-cloud-kms-hsm-ed25519-signer': {
+    module: 'google-cloud-kms-signing-backend',
+    mode: 'library-only'
+  },
   'gui-journey': { module: 'runner', mode: 'runtime-wired' },
   'immutable-artifacts': { module: 'evidence-writer', mode: 'runtime-wired' },
   'jvm-artifact-observation-assessment': { module: 'jvm-artifact-observation', mode: 'library-only' },

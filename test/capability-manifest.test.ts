@@ -116,8 +116,14 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'signed-provider-opaque-signing-adapter'),
     { name: 'signed-provider-opaque-signing-adapter', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-ed25519-signer'),
+    { name: 'google-cloud-kms-hsm-ed25519-signer', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
+  assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
+  assert.ok(manifest.dependencies.some(dependency => dependency.name === 'fast-crc32c' && dependency.version === '2.0.0'))
   assert.ok(manifest.sources.length <= 256)
 })
 
@@ -261,6 +267,29 @@ test('opaque signing adapter không có private-key loader hoặc runtime wiring
     assert.doesNotMatch(
       runtimeSource,
       /(?:from\s+['"][^'"]*signed-provider-signing-adapter|(?:import|require)\(\s*['"][^'"]*signed-provider-signing-adapter)/
+    )
+  }
+})
+
+test('Google Cloud KMS signer không nhận private key, credential hoặc runtime wiring', async () => {
+  const source = await readFile('src/google-cloud-kms-signing-backend.ts', 'utf8')
+  assert.doesNotMatch(
+    source,
+    /node:fs|process\.env|createPrivateKey|generateKeyPair|privateKey|keyFilename|credentials|accessToken|client_email|private_key/
+  )
+  assert.doesNotMatch(source, /runner|report|server|Paper|Bukkit|verifyAndConsume/)
+  assert.match(source, /new KeyManagementServiceClient\(\)/)
+  assert.match(source, /EC_SIGN_ED25519/)
+  assert.match(source, /protectionLevel/)
+
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-signing-backend.ts'))
+    .map(file => `src/${file}`)
+  for (const file of sourceFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    assert.doesNotMatch(
+      runtimeSource,
+      /(?:from\s+['"][^'"]*google-cloud-kms-signing-backend|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-signing-backend)/
     )
   }
 })

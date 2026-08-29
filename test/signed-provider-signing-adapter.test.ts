@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict'
 import { createHash, generateKeyPairSync, sign, type KeyObject } from 'node:crypto'
 import test from 'node:test'
+import crc32c from 'fast-crc32c'
+import {
+  attestGoogleCloudKmsHsmEd25519Key,
+  createGoogleCloudKmsHsmEd25519SignerBinding,
+  type GoogleCloudKmsClientPort
+} from '../src/google-cloud-kms-signing-backend.js'
 import {
   buildSignedProviderClaimTrustStore,
   SignedProviderClaimVerifier
@@ -190,6 +196,60 @@ test('opaque signing adapter chấp nhận async callback với cùng canonical 
   })
 
   assert.equal(value.verifier.verifyAndConsume(envelope).nonceConsumed, true)
+})
+
+test('Google Cloud KMS HSM binding đi qua opaque adapter rồi verifier consume envelope', async () => {
+  const value = fixture()
+  const resource = 'projects/test-project/locations/us-east1/keyRings/botchecker/cryptoKeys/provider/cryptoKeyVersions/7'
+  const pem = value.pair.publicKey.export({ type: 'spki', format: 'pem' }).toString()
+  const client: GoogleCloudKmsClientPort = {
+    async getCryptoKeyVersion() {
+      return [{ name: resource, state: 'ENABLED', algorithm: 'EC_SIGN_ED25519', protectionLevel: 'HSM' }]
+    },
+    async getPublicKey() {
+      return [{
+        name: resource,
+        pem,
+        pemCrc32c: { value: crc32c.calculate(Buffer.from(pem, 'utf8')) },
+        algorithm: 'EC_SIGN_ED25519',
+        protectionLevel: 'HSM'
+      }]
+    },
+    async asymmetricSign(request) {
+      const signature = sign(null, Buffer.from(request.data), value.pair.privateKey)
+      return [{
+        name: resource,
+        signature,
+        signatureCrc32c: { value: crc32c.calculate(signature) },
+        verifiedDataCrc32c: true,
+        protectionLevel: 'HSM'
+      }]
+    }
+  }
+  const attestation = await attestGoogleCloudKmsHsmEd25519Key({
+    client, cryptoKeyVersionName: resource, expectedKeyId: value.key.keyId
+  })
+  const kms = createGoogleCloudKmsHsmEd25519SignerBinding({ client, attestation })
+  const adapter = new SignedProviderOpaqueSigningAdapter({
+    trustStore: value.trustStore,
+    descriptor: {
+      keyId: kms.keyId,
+      provider: value.key.provider,
+      opaqueKeyHandleId: kms.opaqueKeyHandleId
+    },
+    signer: kms.sign,
+    timeoutMs: 1_000,
+    wallNowMs: () => value.clock.wall
+  })
+
+  const envelope = await adapter.createObservationBoundEnvelope({
+    claims: value.claims,
+    jvmArtifactObservation: value.jvmArtifactObservation
+  })
+  const verification = value.verifier.verifyAndConsume(envelope)
+  assert.equal(verification.signatureValid, true)
+  assert.equal(verification.nonceConsumed, true)
+  assert.equal(verification.releaseEligible, false)
 })
 
 test('opaque signing adapter snapshot input trước callback mutation', async () => {

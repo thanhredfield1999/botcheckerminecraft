@@ -11,6 +11,31 @@ Last reviewed: 2026-08-27
 
 ## Implemented Behavior
 
+## 2026-08-29 — Google Cloud KMS HSM Ed25519 backend checkpoint D1
+
+- `VERIFIED offline/library-only`: production backend dùng official
+  `@google-cloud/kms@6.0.0` qua Application Default Credentials, chỉ nhận timeout
+  bounded; API không nhận credential JSON, token, key file hoặc private key.
+- Bootstrap pin exact key-version resource, `ENABLED`, `EC_SIGN_ED25519`, `HSM`,
+  public-key PEM CRC32C và Ed25519 SPKI SHA-256. Attestation snapshot unforgeable
+  trong `WeakMap`; metadata public ghi rõ chưa quan sát signing operation và chưa
+  thiết lập custody.
+- Mỗi callback snapshot/copy payload bounded, gửi raw PureEdDSA data + CRC32C,
+  kiểm exact resource/HSM/input-integrity/signature CRC32C, rồi verify Ed25519 độc
+  lập bằng public key đã pin. Transport errors được sanitize; late response sau
+  abort bị bỏ; RPC có timeout và không retry tự động.
+- Regression phủ numeric/string protobuf enums/checksums, forged attestation,
+  client/key/resource substitution, hostile getters/TOCTOU, wrong-key signature,
+  malformed/oversized payload, timeout/abort/no-leak và fake-HSM → opaque adapter
+  → verifier consume. Focused D1 gate cuối: `44/44` PASS. Full ordered gate
+  `npm run typecheck && npm test && npm run build && git diff --check` PASS:
+  `473` tests, `469` pass, `0` fail, `4` skip; TypeScript/Java build và
+  diff-check đều PASS.
+- Capability `google-cloud-kms-hsm-ed25519-signer` là `library-only`; không import
+  vào server/report/runner/Paper. Máy kiểm chứng không có `gcloud` và không có ADC
+  project/environment, vì vậy real IAM/provisioning/HSM signing operation và
+  custody vẫn `NOT VERIFIED`; đây là scope D2 riêng, không phải release proof.
+
 ## 2026-08-27 — P0 decoder/polling post-UAT hardening
 
 - `VERIFIED offline`: Adventure decoder dùng recursion-path thay vì global dedupe, nên component object dùng lại không bị coi là cycle; traversal bị chặn bởi depth `16`, node budget `512`, selector text `4096` ký tự và `64` lore lines. Evidence vẫn tách riêng ở `256` ký tự/`16` lore lines, nên selector lore dòng 17 dùng được mà report không giữ dòng đó.

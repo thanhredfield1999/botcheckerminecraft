@@ -144,6 +144,18 @@ the adapter locked until the callback actually settles, preventing overlapping
 opaque operations. This is callback orchestration only—not key custody, HSM/KMS,
 freshness, replay consumption, runtime attestation, or release admission.
 
+An optional Google Cloud KMS backend can bind that callback to one exact
+`EC_SIGN_ED25519` key version whose metadata reports `ENABLED` and `HSM`. It uses
+the official client with Application Default Credentials, bounded RPC timeouts
+and retries disabled; its public configuration accepts no credential, token,
+key-file, or private-key material. Bootstrap pins the exact resource name and
+Ed25519 SPKI fingerprint, checks public-key and signature CRC32C values, and
+verifies every returned signature locally before returning it to the opaque
+adapter. The implementation and fake-transport integration are verified offline
+only. No real ADC account, IAM policy, HSM key provisioning, or live signing
+operation has been verified, and the backend remains `library-only` with no
+Paper, HTTP server, report, or release-admission wiring.
+
 ## API
 
 ```http
