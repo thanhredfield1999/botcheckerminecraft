@@ -200,7 +200,7 @@ export function verifyCaviumV2GeneratedEd25519Attributes(
     requireAttribute(publicKey, ATTR.PRIVATE, '00')
     requireAttribute(publicKey, ATTR.VERIFY, '01')
     const publicPoint = requireAttribute(publicKey, ATTR.EC_POINT)
-    if (!/^0420[a-f0-9]{64}$/.test(publicPoint)) throw new Error()
+    if (!/^[a-f0-9]{64}$/.test(publicPoint)) throw new Error()
 
     requireAttribute(privateKey, ATTR.PRIVATE, '01')
     requireAttribute(privateKey, ATTR.SIGN, '01')

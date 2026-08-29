@@ -209,6 +209,16 @@ therefore keeps signature, HSM origin, resource/public-key binding and custody
 unverified. See
 `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_A_2026-08-29.md`.
 
+Checkpoint D4c-b adds a separate `library-only` compositor that runs D4b and
+the corrected D4c-a parser over one owned attestation snapshot. It binds the
+second `CKA_ID` SHA-256 half to the exact caller-supplied CryptoKeyVersion path
+bytes and binds raw PKCS #11 v3.1 Ed25519 `CKA_EC_POINT` bytes to a caller-pinned
+canonical DER SPKI/fingerprint.
+Success is scoped only to caller-pinned roots and selected attributes; it is
+not production-root, trusted-time, revocation, custody, live-KMS or deployment
+evidence. See
+`docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_B_2026-08-29.md`.
+
 ## API
 
 ```http

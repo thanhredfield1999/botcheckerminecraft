@@ -11,6 +11,45 @@ Last reviewed: 2026-08-29
 
 ## Implemented Behavior
 
+## 2026-08-29 — Signed Cavium V2 resource/SPKI binding checkpoint D4c-b
+
+- `VERIFIED offline/library-only` at focused-test level: one fail-closed API
+  invokes D4b on an owned gzip snapshot, recomputes and matches the exact signed
+  statement hash, parses those bytes through D4c-a, then verifies the selected
+  generated-Ed25519 attributes.
+- Exact binding covers the second SHA-256 half of `CKA_ID` against the UTF-8
+  bytes of the caller-supplied CryptoKeyVersion path and raw 32-byte
+  `CKA_EC_POINT` against a
+  caller-pinned canonical Ed25519 DER SPKI/fingerprint. The first `CKA_ID` half is
+  intentionally not assigned an undocumented meaning.
+- D4c-a correction: PKCS #11 v3.1 defines Edwards `CKA_EC_POINT` as raw RFC 8032
+  bytes. The committed `04 20 || 32 bytes` matcher was wrong and is superseded;
+  RED proved the mismatch before correction to exact raw 32 bytes.
+- Result scope is explicitly `CALLER_PINNED_TRUST_ANCHORS`; only selected signed
+  attributes and exact resource/public-key relationships are true. Key-created-
+  in-HSM, non-extractability, production roots, trusted time, revocation and
+  custody remain false/`NOT VERIFIED`.
+- Capability manifest records
+  `google-cloud-kms-hsm-attestation-binding-verifier=library-only`; only this
+  compositor imports D4b/D4c-a, and no runtime/network/preflight/server/report
+  importer imports the compositor.
+- Public-only signed fixture contains certificates, public Ed25519 SPKI and
+  signed bytes; temporary generation private keys are not stored in the repo.
+- TDD RED covered missing compositor, raw-point correction and numeric-project
+  false rejection. Focused D4a–D4c/capability gate `42/42` PASS; typecheck and
+  diff-check PASS. Exact-current full ordered gate PASS: `515` total / `511`
+  pass / `0` fail / `4` skip; TypeScript/Java build and diff-check PASS.
+- Initial implementation review returned `FAIL` with one HIGH because the
+  project-ID regex accepted 5/31+ characters and trailing hyphen. A public-only
+  fully signed `projects/abcde-` fixture reproduced the fail-open behavior;
+  correction now requires 6–30 characters, letter prefix and alphanumeric
+  suffix. A second signed fixture proved `projects/123` must be accepted; numeric
+  projects now use nonzero signed-`int64` bounds and a signed overflow fixture
+  rejects `9223372036854775808`. Final independent correction review on the
+  exact current tree: `PASS`, `0` blocker / `0` high / `0` medium / `0` low;
+  the initial HIGH is `CLOSED` and its old FAIL is superseded.
+- Evidence: `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_B_2026-08-29.md`.
+
 ## 2026-08-29 — Cavium V2 statement parser checkpoint D4c-a
 
 - `VERIFIED offline/library-only`: strict bounded Cavium V2 big-endian response,
@@ -30,6 +69,12 @@ Last reviewed: 2026-08-29
   TypeScript/Java build và diff-check PASS. Independent correction review
   `PASS`, `0` high / `0` medium / `0` low; H1 high-bit CKA_ID alias, M1 missing
   public point và exact-prefix correction đều `CLOSED`.
+- Later D4c-b normative review found that the D4c-a public-point correction had
+  applied classic-EC DER-wrapper semantics to `CKK_EC_EDWARDS`. That conclusion
+  is superseded: PKCS #11 v3.1 requires raw RFC 8032 bytes, now covered by a new
+  RED→GREEN regression. D4c-a's original `509/505/0/4` evidence applies only to
+  the committed pre-correction tree; D4c-b full verification will cover the
+  corrected tree.
 - Evidence: `docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_A_2026-08-29.md`.
 
 ## 2026-08-29 — Google Cloud KMS HSM attestation hardening D4b

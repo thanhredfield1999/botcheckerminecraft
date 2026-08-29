@@ -132,6 +132,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-cavium-v2-statement-parser'),
     { name: 'google-cloud-kms-hsm-cavium-v2-statement-parser', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-attestation-binding-verifier'),
+    { name: 'google-cloud-kms-hsm-attestation-binding-verifier', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -336,7 +340,9 @@ test('Google Cloud KMS HSM attestation verifier không có runtime, network ho�
 
   const productionFiles = [
     ...(await readdir('src', { recursive: true }))
-      .filter(file => file.endsWith('.ts') && !file.endsWith('google-cloud-kms-hsm-attestation-verifier.ts'))
+      .filter(file => file.endsWith('.ts')
+        && !file.endsWith('google-cloud-kms-hsm-attestation-verifier.ts')
+        && !file.endsWith('google-cloud-kms-hsm-attestation-binding-verifier.ts'))
       .map(file => `src/${file}`),
     ...(await readdir('scripts', { recursive: true }))
       .filter(file => /\.(?:[cm]?js|ts)$/.test(file))
@@ -360,7 +366,9 @@ test('Cavium V2 statement parser chỉ là library, không có runtime hoặc ne
 
   const productionFiles = [
     ...(await readdir('src', { recursive: true }))
-      .filter(file => file.endsWith('.ts') && !file.endsWith('cavium-v2-attestation-statement-parser.ts'))
+      .filter(file => file.endsWith('.ts')
+        && !file.endsWith('cavium-v2-attestation-statement-parser.ts')
+        && !file.endsWith('google-cloud-kms-hsm-attestation-binding-verifier.ts'))
       .map(file => `src/${file}`),
     ...(await readdir('scripts', { recursive: true }))
       .filter(file => /\.(?:[cm]?js|ts)$/.test(file))
@@ -370,6 +378,38 @@ test('Cavium V2 statement parser chỉ là library, không có runtime hoặc ne
   for (const file of productionFiles) {
     const runtimeSource = await readFile(file, 'utf8')
     if (/(?:from\s+['"][^'"]*cavium-v2-attestation-statement-parser|(?:import|require)\(\s*['"][^'"]*cavium-v2-attestation-statement-parser)/.test(runtimeSource)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, [])
+})
+
+test('D4c-b attestation binding compositor chỉ là library và không có runtime importer', async () => {
+  const source = await readFile('src/google-cloud-kms-hsm-attestation-binding-verifier.ts', 'utf8')
+  const fixture = await readFile(
+    'test/fixtures/google-cloud-kms-attestation-d4cb-fixture.ts',
+    'utf8'
+  )
+  assert.match(source, /from '.\/google-cloud-kms-hsm-attestation-verifier\.js'/)
+  assert.match(source, /from '.\/cavium-v2-attestation-statement-parser\.js'/)
+  assert.doesNotMatch(source, /node:fs|node:child_process|fetch\(|https?:|process\.env/)
+  assert.doesNotMatch(source, /createPrivateKey|generateKeyPair|BEGIN PRIVATE KEY/)
+  assert.doesNotMatch(source, /google-cloud-kms-live-preflight|server|runner|report|Paper|Bukkit/)
+  assert.doesNotMatch(fixture, /BEGIN PRIVATE KEY|BEGIN ENCRYPTED PRIVATE KEY/)
+
+  const productionFiles = [
+    ...(await readdir('src', { recursive: true }))
+      .filter(file => file.endsWith('.ts')
+        && !file.endsWith('google-cloud-kms-hsm-attestation-binding-verifier.ts'))
+      .map(file => `src/${file}`),
+    ...(await readdir('scripts', { recursive: true }))
+      .filter(file => /\.(?:[cm]?js|ts)$/.test(file))
+      .map(file => `scripts/${file}`)
+  ]
+  const importers: string[] = []
+  for (const file of productionFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*google-cloud-kms-hsm-attestation-binding-verifier|(?:import|require)\(\s*['"][^'"]*google-cloud-kms-hsm-attestation-binding-verifier)/.test(runtimeSource)) {
       importers.push(file)
     }
   }

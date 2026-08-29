@@ -58,7 +58,7 @@ function publicAttributes(): Attribute[] {
     [ATTR.VERIFY, Buffer.of(0x01)],
     [ATTR.LOCAL, Buffer.of(0x01)],
     [ATTR.EC_PARAMS, Buffer.from('06032b6570', 'hex')],
-    [ATTR.EC_POINT, Buffer.concat([Buffer.of(0x04, 0x20), Buffer.alloc(32, 0x33)])]
+    [ATTR.EC_POINT, Buffer.alloc(32, 0x33)]
   ]
 }
 
@@ -246,7 +246,8 @@ test('D4c-a policy reject missing hoặc malformed Ed25519 public-point shape', 
   for (const attributes of [
     publicAttributes().filter(attribute => attribute[0] !== ATTR.EC_POINT),
     publicAttributes().map(attribute => attribute[0] === ATTR.EC_POINT
-      ? [ATTR.EC_POINT, Buffer.alloc(32, 0x33)] as Attribute : attribute)
+      ? [ATTR.EC_POINT, Buffer.concat([Buffer.of(0x04, 0x20), Buffer.alloc(32, 0x33)])] as Attribute
+      : attribute)
   ]) {
     const parsed = parseCaviumV2AttestationStatement(statement({ publicAttributes: attributes }))
     assert.throws(() => verifyCaviumV2GeneratedEd25519Attributes(parsed))

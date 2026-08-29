@@ -74,10 +74,15 @@ non-canonical GenerateKeyPair response-prefix findings are closed.
 
 ## Remaining work
 
-D4c-b must compose D4b's signature-verified statement bytes with this parser in
-one fail-closed API, then bind the second SHA-256 half of `CKA_ID` to the exact
-CryptoKeyVersion resource and bind the attested public-key attributes to the
-caller-pinned Ed25519 SPKI. Production roots remain separately blocked.
+D4c-b now composes D4b's signature-verified statement bytes with this parser and
+binds the second SHA-256 half of `CKA_ID` to exact caller-supplied
+CryptoKeyVersion path bytes plus raw Ed25519 `CKA_EC_POINT` to caller-pinned
+SPKI. During that work, PKCS #11
+v3.1 showed the committed D4c-a DER-like `04 20` public-point wrapper was wrong
+for `CKK_EC_EDWARDS`; a later RED→GREEN correction now requires exact raw RFC
+8032 bytes. The prior wrapper-specific review finding is superseded. See
+`docs/GOOGLE_CLOUD_KMS_HSM_ATTESTATION_D4C_B_2026-08-29.md`. Production roots
+remain separately blocked.
 
 ## Sources
 
