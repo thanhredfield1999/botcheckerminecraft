@@ -71,13 +71,18 @@ export interface GoogleCloudKmsAdcClientOptions {
 export function createGoogleCloudKmsAdcClient(
   input: GoogleCloudKmsAdcClientOptions
 ): Readonly<GoogleCloudKmsClientPort> {
-  if (!input || typeof input !== 'object' || Array.isArray(input)
-    || Object.getPrototypeOf(input) !== Object.prototype
-    || Reflect.ownKeys(input).length !== 1
-    || !Object.prototype.hasOwnProperty.call(input, 'rpcTimeoutMs')) {
+  let rpcTimeoutMs: number
+  try {
+    if (!input || typeof input !== 'object' || Array.isArray(input)
+      || Object.getPrototypeOf(input) !== Object.prototype
+      || Reflect.ownKeys(input).length !== 1
+      || !Object.prototype.hasOwnProperty.call(input, 'rpcTimeoutMs')) {
+      throw new Error()
+    }
+    rpcTimeoutMs = input.rpcTimeoutMs
+  } catch {
     throw new Error('Google Cloud KMS ADC client options are invalid')
   }
-  const rpcTimeoutMs = input.rpcTimeoutMs
   if (!Number.isSafeInteger(rpcTimeoutMs) || rpcTimeoutMs < 100 || rpcTimeoutMs > 30_000) {
     throw new Error('Google Cloud KMS RPC timeout is invalid')
   }
@@ -104,19 +109,31 @@ function isEnum(input: unknown, name: string, number: number): boolean {
 }
 
 function uint32(input: unknown, label: string): number {
-  if (typeof input === 'number' && Number.isSafeInteger(input)
-    && input >= 0 && input <= 0xffff_ffff) return input
-  if (typeof input === 'string' && /^(0|[1-9][0-9]{0,9})$/.test(input)) {
-    const parsed = Number(input)
-    if (parsed <= 0xffff_ffff) return parsed
-  }
-  if (input && typeof input === 'object' && !Array.isArray(input)) {
-    const value = input as Record<string, unknown>
-    if (Number.isInteger(value.low) && value.high === 0) {
-      return (value.low as number) >>> 0
+  try {
+    if (typeof input === 'number' && Number.isSafeInteger(input)
+      && input >= 0 && input <= 0xffff_ffff) return input
+    if (typeof input === 'string' && /^(0|[1-9][0-9]{0,9})$/.test(input)) {
+      const parsed = Number(input)
+      if (parsed <= 0xffff_ffff) return parsed
     }
+    if (input && typeof input === 'object' && !Array.isArray(input)) {
+      const value = input as Record<string, unknown>
+      const low = value.low
+      const high = value.high
+      if (Number.isInteger(low) && high === 0) return (low as number) >>> 0
+    }
+  } catch {
+    // Normalize hostile protobuf-wrapper accessors below.
   }
   throw new Error(`Google Cloud KMS ${label} is invalid`)
+}
+
+function abortSignalIsAborted(signal: AbortSignal): boolean {
+  try {
+    return signal.aborted
+  } catch {
+    throw new Error('Google Cloud KMS signing request is invalid')
+  }
 }
 
 function parseEd25519PublicKey(pem: string): Readonly<{ key: KeyObject, keyId: string }> {
@@ -154,15 +171,27 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
   if (!input || typeof input !== 'object') {
     throw new Error('Google Cloud KMS attestation input is invalid')
   }
-  const inputSnapshot = {
-    client: input.client,
-    cryptoKeyVersionName: input.cryptoKeyVersionName,
-    expectedKeyId: input.expectedKeyId
+  let inputSnapshot: {
+    readonly client: GoogleCloudKmsClientPort
+    readonly cryptoKeyVersionName: string
+    readonly expectedKeyId: string
   }
-  if (!inputSnapshot.client) throw new Error('Google Cloud KMS attestation input is invalid')
-  const getCryptoKeyVersion = inputSnapshot.client.getCryptoKeyVersion.bind(inputSnapshot.client)
-  const getPublicKey = inputSnapshot.client.getPublicKey.bind(inputSnapshot.client)
-  const asymmetricSign = inputSnapshot.client.asymmetricSign.bind(inputSnapshot.client)
+  let getCryptoKeyVersion: GoogleCloudKmsClientPort['getCryptoKeyVersion']
+  let getPublicKey: GoogleCloudKmsClientPort['getPublicKey']
+  let asymmetricSign: GoogleCloudKmsClientPort['asymmetricSign']
+  try {
+    inputSnapshot = {
+      client: input.client,
+      cryptoKeyVersionName: input.cryptoKeyVersionName,
+      expectedKeyId: input.expectedKeyId
+    }
+    if (!inputSnapshot.client) throw new Error()
+    getCryptoKeyVersion = inputSnapshot.client.getCryptoKeyVersion.bind(inputSnapshot.client)
+    getPublicKey = inputSnapshot.client.getPublicKey.bind(inputSnapshot.client)
+    asymmetricSign = inputSnapshot.client.asymmetricSign.bind(inputSnapshot.client)
+  } catch {
+    throw new Error('Google Cloud KMS attestation input is invalid')
+  }
   const name = inputSnapshot.cryptoKeyVersionName
   if (typeof name !== 'string' || !RESOURCE.test(name)) {
     throw new Error('Google Cloud KMS key version resource is invalid')
@@ -177,10 +206,21 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
   } catch {
     throw new Error('Google Cloud KMS attestation failed')
   }
-  const version = record(versionRaw, 'key version')
-  if (version.name !== name || !isEnum(version.state, 'ENABLED', 1)
-    || !isEnum(version.algorithm, 'EC_SIGN_ED25519', 40)
-    || !isEnum(version.protectionLevel, 'HSM', 2)) {
+  let versionSnapshot: Record<'name' | 'state' | 'algorithm' | 'protectionLevel', unknown>
+  try {
+    const version = record(versionRaw, 'key version')
+    versionSnapshot = {
+      name: version.name,
+      state: version.state,
+      algorithm: version.algorithm,
+      protectionLevel: version.protectionLevel
+    }
+  } catch {
+    throw new Error('Google Cloud KMS key version response is invalid')
+  }
+  if (versionSnapshot.name !== name || !isEnum(versionSnapshot.state, 'ENABLED', 1)
+    || !isEnum(versionSnapshot.algorithm, 'EC_SIGN_ED25519', 40)
+    || !isEnum(versionSnapshot.protectionLevel, 'HSM', 2)) {
     throw new Error('Google Cloud KMS key version posture is invalid')
   }
 
@@ -190,23 +230,36 @@ export async function attestGoogleCloudKmsHsmEd25519Key(
   } catch {
     throw new Error('Google Cloud KMS attestation failed')
   }
-  const publicKey = record(publicRaw, 'public key')
-  const publicKeySnapshot = {
-    name: publicKey.name,
-    pem: publicKey.pem,
-    algorithm: publicKey.algorithm,
-    protectionLevel: publicKey.protectionLevel,
-    pemCrc32c: publicKey.pemCrc32c
+  let publicKeySnapshot: Record<
+    'name' | 'pem' | 'algorithm' | 'protectionLevel' | 'pemCrc32c',
+    unknown
+  >
+  try {
+    const publicKey = record(publicRaw, 'public key')
+    publicKeySnapshot = {
+      name: publicKey.name,
+      pem: publicKey.pem,
+      algorithm: publicKey.algorithm,
+      protectionLevel: publicKey.protectionLevel,
+      pemCrc32c: publicKey.pemCrc32c
+    }
+  } catch {
+    throw new Error('Google Cloud KMS public key response is invalid')
   }
   if (publicKeySnapshot.name !== name || typeof publicKeySnapshot.pem !== 'string'
     || !isEnum(publicKeySnapshot.algorithm, 'EC_SIGN_ED25519', 40)
     || !isEnum(publicKeySnapshot.protectionLevel, 'HSM', 2)) {
     throw new Error('Google Cloud KMS public key response is invalid')
   }
-  const pemChecksum = uint32(
-    record(publicKeySnapshot.pemCrc32c, 'public key checksum').value,
-    'public key checksum'
-  )
+  let pemChecksum: number
+  try {
+    pemChecksum = uint32(
+      record(publicKeySnapshot.pemCrc32c, 'public key checksum').value,
+      'public key checksum'
+    )
+  } catch {
+    throw new Error('Google Cloud KMS public key checksum is invalid')
+  }
   if (pemChecksum !== crc32c.calculate(Buffer.from(publicKeySnapshot.pem, 'utf8'))) {
     throw new Error('Google Cloud KMS public key integrity is invalid')
   }
@@ -241,7 +294,15 @@ export function createGoogleCloudKmsHsmEd25519SignerBinding(
   if (!input || typeof input !== 'object') {
     throw new Error('Google Cloud KMS signer binding input is invalid')
   }
-  const inputSnapshot = { client: input.client, attestation: input.attestation }
+  let inputSnapshot: {
+    readonly client: GoogleCloudKmsClientPort
+    readonly attestation: Readonly<GoogleCloudKmsHsmEd25519Attestation>
+  }
+  try {
+    inputSnapshot = { client: input.client, attestation: input.attestation }
+  } catch {
+    throw new Error('Google Cloud KMS signer binding input is invalid')
+  }
   if (!inputSnapshot.client || !inputSnapshot.attestation) {
     throw new Error('Google Cloud KMS signer binding input is invalid')
   }
@@ -251,12 +312,22 @@ export function createGoogleCloudKmsHsmEd25519SignerBinding(
   const name = clientSnapshot.cryptoKeyVersionName
   const opaqueKeyHandleId = `gcp-kms-hsm:${createHash('sha256').update(name).digest('hex').slice(0, 32)}`
   const sign: GoogleCloudKmsOpaqueSignCallback = async request => {
-    const requestSnapshot = {
-      opaqueKeyHandleId: request.opaqueKeyHandleId,
-      signal: request.signal,
-      canonicalPayload: request.canonicalPayload
+    let requestSnapshot: {
+      readonly opaqueKeyHandleId: string
+      readonly signal: AbortSignal
+      readonly canonicalPayload: Uint8Array
     }
-    if (requestSnapshot.opaqueKeyHandleId !== opaqueKeyHandleId || requestSnapshot.signal.aborted) {
+    try {
+      requestSnapshot = {
+        opaqueKeyHandleId: request.opaqueKeyHandleId,
+        signal: request.signal,
+        canonicalPayload: request.canonicalPayload
+      }
+    } catch {
+      throw new Error('Google Cloud KMS signing request is invalid')
+    }
+    if (requestSnapshot.opaqueKeyHandleId !== opaqueKeyHandleId
+      || abortSignalIsAborted(requestSnapshot.signal)) {
       throw new Error('Google Cloud KMS signing request is invalid')
     }
     let payloadBytes: number
@@ -269,7 +340,12 @@ export function createGoogleCloudKmsHsmEd25519SignerBinding(
       || payloadBytes > MAX_CANONICAL_PAYLOAD_BYTES) {
       throw new Error('Google Cloud KMS signing payload is invalid')
     }
-    const data = Buffer.from(requestSnapshot.canonicalPayload)
+    let data: Buffer
+    try {
+      data = Buffer.from(requestSnapshot.canonicalPayload)
+    } catch {
+      throw new Error('Google Cloud KMS signing payload is invalid')
+    }
     const rpcData = Buffer.from(data)
     let raw: unknown
     try {
@@ -281,24 +357,39 @@ export function createGoogleCloudKmsHsmEd25519SignerBinding(
     } catch {
       throw new Error('Google Cloud KMS signing failed')
     }
-    if (requestSnapshot.signal.aborted) throw new Error('Google Cloud KMS signing aborted')
-    const response = record(raw, 'sign response')
-    const responseSnapshot = {
-      name: response.name,
-      verifiedDataCrc32c: response.verifiedDataCrc32c,
-      protectionLevel: response.protectionLevel,
-      signature: response.signature,
-      signatureCrc32c: response.signatureCrc32c
+    if (abortSignalIsAborted(requestSnapshot.signal)) {
+      throw new Error('Google Cloud KMS signing aborted')
+    }
+    let responseSnapshot: Record<
+      'name' | 'verifiedDataCrc32c' | 'protectionLevel' | 'signature' | 'signatureCrc32c',
+      unknown
+    >
+    try {
+      const response = record(raw, 'sign response')
+      responseSnapshot = {
+        name: response.name,
+        verifiedDataCrc32c: response.verifiedDataCrc32c,
+        protectionLevel: response.protectionLevel,
+        signature: response.signature,
+        signatureCrc32c: response.signatureCrc32c
+      }
+    } catch {
+      throw new Error('Google Cloud KMS sign response is invalid')
     }
     if (responseSnapshot.name !== name || responseSnapshot.verifiedDataCrc32c !== true
       || !isEnum(responseSnapshot.protectionLevel, 'HSM', 2)) {
       throw new Error('Google Cloud KMS sign response posture is invalid')
     }
     const signature = copyExactSignature(responseSnapshot.signature)
-    const checksum = uint32(
-      record(responseSnapshot.signatureCrc32c, 'signature checksum').value,
-      'signature checksum'
-    )
+    let checksum: number
+    try {
+      checksum = uint32(
+        record(responseSnapshot.signatureCrc32c, 'signature checksum').value,
+        'signature checksum'
+      )
+    } catch {
+      throw new Error('Google Cloud KMS signature checksum is invalid')
+    }
     if (checksum !== crc32c.calculate(signature)) {
       throw new Error('Google Cloud KMS signature integrity is invalid')
     }

@@ -502,3 +502,154 @@ test('Google Cloud KMS signer reject signature oversized hoặc typed-array prox
     )
   }
 })
+
+async function rejectsSensitiveGetterLeak(operation: () => unknown | Promise<unknown>): Promise<void> {
+  await assert.rejects(
+    async () => await operation(),
+    (error: unknown) => {
+      assert.ok(error instanceof Error)
+      assert.match(error.message, /Google Cloud KMS/i)
+      assert.doesNotMatch(error.message, /getter-sensitive-marker|token|private_key/i)
+      assert.equal('cause' in error, false)
+      return true
+    }
+  )
+}
+
+test('Google Cloud KMS sanitize hostile getters ở public input boundaries', async () => {
+  const sensitive = () => { throw new Error('token=getter-sensitive-marker') }
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    get client() { return sensitive() },
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: 'a'.repeat(64)
+  }))
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    client: fixture().client,
+    cryptoKeyVersionName: RESOURCE,
+    get expectedKeyId() { return sensitive() }
+  }))
+
+  const methodValue = fixture()
+  Object.defineProperty(methodValue.client, 'getPublicKey', { get: sensitive })
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    client: methodValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: methodValue.keyId
+  }))
+
+  const value = fixture()
+  const attestation = await attestGoogleCloudKmsHsmEd25519Key({
+    client: value.client, cryptoKeyVersionName: RESOURCE, expectedKeyId: value.keyId
+  })
+  await rejectsSensitiveGetterLeak(() => createGoogleCloudKmsHsmEd25519SignerBinding({
+    client: value.client,
+    get attestation() { return sensitive() }
+  }))
+  const binding = createGoogleCloudKmsHsmEd25519SignerBinding({ client: value.client, attestation })
+  await rejectsSensitiveGetterLeak(() => binding.sign({
+    opaqueKeyHandleId: binding.opaqueKeyHandleId,
+    signal: new AbortController().signal,
+    get canonicalPayload() { return sensitive() }
+  }))
+  await rejectsSensitiveGetterLeak(() => binding.sign({
+    canonicalPayload: new Uint8Array([1]),
+    opaqueKeyHandleId: binding.opaqueKeyHandleId,
+    get signal() { return sensitive() }
+  }))
+  const hostileSignal = Object.create(null) as AbortSignal
+  Object.defineProperty(hostileSignal, 'aborted', { get: sensitive })
+  await rejectsSensitiveGetterLeak(() => binding.sign({
+    canonicalPayload: new Uint8Array([1]),
+    opaqueKeyHandleId: binding.opaqueKeyHandleId,
+    signal: hostileSignal
+  }))
+})
+
+test('Google Cloud KMS sanitize hostile getters ở SDK response boundaries', async () => {
+  const sensitive = () => { throw new Error('private_key=getter-sensitive-marker') }
+  const versionValue = fixture()
+  versionValue.client.getCryptoKeyVersion = async () => [{
+    get name() { return sensitive() }
+  }]
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    client: versionValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: versionValue.keyId
+  }))
+
+  const publicValue = fixture()
+  publicValue.client.getPublicKey = async () => [{
+    name: RESOURCE,
+    get pemCrc32c() { return sensitive() },
+    algorithm: 'EC_SIGN_ED25519',
+    protectionLevel: 'HSM'
+  }]
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    client: publicValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: publicValue.keyId
+  }))
+
+  const checksumValue = fixture()
+  const checksumPem = checksumValue.pair.publicKey
+    .export({ type: 'spki', format: 'pem' }).toString()
+  checksumValue.client.getPublicKey = async () => [{
+    name: RESOURCE,
+    pem: checksumPem,
+    pemCrc32c: { get value() { return sensitive() } },
+    algorithm: 'EC_SIGN_ED25519',
+    protectionLevel: 'HSM'
+  }]
+  await rejectsSensitiveGetterLeak(() => attestGoogleCloudKmsHsmEd25519Key({
+    client: checksumValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: checksumValue.keyId
+  }))
+
+  const signValue = fixture()
+  signValue.client.asymmetricSign = async () => [{
+    get signature() { return sensitive() },
+    name: RESOURCE,
+    verifiedDataCrc32c: true,
+    protectionLevel: 'HSM'
+  }]
+  const signAttestation = await attestGoogleCloudKmsHsmEd25519Key({
+    client: signValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: signValue.keyId
+  })
+  const binding = createGoogleCloudKmsHsmEd25519SignerBinding({
+    client: signValue.client, attestation: signAttestation
+  })
+  await rejectsSensitiveGetterLeak(() => binding.sign({
+    canonicalPayload: new Uint8Array([1]),
+    opaqueKeyHandleId: binding.opaqueKeyHandleId,
+    signal: new AbortController().signal
+  }))
+
+  const signatureChecksumValue = fixture()
+  signatureChecksumValue.client.asymmetricSign = async request => {
+    const signature = sign(null, Buffer.from(request.data), signatureChecksumValue.pair.privateKey)
+    return [{
+      name: RESOURCE,
+      signature,
+      signatureCrc32c: { get value() { return sensitive() } },
+      verifiedDataCrc32c: true,
+      protectionLevel: 'HSM'
+    }]
+  }
+  const signatureChecksumAttestation = await attestGoogleCloudKmsHsmEd25519Key({
+    client: signatureChecksumValue.client,
+    cryptoKeyVersionName: RESOURCE,
+    expectedKeyId: signatureChecksumValue.keyId
+  })
+  const checksumBinding = createGoogleCloudKmsHsmEd25519SignerBinding({
+    client: signatureChecksumValue.client,
+    attestation: signatureChecksumAttestation
+  })
+  await rejectsSensitiveGetterLeak(() => checksumBinding.sign({
+    canonicalPayload: new Uint8Array([1]),
+    opaqueKeyHandleId: checksumBinding.opaqueKeyHandleId,
+    signal: new AbortController().signal
+  }))
+})

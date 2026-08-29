@@ -35,6 +35,16 @@ Last reviewed: 2026-08-27
   vào server/report/runner/Paper. Máy kiểm chứng không có `gcloud` và không có ADC
   project/environment, vì vậy real IAM/provisioning/HSM signing operation và
   custody vẫn `NOT VERIFIED`; đây là scope D2 riêng, không phải release proof.
+- Independent review đến sau commit D1 phát hiện hostile getters ở public input
+  và SDK response có thể ném message chứa secret trước vùng sanitize. Correction
+  đã RED→GREEN bằng snapshot/accessor normalization cho ADC options,
+  attestation/binding/sign request, key/public/sign response, `AbortSignal` và
+  protobuf checksum wrapper; mỗi field vẫn chỉ đọc một lần và lỗi không giữ
+  `cause` hoặc message gốc. Review FAIL cũ supersede mọi PASS trước correction.
+  Focused correction `46/46` PASS; full ordered gate `475/471/0/4` PASS cùng
+  TypeScript/Java build và diff-check. Correction review độc lập trả `PASS`, không
+  blocker/high/medium; LOW chỉ là wording post-RPC khi hostile `AbortSignal`
+  getter ném lỗi, không có leak hoặc behavioral bypass.
 
 ## 2026-08-27 — P0 decoder/polling post-UAT hardening
 
