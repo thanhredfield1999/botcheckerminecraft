@@ -138,6 +138,20 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
 - Declaration `paper-process` compose được với provider-registry admission bằng
   capability `dry-run-preflight`, nhưng capability module vẫn `library-only` và không có
   runtime importer.
+- `createPaperProcessFilesystemObserver` nay thực hiện synchronous bounded read-only cho
+  exact declared `paper`, `candidate` và optional `probe` files dưới một configured
+  isolated root. Nó reject non-canonical/symlink/junction/non-regular/multi-hardlink,
+  path/descriptor metadata change, hash mismatch, `>128 MiB/file` và `>256 MiB`
+  aggregate; observation chỉ được compose khi module-issued và target-binding hash khớp.
+- Posture role-scoped bắt buộc là `executableArtifactFileBytesObserved:true`,
+  `configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+  non-atomic, freshness `not-established` và không chứng minh JVM-loaded bytes.
+- Focused exact-current của slice mới `39 pass / 0 fail / 1 Windows symlink EPERM skip`;
+  full ordered gate `642 total / 637 pass / 0 fail / 5 skip`; typecheck,
+  TypeScript/Java build, security/claim scan và diff-check PASS. Initial review
+  `deleg_85402dd8` tìm MEDIUM `PPFSO-MEDIUM-001` do field cũ overclaim whole filesystem;
+  config-tamper regression RED→GREEN và correction `deleg_ceed4c73` xác nhận CLOSED,
+  PASS `0/0/0/0`. External-hardlink bypass cũng đã RED→GREEN bằng `nlink === 1` guard.
 - Focused exact-current `42/42` PASS; full ordered gate
   `633 total / 629 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
   security/claim scan và diff-check PASS. Independent review `deleg_05d8b30f` PASS
@@ -157,9 +171,11 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 `crash-recovery-runner.ts` chỉ gọi callback bên ngoài; chưa thực thi/kiểm chứng crash boundary.
 
-- Thêm read-only authoritative fact collector cho approved isolated root; kiểm
-  realpath/symlink, exact artifact bytes, port/PID/session lock và zero-player state thay
-  vì tin caller facts.
+- Mở rộng read-only collector riêng cho declared config artifacts nếu lifecycle policy
+  cần config-byte proof; slice hiện ghi rõ `configurationArtifactsObserved:false`.
+- Thêm authoritative socket/PID/session-lock và zero-player collectors thay vì tin
+  caller facts. Executable artifact file observation hiện tại không chứng minh các facts
+  đó, không atomic/fresh và không chứng minh JVM đã load bytes.
 - Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;
   - readiness marker + health probe;
@@ -173,8 +189,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 - Library-only dry-run hiện hiển thị toàn bộ planned mutation và fail closed trên
   caller-supplied mismatch trước mọi mutation; chưa chứng minh facts đến từ OS/Paper.
-- Authoritative sai root/hash/port/PID/approval phải fail trước JVM/file mutation sau khi
-  read-only collector được triển khai và kiểm chứng controlled runtime.
+- Executable artifact root/path/hash mismatch hiện fail trước mutation ở library layer;
+  port/PID/player/approval vẫn cần authoritative collectors và controlled runtime trước
+  khi acceptance tổng thể được đóng.
 - Clean restart và authorized crash test tạo evidence phase-bound, không cần orchestration script ngoài.
 
 ### P0.4. Evidence bundle append-only và exact candidate binding

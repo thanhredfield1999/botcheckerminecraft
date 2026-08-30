@@ -77,6 +77,24 @@ start/stop/kill Paper, back up or restore a fixture, establish symlink/realpath 
 prove approval provenance, issue a boot token, or provide restart/crash/release
 evidence. Callers must not treat a successful dry-run as authoritative runtime truth.
 
+### Paper executable artifact file observation (library only)
+
+`createPaperProcessFilesystemObserver(...)` synchronously reads the exact declared
+`paper`, `candidate` and optional `probe` files under one configured isolated root. It
+uses bounded descriptor reads, rejects non-canonical/symlink/junction/non-regular or
+multi-hardlink files, brackets path/descriptor metadata and compares exact SHA-256.
+Only a module-issued immutable observation can be composed with an exact factory-issued
+`PaperProcessProvider`.
+
+The output is deliberately role-scoped:
+`executableArtifactFileBytesObserved:true`,
+`configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+`filesystemObservationAtomic:false`, freshness `not-established` and
+`provesJvmLoadedBytes:false`. It does not inspect config artifacts, sockets, PID/session
+lock, players or a JVM, and it does not prove that Paper loaded those bytes. The module
+has no runtime importer and should not be called from the HTTP/event-loop path; it adds
+no lifecycle, mutation, restart, crash, approval-provenance or release proof.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,

@@ -15,6 +15,7 @@ const SAFE_SCOPE = /^[a-z][a-z0-9._:-]{0,63}$/
 const SAFE_PATH_PART = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/
 const CREDENTIAL_PATTERN = /(password|passwd|secret|token|credential|api[_-]?key|bearer)/i
 const PRODUCTION_ROOT_PARTS = new Set(['live', 'prod', 'production', 'server', 'minecraftserver'])
+const paperProcessProviderCapabilities = new WeakSet<object>()
 const OPERATIONS = Object.freeze([
   'backup-fixture',
   'start-paper',
@@ -126,6 +127,12 @@ export class PaperProcessPreflightError extends Error {
   }
 }
 
+export function assertPaperProcessProvider(input: unknown): asserts input is PaperProcessProvider {
+  if (typeof input !== 'object' || input === null || !paperProcessProviderCapabilities.has(input)) {
+    throw new Error('Paper process provider is invalid')
+  }
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
@@ -219,7 +226,7 @@ export function createPaperProcessProvider(input: unknown): PaperProcessProvider
       mutationClass: 'isolated-process-lifecycle' as const
     })
 
-    return Object.freeze({
+    const provider = Object.freeze({
       declaration,
       preflight(factsInput: unknown): Readonly<PaperProcessDryRunPreview> {
         try {
@@ -261,6 +268,8 @@ export function createPaperProcessProvider(input: unknown): PaperProcessProvider
         }
       }
     })
+    paperProcessProviderCapabilities.add(provider)
+    return provider
   } catch {
     throw new Error('Paper process provider configuration is invalid')
   }

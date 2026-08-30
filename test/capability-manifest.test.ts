@@ -405,6 +405,34 @@ test('Paper process provider preflight chỉ là library-only dry-run không lif
       importers.push(`src/${file}`)
     }
   }
+  assert.deepEqual(importers, ['src/paper-process-filesystem-observer.ts'])
+})
+
+test('Paper process filesystem observer chỉ là library-only bounded read không lifecycle I/O', async () => {
+  const source = await readFile('src/paper-process-filesystem-observer.ts', 'utf8')
+  const manifest = collectRuntimeCapabilityManifest({ rootDir: process.cwd() })
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-process-executable-artifact-file-observation'),
+    { name: 'paper-process-executable-artifact-file-observation', mode: 'library-only' }
+  )
+  assert.match(source, /executableArtifactFileBytesObserved: true/)
+  assert.match(source, /configurationArtifactsObserved: false/)
+  assert.match(source, /observedArtifactRoles/)
+  assert.doesNotMatch(source, /filesystemFactsObserved/)
+  assert.match(source, /filesystemObservationAtomic: false/)
+  assert.match(source, /filesystemObservationFreshness: 'not-established'/)
+  assert.match(source, /provesJvmLoadedBytes: false/)
+  assert.doesNotMatch(source, /node:child_process|node:net|node:http|fetch\s*\(|process\.env|\.spawn\s*\(|\.kill\s*\(|\.listen\s*\(/)
+  assert.doesNotMatch(source, /writeFile|rename\s*\(|unlink\s*\(|rm\s*\(|mkdir\s*\(|\/reload|PlugMan|hot-loader|taskkill|killall/)
+
+  const files = (await readdir('src')).filter(file => file.endsWith('.ts') && file !== 'paper-process-filesystem-observer.ts')
+  const importers: string[] = []
+  for (const file of files) {
+    const candidate = await readFile(`src/${file}`, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-process-filesystem-observer|(?:import|require)\(\s*['"][^'"]*paper-process-filesystem-observer)/.test(candidate)) {
+      importers.push(`src/${file}`)
+    }
+  }
   assert.deepEqual(importers, [])
 })
 

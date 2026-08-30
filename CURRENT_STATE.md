@@ -11,6 +11,38 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Paper executable artifact file observation
+
+- `VERIFIED offline/library-only partial`: `createPaperProcessFilesystemObserver`
+  performs synchronous bounded read-only observation of the exact declared
+  `paper`, `candidate` and optional `probe` files below one configured isolated root.
+  It rejects non-canonical root/parent paths, symlink/junction components, non-regular
+  files, external hardlink aliases (`nlink != 1`), hash mismatch, changing path/
+  descriptor metadata, files above `128 MiB` and aggregate bytes above `256 MiB`.
+- Bytes are read once through a checked file descriptor and compared with the declared
+  SHA-256. A module-issued immutable observation can compose with an exact factory-issued
+  `PaperProcessProvider`; forged observations and custom providers fail before provider
+  invocation, while target-binding hash mismatch fails before any preview is returned.
+- The role-scoped output says `executableArtifactFileBytesObserved:true`,
+  `configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+  `filesystemObservationAtomic:false`, freshness `not-established` and
+  `provesJvmLoadedBytes:false`. Capability
+  `paper-process-executable-artifact-file-observation` is `library-only` and has no
+  runtime importer.
+- Focused exact-current gate passed `39 pass / 0 fail / 1 Windows symlink EPERM skip`.
+  Full ordered gate passed `642 total / 637 pass / 0 fail / 5 skip`; typecheck,
+  TypeScript/Java build, security/claim scan and diff-check passed.
+- Initial independent review `deleg_85402dd8` found MEDIUM `PPFSO-MEDIUM-001`:
+  `filesystemFactsObserved:true` overclaimed because config artifacts were intentionally
+  outside scope. A config-tamper regression went RED, the field/capability were replaced
+  by the role-scoped posture above, and correction review `deleg_ceed4c73` confirmed the
+  finding CLOSED with PASS `0/0/0/0`. The external-hardlink containment bypass was also
+  reproduced RED and corrected GREEN with the single-link guard.
+- This is synchronous library I/O for an isolated tool path, not an event-loop/server
+  runtime consumer. It does not observe config bytes, sockets, PID/session lock, players
+  or JVM-loaded bytes; provide cross-file atomicity/freshness; start/stop Paper; prove
+  approval provenance; or create lifecycle/restart/crash/release evidence.
+
 ## 2026-08-31 — Paper process dry-run preflight
 
 - `VERIFIED offline/library-only partial`: `createPaperProcessProvider` binds one
@@ -31,10 +63,10 @@ Last reviewed: 2026-08-31
   security/claim scan and diff-check passed. Independent review `deleg_05d8b30f`
   passed `0/0/0/0`; its provider/capability suite passed `31/31` and custom
   optional-probe/freeze/root-case/getter/scope-order probes passed.
-- This slice does not inspect the filesystem, sockets, PID/session state, players or a
-  running JVM. It does not establish symlink/realpath truth, perform backup/start/stop/
-  kill/restore, prove approval provenance, issue a boot token, verify Paper lifecycle or
-  create controlled runtime/restart/crash/release evidence.
+- The dry-run provider itself does not inspect the filesystem, sockets, PID/session
+  state, players or a running JVM. The separate library-only executable artifact file
+  observer above may supply only the role-scoped file-byte portion; all remaining facts
+  and lifecycle/release non-claims stay unchanged.
 
 ## 2026-08-31 — Authorized provider-registry admission
 
