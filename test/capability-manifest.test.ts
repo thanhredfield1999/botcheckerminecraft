@@ -377,10 +377,35 @@ test('authorized provider registry chỉ admission metadata và được server 
     }
   }
 
-  assert.deepEqual(importers, ['src/runner.ts', 'src/server.ts'])
+  assert.deepEqual(importers, ['src/paper-process-provider.ts', 'src/runner.ts', 'src/server.ts'])
+  const paperProcessSource = await readFile('src/paper-process-provider.ts', 'utf8')
+  assert.match(paperProcessSource, /import type \{ ProviderDeclarationSnapshot \} from '\.\/provider-registry\.js'/)
   assert.match(serverSource, /providerRegistry\.resolve/)
   assert.doesNotMatch(registrySource, /node:http|node:net|node:fs|fetch\s*\(|process\.env|org\.bukkit|io\.papermc/)
   assert.doesNotMatch(registrySource, /\.start\s*\(|\.stop\s*\(|\.restart\s*\(|\.observe\s*\(|\.invoke\s*\(/)
+})
+
+test('Paper process provider preflight chỉ là library-only dry-run không lifecycle I/O', async () => {
+  const source = await readFile('src/paper-process-provider.ts', 'utf8')
+  const manifest = collectRuntimeCapabilityManifest({ rootDir: process.cwd() })
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-process-provider-preflight'),
+    { name: 'paper-process-provider-preflight', mode: 'library-only' }
+  )
+  assert.doesNotMatch(source, /node:child_process|node:fs|node:net|node:http|fetch\s*\(|process\.env|\.spawn\s*\(|\.kill\s*\(|\.listen\s*\(/)
+  assert.doesNotMatch(source, /\/reload|PlugMan|hot-loader|taskkill|killall/)
+  assert.match(source, /mutationAllowed: false/)
+  assert.match(source, /factsAuthoritative: false/)
+
+  const files = (await readdir('src')).filter(file => file.endsWith('.ts') && file !== 'paper-process-provider.ts')
+  const importers: string[] = []
+  for (const file of files) {
+    const candidate = await readFile(`src/${file}`, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-process-provider|(?:import|require)\(\s*['"][^'"]*paper-process-provider)/.test(candidate)) {
+      importers.push(`src/${file}`)
+    }
+  }
+  assert.deepEqual(importers, [])
 })
 
 test('Paper JVM canonical-byte provider chỉ compose codec vào observer contract', async () => {

@@ -11,6 +11,31 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Paper process dry-run preflight
+
+- `VERIFIED offline/library-only partial`: `createPaperProcessProvider` binds one
+  configured absolute non-production-like root, logical registry root, port, provider
+  identity, caller-configured authorization metadata and exact declared
+  Paper/candidate/optional-probe artifact hashes.
+- The strict preflight accepts only plain bounded snapshots of caller-supplied
+  root/hash/port/PID/session-lock/player/authorization facts. Exact clean-state facts
+  produce a deeply frozen mutation preview with `mutationAllowed:false`,
+  `factsAuthoritative:false`, `approvalAuthoritative:false`, `bootTokenRequired:true`
+  and the exact target-binding SHA-256. Mismatch, hostile getters, Proxy scope containers
+  and malformed input fail with fixed sanitized errors.
+- Its immutable `paper-process` declaration composes with provider-registry admission as
+  capability `dry-run-preflight`. Capability `paper-process-provider-preflight` remains
+  `library-only`; no runtime module imports or invokes this provider.
+- Focused exact-current gate passed `42/42`. Full ordered gate passed
+  `633 total / 629 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  security/claim scan and diff-check passed. Independent review `deleg_05d8b30f`
+  passed `0/0/0/0`; its provider/capability suite passed `31/31` and custom
+  optional-probe/freeze/root-case/getter/scope-order probes passed.
+- This slice does not inspect the filesystem, sockets, PID/session state, players or a
+  running JVM. It does not establish symlink/realpath truth, perform backup/start/stop/
+  kill/restore, prove approval provenance, issue a boot token, verify Paper lifecycle or
+  create controlled runtime/restart/crash/release evidence.
+
 ## 2026-08-31 — Authorized provider-registry admission
 
 - `VERIFIED offline/API partial`: `createProviderRegistry` snapshots up to 32 typed

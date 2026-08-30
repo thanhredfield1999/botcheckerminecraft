@@ -60,6 +60,23 @@ invoke providers and supplies no Paper lifecycle, process, scheduler, transport,
 restart, filesystem, SQLite, log, vision, custody or release proof. Without an
 injected registry, the legacy `{ scenario }` request remains available.
 
+### Paper process dry-run preflight (library only)
+
+`createPaperProcessProvider(...)` can bind one configured isolated root, logical
+registry root, port, provider identity, caller-configured authorization metadata and
+exact declared Paper/candidate/optional-probe hashes. Its strict `preflight(...)`
+compares caller-supplied clean-state facts and returns a deeply frozen mutation preview
+with `mutationAllowed:false`, `factsAuthoritative:false`,
+`approvalAuthoritative:false`, `bootTokenRequired:true` and the exact target-binding
+SHA-256. Its immutable `paper-process` declaration can be admitted by the provider
+registry under capability `dry-run-preflight`.
+
+This module is not a Paper lifecycle provider yet. It performs no filesystem, socket,
+PID, session-lock, player or JVM inspection and has no runtime importer. It does not
+start/stop/kill Paper, back up or restore a fixture, establish symlink/realpath truth,
+prove approval provenance, issue a boot token, or provide restart/crash/release
+evidence. Callers must not treat a successful dry-run as authoritative runtime truth.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,

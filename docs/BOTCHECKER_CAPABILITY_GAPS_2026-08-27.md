@@ -124,7 +124,27 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
 
 ### P0.3. Paper process orchestration an toàn và có approval boundary
 
-**OBSERVED**
+**VERIFIED offline/library-only partial (2026-08-31)**
+
+- `createPaperProcessProvider` đã bind một configured absolute root không có segment
+  production-like rõ ràng, logical registry root, port, provider identity/version/
+  instance, caller-configured authorization metadata và exact declared
+  Paper/candidate/optional-probe hashes từ `ArtifactTargetBinding`.
+- Strict preflight snapshot caller-supplied root/hash/port/PID/session-lock/player/
+  authorization facts đúng một lần. Exact clean-state facts tạo immutable mutation
+  preview với `mutationAllowed:false`, `factsAuthoritative:false`,
+  `approvalAuthoritative:false`, `bootTokenRequired:true` và exact target-binding hash;
+  mismatch, malformed input, hostile getter và Proxy scope fail bằng lỗi sanitized.
+- Declaration `paper-process` compose được với provider-registry admission bằng
+  capability `dry-run-preflight`, nhưng capability module vẫn `library-only` và không có
+  runtime importer.
+- Focused exact-current `42/42` PASS; full ordered gate
+  `633 total / 629 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  security/claim scan và diff-check PASS. Independent review `deleg_05d8b30f` PASS
+  `0/0/0/0`; targeted provider/capability `31/31` và custom optional-probe/freeze/
+  root-case/getter/scope-order probes PASS.
+
+**REMAINING / NEEDED**
 
 BotChecker không tự có Paper lifecycle provider. Các run thật phải dùng Python/Node ngoài để:
 
@@ -137,13 +157,10 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 `crash-recovery-runner.ts` chỉ gọi callback bên ngoài; chưa thực thi/kiểm chứng crash boundary.
 
-**NEEDED**
-
-- `PaperProcessProvider` chỉ hoạt động với isolated approved root.
-- Guard bắt buộc:
-  - root allowlist và reject production path mặc định;
-  - exact Paper/candidate/probe hashes;
-  - port/PID/session-lock offline check;
+- Thêm read-only authoritative fact collector cho approved isolated root; kiểm
+  realpath/symlink, exact artifact bytes, port/PID/session lock và zero-player state thay
+  vì tin caller facts.
+- Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;
   - readiness marker + health probe;
   - clean `stop` và natural JVM-exit proof;
@@ -154,8 +171,10 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 **Acceptance**
 
-- Dry-run hiển thị toàn bộ mutation trước khi chạy.
-- Sai root/hash/port/PID/approval → fail trước JVM/file mutation.
+- Library-only dry-run hiện hiển thị toàn bộ planned mutation và fail closed trên
+  caller-supplied mismatch trước mọi mutation; chưa chứng minh facts đến từ OS/Paper.
+- Authoritative sai root/hash/port/PID/approval phải fail trước JVM/file mutation sau khi
+  read-only collector được triển khai và kiểm chứng controlled runtime.
 - Clean restart và authorized crash test tạo evidence phase-bound, không cần orchestration script ngoài.
 
 ### P0.4. Evidence bundle append-only và exact candidate binding
