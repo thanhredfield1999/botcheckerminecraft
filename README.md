@@ -139,6 +139,13 @@ wall clock immediately before bounded observer I/O. Supplier errors are normaliz
 and no Bukkit/Paper object is retained. This port imports no Bukkit/Paper API and
 provides no scheduler, plugin lifecycle, transport, signing, custody or runtime wiring.
 
+A transport-neutral Java/Node codec can canonicalize one port result as a strict
+JSON v1 envelope. Both halves enforce a `16 KiB` cap; Node requires exact canonical
+UTF-8, rejects extra fields and malformed bytes, and returns a deep-frozen owned
+snapshot. No runtime source imports this codec. It opens no process, socket or HTTP
+endpoint and provides no origin authentication, challenge, freshness, nonce, signing,
+custody or release proof.
+
 A separate Java-only `PaperJvmObservationClaimBridge` can combine one caller-supplied
 canonical claim record with one port result. It requires exact observation-time and
 claimed server/boot ID equality, then reuses the existing candidate/hash/posture checks

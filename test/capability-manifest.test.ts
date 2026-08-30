@@ -234,6 +234,10 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-claim-bridge'),
     { name: 'paper-jvm-observation-claim-bridge', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-result-codec'),
+    { name: 'paper-jvm-observation-result-codec', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
@@ -249,6 +253,9 @@ test('Java observation core được build và bind vào capability provenance',
     && sha256.test(source.sha256)))
   assert.ok(java?.sources.some(source =>
     source.path === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java'
+    && sha256.test(source.sha256)))
+  assert.ok(java?.sources.some(source =>
+    source.path === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.java'
     && sha256.test(source.sha256)))
   assert.deepEqual(java?.compiled, [])
 })
@@ -290,6 +297,8 @@ test('compiled capability collector bind Java class output, source và build scr
   assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationPort.class')))
   assert.ok(java?.sources.some(source => source.path.endsWith('/PaperJvmObservationClaimBridge.java')))
   assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationClaimBridge.class')))
+  assert.ok(java?.sources.some(source => source.path.endsWith('/PaperJvmObservationResultCodec.java')))
+  assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationResultCodec.class')))
 })
 
 test('Paper JVM observation port chỉ là library boundary không runtime/signing wiring', async () => {
@@ -319,6 +328,33 @@ test('Paper JVM observation claim bridge chỉ compose canonical library input',
   assert.match(source, /JvmObservationBoundClaimBuilder\.Input/)
   assert.match(source, /JvmObservationBoundClaimBuilder\.canonicalJsonUtf8V2/)
   assert.match(source, /claims\.observedAtMs\(\) != result\.observedAtMs\(\)/)
+})
+
+test('Paper JVM observation result codecs chỉ là transport-neutral libraries', async () => {
+  const javaSource = await readFile(
+    'java-src/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.java',
+    'utf8'
+  )
+  const nodeSource = await readFile('src/paper-jvm-observation-result-codec.ts', 'utf8')
+  const combined = `${javaSource}\n${nodeSource}`
+  assert.doesNotMatch(combined, /org\.bukkit|io\.papermc|PrivateKey|KeyFactory|Signature|PKCS|PEM|JKS|KeyStore/)
+  assert.doesNotMatch(combined, /node:http|node:net|java\.net|ServerSocket|HttpClient|Socket|fetch\s*\(/)
+  assert.doesNotMatch(combined, /System\.getenv|System\.getProperty|process\.env|verifyAndConsume|consume\s*\(/)
+  assert.match(javaSource, /MAX_CANONICAL_BYTES = 16 \* 1024/)
+  assert.match(nodeSource, /MAX_CANONICAL_BYTES = 16 \* 1024/)
+  assert.match(nodeSource, /new TextDecoder\('utf-8', \{ fatal: true \}\)/)
+
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('paper-jvm-observation-result-codec.ts'))
+    .map(file => `src/${file}`)
+  const importers: string[] = []
+  for (const file of sourceFiles) {
+    const source = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-jvm-observation-result-codec|(?:import|require)\(\s*['"][^'"]*paper-jvm-observation-result-codec)/.test(source)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, [])
 })
 
 test('Java production observation-bound builder không có key hoặc signing API', async () => {

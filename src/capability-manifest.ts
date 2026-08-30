@@ -469,6 +469,11 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
       ...(javaSources.some(source => source.path
         === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java')
         ? [['paper-jvm-observation-claim-bridge', 'library-only'] as const]
+        : []),
+      ...(sourcePaths.has(`${codeRoot}/paper-jvm-observation-result-codec${codeRoot === 'src' ? '.ts' : '.js'}`)
+        && javaSources.some(source => source.path
+          === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.java')
+        ? [['paper-jvm-observation-result-codec', 'library-only'] as const]
         : [])
     ]),
     sources,

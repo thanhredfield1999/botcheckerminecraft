@@ -11,6 +11,32 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Canonical Paper observation-result codec
+
+- `VERIFIED offline/library-only partial`: Java `PaperJvmObservationResultCodec`
+  serializes one non-authoritative port result into a canonical JSON v1 envelope;
+  Node `paper-jvm-observation-result-codec.ts` strict-parses the same envelope,
+  requires byte-for-byte canonical UTF-8 and returns a deep-frozen owned snapshot.
+- Both sides enforce a `16 KiB` canonical-byte bound. Tests cover supplementary
+  Unicode Java→Node parity, strict/extra-field rejection, malformed UTF-8,
+  non-canonical whitespace, oversized input, input-buffer mutation isolation and
+  hostile getter error sanitization.
+- Capability `paper-jvm-observation-result-codec` is `library-only` only when both
+  Java and Node source halves exist. Source/compiled provenance is bound, and import
+  graph tests confirm no runtime source consumer.
+- Focused exact-current gate is `29/29` PASS. Full ordered gate is
+  `598 total / 594 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security/claim scan and diff-check PASS.
+- Initial review `deleg_951fb9f0` found one MEDIUM hostile `Uint8Array` Proxy
+  getter leak and one LOW caller-controlled Zod diagnostic leak. Both were reproduced
+  RED, normalized behind bounded codec errors, and closed GREEN. Final correction
+  confirmation `deleg_e606f6b0` PASS; focused codec `3/3` and five direct hostile-byte,
+  nested-schema, malformed-UTF-8 and non-canonical probes PASS, with no remaining
+  blocker/high/medium/low finding.
+- This codec performs no transport or I/O. It does not start a process/socket/HTTP
+  endpoint, schedule Paper work, authenticate origin, issue a challenge, consume a
+  nonce, sign, establish freshness/runtime identity/custody, or admit a release.
+
 ## 2026-08-30 — Paper observation result to canonical claim bridge
 
 - `VERIFIED offline/library-only partial`: `PaperJvmObservationClaimBridge` accepts
