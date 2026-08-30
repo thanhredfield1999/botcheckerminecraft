@@ -36,6 +36,7 @@ const reportReferenceSchema = z.strictObject({
   artifactFileName: z.string().min(1).max(200),
   artifactSha256: z.string().regex(SHA256_PATTERN),
   verificationScope: z.literal('SIGNATURE_ONLY_NON_RELEASE'),
+  signatureVerified: z.literal(false).optional(),
   freshnessEstablished: z.literal(false),
   replayChecked: z.literal(false),
   nonceConsumed: z.literal(false),

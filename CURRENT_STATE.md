@@ -11,6 +11,36 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Optional TestRun signed-provider evidence persistence
+
+- `VERIFIED offline/optional-runner partial`: `TestRun` can receive one injected
+  signed-provider evidence factory only with an exact artifact-bound
+  `server-probe` target. The callback is snapshotted once at construction and
+  receives a frozen run/scenario/capability/target/artifact request.
+- Persistence strict-parses one `jvm-observation-bound-v2` envelope, recomputes
+  its canonical challenge identity, matches run/target/provider/artifacts and
+  independently reassesses the exact non-authoritative candidate JVM
+  observation before adding one `provider-evidence` artifact to the same
+  create-new sealed bundle.
+- The report references the artifact by exact filename/SHA-256 and keeps
+  signature verification, freshness, replay, nonce consumption and release
+  eligibility false. A failed bundle write rolls back the in-memory reference,
+  so a non-persisted artifact is not advertised by `run.report()`.
+- This writer path does not verify the provider signature or authenticate the
+  functional report verdict. The separate P0.4 verifier must still receive an
+  exact trust-store snapshot to re-verify the sealed result.
+- TDD RED first failed because `TestRun` never called the factory. Focused
+  report/P0.4/target/counterexample gate is `25/25` PASS, including
+  queued-cancellation, persistence-reference rollback, provider-before-report
+  collision ordering and immutable target binding across callback `await`.
+  Exact-current full ordered gate is
+  `566 total / 562 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security scan and diff-check PASS.
+- Default `createServer()` does not supply this factory. There is still no HTTP
+  configuration, production Paper/Bukkit observer-to-signer adapter, trusted
+  key custody/provisioning, trusted time, release admission or controlled
+  runtime evidence.
+
 ## 2026-08-30 — Signed-provider sealed evidence verifier P0.4
 
 - `VERIFIED offline/library-only partial`: a separate compositor verifies one
@@ -28,9 +58,10 @@ Last reviewed: 2026-08-30
   replay/consume, trusted time, trust-store provenance/rollback, key custody,
   loaded-bytecode proof, runtime wiring, production readiness and release
   eligibility remain explicit `false`.
-- Capability `signed-provider-evidence-bundle-verifier` is `library-only`; the
-  module has no downstream production importer. `TestRun`, HTTP server, report
-  persistence and Paper/Bukkit paths do not generate/call this API.
+- Capability `signed-provider-evidence-bundle-verifier` remains `library-only`;
+  the module has no downstream production importer. The later optional
+  `TestRun` factory path can create/reference the artifact, but does not call the
+  verifier; default HTTP server and Paper/Bukkit paths remain unwired.
 - Initial implementation review FAIL found one HIGH: hostile Proxy cardinality could
   pass `length=1`, make `.map()` materialize `129` artifacts, then leave partial
   files before late schema rejection. RED reproduced this. The writer now rejects
@@ -42,9 +73,10 @@ Last reviewed: 2026-08-30
   typecheck, TypeScript/Java build, static scan and diff-check PASS.
 - Claim/import review PASS `0/0/0/0`. Final exact-current correction review
   `deleg_167e22f7` PASS `0/0/0/0`; the initial Proxy-cardinality HIGH is `CLOSED`.
-- P0.4 remains `PARTIAL`: production observer-to-signer adapter, trusted custody,
-  effective config/boot/server-instance truth, runner/server/release wiring and
-  controlled Paper evidence remain `NOT VERIFIED`.
+- P0.4 remains `PARTIAL`: optional runner persistence now exists, but production
+  observer-to-signer, trusted custody, effective config/boot/server-instance
+  truth, default server/release wiring and controlled Paper evidence remain
+  `NOT VERIFIED`.
 - Evidence: `docs/SIGNED_PROVIDER_EVIDENCE_BUNDLE_P04_2026-08-30.md`.
 
 ## 2026-08-30 — Caller-supplied trust-root policy checkpoint D4d
@@ -483,7 +515,7 @@ Last reviewed: 2026-08-30
 - `npm run build` compile Java bằng `javac --release 21`; capability manifest v2 bind build script, Java source và compiled `.class`. Legacy manifest không auxiliary vẫn là v1 với exact legacy fingerprint; explicit empty auxiliary fail-closed. Compiled collector được chứng minh từ trạng thái `dist/` vắng.
 - Opus threat/correction reviews `3653363a-b3b2-4e32-97da-cec4fb038253` và `3c847af3-dc3b-4759-95ae-4d977ea694da` PASS production boundary; M1 MRJAR Unix-`cp` portability đã RED→GREEN bằng Node `copyFileSync` và correction `3a74e622-6b70-43e9-ac34-d1ee14a4cc5c` xác nhận CLOSED. Capability schema v2 review `7abba73d-ba80-45da-8c28-27d15081f843` PASS, `0` blocker/high/medium; hai LOW version-domain/empty downgrade đã được sửa sau review.
 - `VERIFIED offline/library-only`: strict Node observation v1 parser/canonicalizer bind caller-declared `paper|candidate|probe` identity cùng whole-CodeSource file SHA-256 vào exact target binding. Exact file match chỉ trả `TARGET_FILE_MATCH_NON_AUTHORITATIVE`; hash/identity mismatch được giữ thành structured counter-evidence. Assessment tự chứa URI fingerprint, file/resource hashes + sizes, informational base-entry assessment và SHA-256 của toàn canonical observation.
-- Java `canonicalJsonUtf8V1` khớp byte-for-byte Node cho vector ASCII và supplementary Unicode; producer/consumer cùng reject forged trust posture, role `config`, credential-like metadata, path alias/traversal và byte overflow. Capability `jvm-artifact-observation-assessment` là `library-only`, chưa import vào runner/server/report/signed-provider.
+- Java `canonicalJsonUtf8V1` khớp byte-for-byte Node cho vector ASCII và supplementary Unicode; producer/consumer cùng reject forged trust posture, role `config`, credential-like metadata, path alias/traversal và byte overflow. Tại checkpoint này capability `jvm-artifact-observation-assessment` là `library-only` và chưa có importer. Optional `TestRun` persistence slice ngày 2026-08-30 về sau import assessment để structural-bind factory output, nhưng default server/Paper vẫn không cấu hình producer.
 - Opus review `617fcd15-42d9-4897-b003-8d42ff0fc148` PASS `0` blocker/high/medium; correction `1f6e79c3-8200-4655-8b8d-3316e6a9cedd` xác nhận cả 4 LOW (path parity, class-resource signal, self-contained fields, Unicode UTF-8) CLOSED.
 - Full exact-tree gate: `npm run typecheck && npm test && npm run build && git diff --check` exit `0`; `401` tests, `398` pass, `0` fail, `3` skip (2 intentional Windows signal skips cũ + 1 symlink `EPERM` skip); Java build, TypeScript build và diff-check PASS.
 - Đây không phải trusted/prod probe hoặc runtime attestation: không signer/private-key/key custody, nonce/report/server/Paper integration, effective config observation, loaded-bytecode proof, runtime behavior hay release admission. Không mở Paper/listener, không deploy/reload/restart, không chạm production và chưa push.

@@ -6,7 +6,16 @@ import type { Entity } from 'prismarine-entity'
 import { Vec3 } from 'vec3'
 import type { Scenario, ScenarioStep } from './scenario.js'
 import { boundedGuiItems, boundedGuiSnapshot, formatGuiSnapshot, itemSearchText, sanitizeGuiText, snapshotGui } from './snapshot.js'
-import type { GuiSnapshot, RunManifest, RunStatus, StepResult, TestReport, TimelineEvent, Verdict } from './types.js'
+import type {
+  GuiSnapshot,
+  RunManifest,
+  RunStatus,
+  SignedProviderEvidenceReference,
+  StepResult,
+  TestReport,
+  TimelineEvent,
+  Verdict
+} from './types.js'
 import { RunLifecycle } from './lifecycle.js'
 import { BotSession, waitForSpawn } from './bot-session.js'
 import { CrossingTracker } from './crossing.js'
@@ -31,7 +40,16 @@ import type { GameplayEvaluation } from './gameplay-contract.js'
 import type { MultiClientEvaluation } from './multi-client-contract.js'
 import type { CapabilityManifest } from './capability-manifest.js'
 import { writeEvidenceBundle, type EvidenceBundleInput } from './evidence-bundle.js'
-import { evidenceBinding, type ArtifactTargetBinding } from './target-binding.js'
+import {
+  artifactTargetBindingSha256,
+  evidenceBinding,
+  type ArtifactTargetBinding
+} from './target-binding.js'
+import { assessJvmArtifactObservationAgainstBinding } from './jvm-artifact-observation.js'
+import {
+  canonicalSignedProviderChallengeIdentityV1,
+  parseSignedProviderClaimEnvelope
+} from './signed-provider-claim-schema.js'
 
 const { goals, Movements, pathfinder } = createRequire(import.meta.url)('mineflayer-pathfinder') as typeof import('mineflayer-pathfinder')
 const GIT_COMMIT_PATTERN = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/
@@ -45,6 +63,33 @@ interface MinecraftOptions {
   password?: string
 }
 
+export interface SignedProviderEvidenceFactoryRequest {
+  readonly runId: string
+  readonly scenarioName: string
+  readonly scenarioSha256: string
+  readonly capabilitySourceFingerprint?: string
+  readonly bindingId: string
+  readonly targetBindingSha256: string
+  readonly provider: Readonly<ArtifactTargetBinding['provider']>
+  readonly loadedArtifacts: ReadonlyArray<Readonly<ArtifactTargetBinding['artifacts'][number]>>
+}
+
+export type SignedProviderEvidenceFactory = (
+  request: Readonly<SignedProviderEvidenceFactoryRequest>
+) => unknown | Promise<unknown>
+
+function immutableEvidenceBinding(targetBinding?: ArtifactTargetBinding): RunManifest['evidence'] {
+  const binding = evidenceBinding(targetBinding)
+  if (binding.evidenceGrade === 'development-unbound') return Object.freeze(binding)
+  for (const artifact of binding.targetBinding.artifacts) Object.freeze(artifact)
+  Object.freeze(binding.targetBinding.artifacts)
+  Object.freeze(binding.targetBinding.provider)
+  Object.freeze(binding.targetBinding.authorization.scope)
+  Object.freeze(binding.targetBinding.authorization)
+  Object.freeze(binding.targetBinding)
+  return Object.freeze(binding)
+}
+
 interface TestRunDependencies {
   createBot?: (options: MinecraftOptions) => Bot
   prepareNavigation?: (bot: Bot) => void
@@ -54,6 +99,7 @@ interface TestRunDependencies {
   sourceRevision?: string
   capabilityManifest?: CapabilityManifest
   targetBinding?: ArtifactTargetBinding
+  signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
   qaExecution?: {
     executionId: string
     beforeRunId: string
@@ -179,6 +225,8 @@ export class TestRun {
   private readonly completedStepWindowGenerations = new Map<string, number>()
   private readonly sourceRevision?: string
   private readonly evidenceBinding: RunManifest['evidence']
+  private readonly signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
+  private signedProviderEvidenceReference?: SignedProviderEvidenceReference
 
   constructor(
     readonly scenario: Scenario,
@@ -186,6 +234,7 @@ export class TestRun {
     private readonly reportDir: string,
     private readonly dependencies: TestRunDependencies = {}
   ) {
+    const signedProviderEvidenceFactory = dependencies.signedProviderEvidenceFactory
     const dependencyRevision = dependencies.sourceRevision?.trim()
     const sourceRevision = (dependencyRevision || process.env.GIT_COMMIT)?.trim().toLocaleLowerCase()
     const capabilityCommit = dependencies.capabilityManifest?.git.commit.toLocaleLowerCase()
@@ -196,7 +245,13 @@ export class TestRun {
       throw new Error('sourceRevision does not match capability manifest Git commit')
     }
     this.sourceRevision = sourceRevision
-    this.evidenceBinding = evidenceBinding(dependencies.targetBinding)
+    this.evidenceBinding = immutableEvidenceBinding(dependencies.targetBinding)
+    this.signedProviderEvidenceFactory = signedProviderEvidenceFactory
+    if (signedProviderEvidenceFactory
+      && (this.evidenceBinding.evidenceGrade !== 'artifact-bound'
+        || this.evidenceBinding.targetBinding.provider.kind !== 'server-probe')) {
+      throw new Error('Signed provider evidence requires an artifact-bound server-probe target')
+    }
   }
 
   private record(type: string, summary: string, data?: unknown): void {
@@ -1209,6 +1264,9 @@ export class TestRun {
         name: this.scenario.name,
         sha256: createHash('sha256').update(JSON.stringify(this.scenario)).digest('hex')
       },
+      ...(this.signedProviderEvidenceReference
+        ? { signedProviderEvidence: this.signedProviderEvidenceReference }
+        : {}),
       ...(this.scenario.qa ? {
         qa: {
           ...this.scenario.qa,
@@ -1274,32 +1332,135 @@ export class TestRun {
   }
 
   private async writeReport(): Promise<void> {
-    const report = this.report()
-    const artifacts: EvidenceBundleInput['artifacts'] = [{
-      role: 'report',
-      fileName: `${this.id}.json`,
-      content: JSON.stringify(report, null, 2)
-    }]
-    for (const [index, step] of report.steps.entries()) {
-      const map = (step.evidence as { routePixelMap?: RoutePixelMapInput } | undefined)?.routePixelMap
-      if (!map) continue
-      const prefix = `${this.id}-step-${String(index + 1).padStart(4, '0')}-route-map`
-      artifacts.push(
-        { role: 'route-map-json', fileName: `${prefix}.json`, content: JSON.stringify(map, null, 2) },
-        { role: 'route-map-html', fileName: `${prefix}.html`, content: renderRoutePixelMapHtml(map) }
-      )
+    const providerEvidence = await this.buildSignedProviderEvidenceArtifact()
+    const previousReference = this.signedProviderEvidenceReference
+    if (providerEvidence) this.signedProviderEvidenceReference = providerEvidence.reference
+    try {
+      const report = this.report()
+      const artifacts: EvidenceBundleInput['artifacts'] = [
+        ...(providerEvidence ? [providerEvidence.artifact] : []),
+        {
+          role: 'report',
+          fileName: `${this.id}.json`,
+          content: JSON.stringify(report, null, 2)
+        }
+      ]
+      for (const [index, step] of report.steps.entries()) {
+        const map = (step.evidence as { routePixelMap?: RoutePixelMapInput } | undefined)?.routePixelMap
+        if (!map) continue
+        const prefix = `${this.id}-step-${String(index + 1).padStart(4, '0')}-route-map`
+        artifacts.push(
+          { role: 'route-map-json', fileName: `${prefix}.json`, content: JSON.stringify(map, null, 2) },
+          { role: 'route-map-html', fileName: `${prefix}.html`, content: renderRoutePixelMapHtml(map) }
+        )
+      }
+      await writeEvidenceBundle(this.reportDir, `${this.id}.bundle.json`, {
+        runId: this.id,
+        scenarioSha256: report.manifest.scenario.sha256,
+        ...(report.manifest.capability
+          ? { capabilitySourceFingerprint: report.manifest.capability.sourceFingerprint }
+          : {}),
+        ...(report.manifest.evidence.evidenceGrade === 'artifact-bound'
+          ? { targetBindingSha256: report.manifest.evidence.targetBindingSha256 }
+          : {}),
+        artifacts
+      })
+    } catch (error) {
+      this.signedProviderEvidenceReference = previousReference
+      throw error
     }
-    await writeEvidenceBundle(this.reportDir, `${this.id}.bundle.json`, {
+  }
+
+  private async buildSignedProviderEvidenceArtifact(): Promise<
+    | {
+        artifact: EvidenceBundleInput['artifacts'][number]
+        reference: SignedProviderEvidenceReference
+      }
+    | undefined
+  > {
+    const factory = this.signedProviderEvidenceFactory
+    if (!factory || (this.cancelled && !this.bot)) return undefined
+    if (this.evidenceBinding.evidenceGrade !== 'artifact-bound') {
+      throw new Error('Signed provider evidence target binding is unavailable')
+    }
+    const targetBinding = this.evidenceBinding.targetBinding
+    if (targetBinding.provider.kind !== 'server-probe') {
+      throw new Error('Signed provider evidence requires a server-probe target')
+    }
+    const targetBindingSha256 = artifactTargetBindingSha256(targetBinding)
+    const loadedArtifacts = Object.freeze(
+      targetBinding.artifacts.map(artifact => Object.freeze({ ...artifact }))
+    )
+    const request = Object.freeze({
       runId: this.id,
-      scenarioSha256: report.manifest.scenario.sha256,
-      ...(report.manifest.capability
-        ? { capabilitySourceFingerprint: report.manifest.capability.sourceFingerprint }
+      scenarioName: this.scenario.name,
+      scenarioSha256: createHash('sha256').update(JSON.stringify(this.scenario)).digest('hex'),
+      ...(this.dependencies.capabilityManifest
+        ? { capabilitySourceFingerprint: this.dependencies.capabilityManifest.sourceFingerprint }
         : {}),
-      ...(report.manifest.evidence.evidenceGrade === 'artifact-bound'
-        ? { targetBindingSha256: report.manifest.evidence.targetBindingSha256 }
-        : {}),
-      artifacts
+      bindingId: targetBinding.bindingId,
+      targetBindingSha256,
+      provider: Object.freeze({ ...targetBinding.provider }),
+      loadedArtifacts
     })
+    try {
+      const envelope = parseSignedProviderClaimEnvelope(await factory(request))
+      if (envelope.schemaVersion !== 2) throw new Error()
+      const claims = envelope.claims
+      const {
+        challengeId: _challengeId,
+        observedAtMs: _observedAtMs,
+        claimedServerInstanceId: _claimedServerInstanceId,
+        claimedBootId: _claimedBootId,
+        loadedArtifacts: _loadedArtifacts,
+        ...challengeIdentity
+      } = claims
+      const expectedChallengeId = createHash('sha256')
+        .update(canonicalSignedProviderChallengeIdentityV1(challengeIdentity)).digest('hex')
+      const observation = assessJvmArtifactObservationAgainstBinding(
+        envelope.jvmArtifactObservation,
+        targetBinding
+      )
+      if (claims.runId !== this.id
+        || claims.challengeId !== expectedChallengeId
+        || claims.issuedAtMs >= claims.expiresAtMs
+        || claims.observedAtMs < claims.issuedAtMs
+        || claims.observedAtMs > claims.expiresAtMs
+        || claims.bindingId !== targetBinding.bindingId
+        || claims.targetBindingSha256 !== targetBindingSha256
+        || JSON.stringify(claims.provider) !== JSON.stringify(targetBinding.provider)
+        || JSON.stringify(claims.loadedArtifacts) !== JSON.stringify(targetBinding.artifacts)
+        || observation.status !== 'TARGET_FILE_MATCH_NON_AUTHORITATIVE'
+        || observation.artifact.role !== 'candidate') {
+        throw new Error()
+      }
+      const content = JSON.stringify({
+        schemaVersion: 2,
+        profile: envelope.profile,
+        claims,
+        jvmArtifactObservation: envelope.jvmArtifactObservation,
+        signatureBase64Url: envelope.signatureBase64Url
+      })
+      const artifactFileName = `${this.id}-signed-provider-envelope.json`
+      const reference = Object.freeze({
+        schemaVersion: 1,
+        kind: 'signed-provider-observation-bound-envelope',
+        artifactFileName,
+        artifactSha256: createHash('sha256').update(content).digest('hex'),
+        verificationScope: 'SIGNATURE_ONLY_NON_RELEASE',
+        signatureVerified: false,
+        freshnessEstablished: false,
+        replayChecked: false,
+        nonceConsumed: false,
+        releaseEligible: false
+      } satisfies SignedProviderEvidenceReference)
+      return {
+        artifact: { role: 'provider-evidence', fileName: artifactFileName, content },
+        reference
+      }
+    } catch {
+      throw new Error('Signed provider evidence factory output rejected')
+    }
   }
 
   private async persistReport(): Promise<void> {

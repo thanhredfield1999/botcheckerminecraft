@@ -12,8 +12,24 @@ The slice can independently re-verify one sealed evidence bundle that contains:
 - exactly one `provider-evidence` artifact containing a canonical
   `jvm-observation-bound-v2` signed-provider envelope.
 
-This is not runner, HTTP server, Paper, Bukkit, production probe, release-admission
-or deployment wiring.
+At the original P0.4 checkpoint this was not runner, HTTP server, Paper, Bukkit,
+production probe, release-admission or deployment wiring. A later optional
+`TestRun` persistence slice can now create the report reference and seal one
+factory-supplied envelope, but it does not call this verifier or verify the
+signature while writing. The default HTTP server remains unwired.
+
+The later persistence slice observed RED because `TestRun` did not call the
+factory, then GREEN after the minimal integration. Its exact-current focused
+report/P0.4/target/counterexample gate is `25/25` PASS; full ordered gate is
+`566 total / 562 pass / 0 fail / 4 skip`, with typecheck, TypeScript/Java build,
+added-line security scan and diff-check PASS.
+
+Independent review found and closed two persistence-path counterexamples: the
+writer now orders provider evidence before a referencing report, and the runner
+deep-freezes its target binding so an injected callback cannot mutate internal
+binding state through `run.report()` while awaited. The persisted reference also
+states `signatureVerified: false`; signature verification remains the separate
+verifier's responsibility.
 
 ## Verified local behavior
 
@@ -110,8 +126,11 @@ Exact-current local results before documentation-only edits:
 
 ## Remaining P0.4 gaps
 
-- `TestRun` does not yet generate or reference a signed-provider evidence artifact.
-- HTTP server, report persistence and release admission do not call this verifier.
+- Optional `TestRun` persistence can request, structurally bind, reference and
+  seal a signed-provider artifact. It deliberately does not verify the signature;
+  this verifier remains a separate explicit consumer.
+- Default HTTP server and release admission do not configure the factory or call
+  this verifier.
 - No production Paper/Bukkit observer-to-signer adapter exists.
 - Effective configuration, true boot/server-instance identity, trusted key custody,
   provisioning, trusted clock and controlled Paper evidence remain unverified.

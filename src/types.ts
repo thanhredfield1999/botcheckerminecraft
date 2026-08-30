@@ -13,12 +13,26 @@ export type EvidenceBinding =
       targetBindingSha256: string
     }
 
+export interface SignedProviderEvidenceReference {
+  schemaVersion: 1
+  kind: 'signed-provider-observation-bound-envelope'
+  artifactFileName: string
+  artifactSha256: string
+  verificationScope: 'SIGNATURE_ONLY_NON_RELEASE'
+  signatureVerified: false
+  freshnessEstablished: false
+  replayChecked: false
+  nonceConsumed: false
+  releaseEligible: false
+}
+
 export interface RunManifest {
   schemaVersion: 1
   evidence: EvidenceBinding
   runner: { name: string; version: string; sourceRevision?: string }
   capability?: CapabilityManifest
   scenario: { name: string; sha256: string }
+  signedProviderEvidence?: SignedProviderEvidenceReference
   qa?: {
     project: string
     fixture: string
