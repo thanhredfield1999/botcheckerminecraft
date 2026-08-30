@@ -230,6 +230,10 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-port'),
     { name: 'paper-jvm-observation-port', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-claim-bridge'),
+    { name: 'paper-jvm-observation-claim-bridge', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
@@ -242,6 +246,9 @@ test('Java observation core được build và bind vào capability provenance',
     && sha256.test(source.sha256)))
   assert.ok(java?.sources.some(source =>
     source.path === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java'
+    && sha256.test(source.sha256)))
+  assert.ok(java?.sources.some(source =>
+    source.path === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java'
     && sha256.test(source.sha256)))
   assert.deepEqual(java?.compiled, [])
 })
@@ -281,6 +288,8 @@ test('compiled capability collector bind Java class output, source và build scr
   assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmObservationBoundClaimBuilder.class')))
   assert.ok(java?.sources.some(source => source.path.endsWith('/PaperJvmObservationPort.java')))
   assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationPort.class')))
+  assert.ok(java?.sources.some(source => source.path.endsWith('/PaperJvmObservationClaimBridge.java')))
+  assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationClaimBridge.class')))
 })
 
 test('Paper JVM observation port chỉ là library boundary không runtime/signing wiring', async () => {
@@ -297,6 +306,19 @@ test('Paper JVM observation port chỉ là library boundary không runtime/signi
   assert.match(source, /observation\.authoritative\(\)/)
   assert.match(source, /observation\.provesLoadedBytecode\(\)/)
   assert.match(source, /observation\.releaseEligible\(\)/)
+})
+
+test('Paper JVM observation claim bridge chỉ compose canonical library input', async () => {
+  const source = await readFile(
+    'java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java',
+    'utf8'
+  )
+  assert.doesNotMatch(source, /org\.bukkit|io\.papermc|PrivateKey|KeyFactory|Signature|PKCS|PEM|JKS|KeyStore/)
+  assert.doesNotMatch(source, /java\.net|java\.nio\.file|System\.getenv|System\.getProperty/)
+  assert.doesNotMatch(source, /SignedProviderClaimVerifier|verifyAndConsume|consume\s*\(|runner|report|HTTP|Socket|ServerSocket/)
+  assert.match(source, /JvmObservationBoundClaimBuilder\.Input/)
+  assert.match(source, /JvmObservationBoundClaimBuilder\.canonicalJsonUtf8V2/)
+  assert.match(source, /claims\.observedAtMs\(\) != result\.observedAtMs\(\)/)
 })
 
 test('Java production observation-bound builder không có key hoặc signing API', async () => {

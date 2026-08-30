@@ -139,6 +139,14 @@ wall clock immediately before bounded observer I/O. Supplier errors are normaliz
 and no Bukkit/Paper object is retained. This port imports no Bukkit/Paper API and
 provides no scheduler, plugin lifecycle, transport, signing, custody or runtime wiring.
 
+A separate Java-only `PaperJvmObservationClaimBridge` can combine one caller-supplied
+canonical claim record with one port result. It requires exact observation-time and
+claimed server/boot ID equality, then reuses the existing candidate/hash/posture checks
+and canonical-byte builder. Tested bytes match the Node v2 canonicalizer. The result
+record is still publicly constructible, so this bridge establishes only internal
+claim/result consistency—not origin from `observe()`, challenge issuance, freshness,
+nonce consumption, runtime identity, signing, custody or release readiness.
+
 The Java auxiliary library also contains a production canonical-byte builder for
 the `jvm-observation-bound-v2` profile. It snapshots and deterministically sorts
 claim artifacts, mirrors the bounded Node field validation, requires an exact

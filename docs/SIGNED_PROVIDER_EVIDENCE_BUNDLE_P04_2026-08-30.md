@@ -139,6 +139,11 @@ Exact-current local results before documentation-only edits:
   off-thread bounded one-shot observation and non-authoritative output. It imports no
   Bukkit/Paper API and has no scheduler, lifecycle, transport, signer or deployment
   wiring. No production Paper/Bukkit observer-to-signer plugin adapter exists.
+- A library-only Java bridge now requires exact time/server/boot equality between a
+  caller-supplied canonical claims record and one port result, then delegates exact
+  candidate/hash/posture validation and v2 canonical bytes to the existing builder.
+  Because the result record is publicly constructible, this is consistency binding,
+  not proof of port provenance, challenge issuance, freshness or nonce consumption.
 - Effective configuration, true boot/server-instance identity, trusted key custody,
   provisioning, trusted clock and controlled Paper evidence remain unverified.
 - No production deployment, restart, reload or live operation was performed.

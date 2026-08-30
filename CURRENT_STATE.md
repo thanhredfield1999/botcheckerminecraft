@@ -11,6 +11,28 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Paper observation result to canonical claim bridge
+
+- `VERIFIED offline/library-only partial`: `PaperJvmObservationClaimBridge` accepts
+  one caller-supplied canonical `Claims` record and one `PaperJvmObservationPort.Result`.
+  It requires exact observation time and claimed server/boot ID equality, then
+  delegates candidate/hash/posture validation and canonical UTF-8 construction to
+  `JvmObservationBoundClaimBuilder`.
+- Java bytes from one real JAR CodeSource observation are byte-for-byte equal to the
+  Node v2 canonicalizer. Mismatched time/server/boot metadata and candidate hash fail
+  before canonical output, with bounded messages that do not include caller values.
+- Capability `paper-jvm-observation-claim-bridge` is `library-only` and is bound into
+  Java source/compiled provenance. It imports no Bukkit/Paper, signer/private-key,
+  nonce store, network, runner/report/server, filesystem or environment API.
+- Focused exact-current gate is `28/28` PASS. Full ordered gate is
+  `594 total / 590 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security/claim scan and diff-check PASS. Independent review
+  `deleg_9a6b9d4d` PASS with no blocker/high/medium findings.
+- `Result` remains publicly constructible data; this bridge proves only internal
+  claim/result consistency. It does not prove the result came from `observe()`, issue
+  a challenge, consume a nonce, establish freshness/runtime identity, sign, or admit
+  a release. Production Paper lifecycle/transport/custody remain `NOT VERIFIED`.
+
 ## 2026-08-30 — Paper JVM observation port contract
 
 - `VERIFIED offline/library-only partial`: `PaperJvmObservationPort` defines a

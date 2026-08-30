@@ -465,6 +465,10 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
       ...(javaSources.some(source => source.path
         === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java')
         ? [['paper-jvm-observation-port', 'library-only'] as const]
+        : []),
+      ...(javaSources.some(source => source.path
+        === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java')
+        ? [['paper-jvm-observation-claim-bridge', 'library-only'] as const]
         : [])
     ]),
     sources,
