@@ -11,6 +11,32 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Canonical-byte observation provider adapter
+
+- `VERIFIED offline/library-only partial`: `createPaperJvmObservationByteProvider`
+  adapts one injected canonical-byte callback into the existing
+  `SignedProviderObservationProvider` contract. It forwards the pipeline-owned frozen
+  challenge/candidate/abort request unchanged, strict-parses one canonical result and
+  returns the codec-owned deep-frozen observation snapshot.
+- Pre/post callback abort checks fail closed. Hostile `AbortSignal`/byte Proxies,
+  callback failures and malformed bytes are normalized to bounded messages; caller
+  abort reasons, callback paths and schema diagnostics are not exposed.
+- An end-to-end offline test composes the adapter with the existing observer-signing
+  pipeline, opaque signer and verifier: exact challenge/binding/candidate checks and
+  signature verification succeed, the separate verifier consumes the nonce, while
+  observation posture remains non-authoritative and release-ineligible.
+- Capability `paper-jvm-observation-byte-provider` is `library-only` only when the
+  adapter, Node codec, observer pipeline and Java codec source all exist. The codec's
+  only source importer is this adapter; the adapter has no downstream runtime importer.
+- Focused exact-current gate is `53/53` PASS. Full ordered gate is
+  `608 total / 604 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security/claim scan and diff-check PASS. Independent review
+  `deleg_d19f1213` PASS with `0` blocker/high/medium/low; targeted adapter `8/8`
+  and composition/capability `3/3` probes PASS.
+- The injected callback is still caller-owned. This adapter starts no process/socket/
+  HTTP/Paper scheduler, authenticates no origin, and does not prove port provenance,
+  challenge issuance/freshness, trusted time/runtime identity, custody or release.
+
 ## 2026-08-30 — Canonical Paper observation-result codec
 
 - `VERIFIED offline/library-only partial`: Java `PaperJvmObservationResultCodec`

@@ -142,9 +142,13 @@ provides no scheduler, plugin lifecycle, transport, signing, custody or runtime 
 A transport-neutral Java/Node codec can canonicalize one port result as a strict
 JSON v1 envelope. Both halves enforce a `16 KiB` cap; Node requires exact canonical
 UTF-8, rejects extra fields and malformed bytes, and returns a deep-frozen owned
-snapshot. No runtime source imports this codec. It opens no process, socket or HTTP
-endpoint and provides no origin authentication, challenge, freshness, nonce, signing,
-custody or release proof.
+snapshot. A separate library-only adapter can turn one injected canonical-byte
+callback into the existing observation-provider contract, forwarding the pipeline's
+challenge/candidate/abort request and sanitizing callback, proxy, abort and malformed
+byte failures. Offline tests compose that adapter through the signer and verifier.
+Neither component opens process, socket, HTTP or Paper scheduler I/O, authenticates
+callback origin, proves port provenance/freshness/runtime identity/custody, or admits
+a release.
 
 A separate Java-only `PaperJvmObservationClaimBridge` can combine one caller-supplied
 canonical claim record with one port result. It requires exact observation-time and

@@ -140,8 +140,12 @@ Exact-current local results before documentation-only edits:
   Bukkit/Paper API and has no scheduler, lifecycle, transport, signer or deployment
   wiring. No production Paper/Bukkit observer-to-signer plugin adapter exists.
 - A transport-neutral Java/Node codec canonicalizes one public result in a strict,
-  bounded `16 KiB` JSON v1 envelope. It has no runtime importer or process/socket/HTTP
-  I/O; canonical bytes do not authenticate origin, challenge issuance or freshness.
+  bounded `16 KiB` JSON v1 envelope. A library-only byte-provider adapter is now the
+  codec's sole source importer and composes one injected canonical-byte callback into
+  the existing observer-signing pipeline; offline signer/verifier composition passes.
+  It forwards abort/challenge/candidate input but adds no process/socket/HTTP/Paper
+  scheduler I/O. Callback origin, port provenance, challenge issuance/freshness,
+  runtime identity, custody and release remain unauthenticated or unproven.
 - A library-only Java bridge now requires exact time/server/boot equality between a
   caller-supplied canonical claims record and one port result, then delegates exact
   candidate/hash/posture validation and v2 canonical bytes to the existing builder.

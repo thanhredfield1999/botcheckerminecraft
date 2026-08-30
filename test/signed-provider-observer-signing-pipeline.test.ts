@@ -5,6 +5,8 @@ import {
   buildSignedProviderClaimTrustStore,
   SignedProviderClaimVerifier
 } from '../src/signed-provider-claim.js'
+import { createPaperJvmObservationByteProvider } from '../src/paper-jvm-observation-byte-provider.js'
+import { canonicalPaperJvmObservationResultV1 } from '../src/paper-jvm-observation-result-codec.js'
 import {
   SignedProviderObserverSigningPipeline,
   type SignedProviderObservationProvider
@@ -173,6 +175,40 @@ test('observer-signing pipeline snapshot top-level option getters đúng một l
     observerTimeoutMs: 1,
     wallNowMs: 1
   })
+})
+
+test('canonical-byte provider compose vào observer-signing pipeline thành envelope consumable', async () => {
+  const value = fixture()
+  let byteSourceCalls = 0
+  const observer = createPaperJvmObservationByteProvider(request => {
+    byteSourceCalls += 1
+    assert.equal(Object.isFrozen(request), true)
+    assert.equal(Object.isFrozen(request.challenge), true)
+    assert.equal(Object.isFrozen(request.candidate), true)
+    assert.equal(request.candidate.expectedSha256, '1'.repeat(64))
+    assert.equal(request.signal.aborted, false)
+    return canonicalPaperJvmObservationResultV1({
+      schemaVersion: 1,
+      observedAtMs: 10_050,
+      claimedServerInstanceId: 'claimed-paper-byte-instance-a',
+      claimedBootId: 'claimed-paper-byte-boot-a',
+      jvmArtifactObservation: candidateObservation()
+    })
+  })
+  const pipeline = pipelineFor(value, observer)
+
+  value.clock.wall = 10_100
+  value.clock.mono = 600
+  const envelope = await pipeline.createObservationBoundEnvelope(value.challenge)
+  const verification = value.verifier.verifyAndConsume(envelope)
+
+  assert.equal(byteSourceCalls, 1)
+  assert.equal(verification.signatureValid, true)
+  assert.equal(verification.nonceConsumed, true)
+  assert.equal(verification.claimedServerInstanceId, 'claimed-paper-byte-instance-a')
+  assert.equal(verification.claimedBootId, 'claimed-paper-byte-boot-a')
+  assert.equal(verification.observationBinding?.status, 'TARGET_FILE_MATCH_NON_AUTHORITATIVE')
+  assert.equal(verification.releaseEligible, false)
 })
 
 test('observer-signing pipeline bind challenge, observation và opaque signer thành envelope consumable', async () => {

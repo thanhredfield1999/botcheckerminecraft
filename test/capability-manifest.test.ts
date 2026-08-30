@@ -238,6 +238,10 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-result-codec'),
     { name: 'paper-jvm-observation-result-codec', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-byte-provider'),
+    { name: 'paper-jvm-observation-byte-provider', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
@@ -351,6 +355,32 @@ test('Paper JVM observation result codecs chỉ là transport-neutral libraries'
   for (const file of sourceFiles) {
     const source = await readFile(file, 'utf8')
     if (/(?:from\s+['"][^'"]*paper-jvm-observation-result-codec|(?:import|require)\(\s*['"][^'"]*paper-jvm-observation-result-codec)/.test(source)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, ['src/paper-jvm-observation-byte-provider.ts'])
+})
+
+test('Paper JVM canonical-byte provider chỉ compose codec vào observer contract', async () => {
+  const source = await readFile('src/paper-jvm-observation-byte-provider.ts', 'utf8')
+  const capabilitySource = await readFile('src/capability-manifest.ts', 'utf8')
+  assert.doesNotMatch(source, /node:http|node:net|node:fs|fetch\s*\(|process\.env|PrivateKey|Signature|verifyAndConsume|consume\s*\(/)
+  assert.doesNotMatch(source, /PaperJvmObservationPort|org\.bukkit|io\.papermc|createServer|TestRun|TestReport|ServerSocket/)
+  assert.match(source, /parseCanonicalPaperJvmObservationResultV1/)
+  assert.match(source, /SignedProviderObservationProvider/)
+  assert.match(source, /Paper observation byte source failed/)
+  assert.match(
+    capabilitySource,
+    /paper-jvm-observation-byte-provider[\s\S]*PaperJvmObservationResultCodec\.java/
+  )
+
+  const sourceFiles = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && !file.endsWith('paper-jvm-observation-byte-provider.ts'))
+    .map(file => `src/${file}`)
+  const importers: string[] = []
+  for (const file of sourceFiles) {
+    const candidate = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-jvm-observation-byte-provider|(?:import|require)\(\s*['"][^'"]*paper-jvm-observation-byte-provider)/.test(candidate)) {
       importers.push(file)
     }
   }
