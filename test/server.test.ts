@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { CapabilityManifest } from '../src/capability-manifest.js'
+import { createProviderRegistry, type ResolvedAuthorizedPlan } from '../src/provider-registry.js'
 import { createServer } from '../src/server.js'
 import { scenarioSchema } from '../src/scenario.js'
 import { buildArtifactTargetBinding } from '../src/target-binding.js'
@@ -26,6 +27,24 @@ const capabilityManifest: CapabilityManifest = {
   packageLockSha256: '2'.repeat(64), sourceFingerprint: '3'.repeat(64),
   sources: [{ path: 'src/server.ts', sha256: '4'.repeat(64) }],
   dependencies: [], capabilities: [{ name: 'gui-journey', mode: 'runtime-wired' }]
+}
+
+function planRequest() {
+  return {
+    schemaVersion: 1 as const,
+    scenario: 'queue-test',
+    providers: [{
+      kind: 'server-probe' as const,
+      id: 'paper-probe',
+      version: '1.0.0',
+      instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorizationId: 'approval-fixture-a',
+      requiredScope: ['artifact-observe'],
+      targetRoot: 'fixtures/paper-a',
+      mutationClass: 'observe-only' as const
+    }]
+  }
 }
 
 const targetBinding = buildArtifactTargetBinding({
@@ -133,6 +152,270 @@ test('API queues FIFO, exposes pressure, rejects overflow and cancels queued run
   await new Promise(resolve => setImmediate(resolve))
   assert.deepEqual(starts, ['run-1'])
   assert.equal(created[1].status, 'cancelled')
+})
+
+test('server provider-registry mode resolve authorized plan trước scenario/run creation', async t => {
+  const registry = createProviderRegistry([{
+    declaration: {
+      schemaVersion: 1,
+      kind: 'server-probe',
+      id: 'paper-probe',
+      version: '1.0.0',
+      instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorization: { id: 'approval-fixture-a', scope: ['artifact-observe'] },
+      targetRoot: 'fixtures/paper-a',
+      mutationClass: 'observe-only'
+    },
+    port: Object.freeze({ name: 'probe-port' })
+  }])
+  const order: string[] = []
+  let resolution: Readonly<ResolvedAuthorizedPlan> | undefined
+  const app = createServer({
+    logger: false,
+    providerRegistry: registry,
+    scenarioLoader: async (_directory, name) => {
+      order.push(`scenario:${name}`)
+      return scenario
+    },
+    runFactory: (_scenario, resolvedPlan) => {
+      order.push('run')
+      resolution = resolvedPlan
+      return {
+        id: 'authorized-run', status: 'queued', start: async () => {}, cancel: () => {},
+        persistCancelled: async () => {}, view: () => ({}), report: () => ({})
+      }
+    }
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/runs',
+    payload: {
+      authorizedPlan: {
+        schemaVersion: 1,
+        scenario: 'queue-test',
+        providers: [{
+          kind: 'server-probe', id: 'paper-probe', version: '1.0.0', instanceId: 'fixture-a',
+          capabilities: ['jvm-observation'], authorizationId: 'approval-fixture-a',
+          requiredScope: ['artifact-observe'], targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+        }]
+      }
+    }
+  })
+
+  assert.equal(response.statusCode, 202)
+  assert.deepEqual(order, ['scenario:queue-test', 'run'])
+  assert.equal(resolution?.scenario, 'queue-test')
+  assert.equal(Object.isFrozen(resolution), true)
+  assert.equal(Object.isFrozen(resolution?.providers), true)
+})
+
+test('server provider-registry mode sanitize unexpected registry failure trước scenario/run', async t => {
+  let scenarioLoads = 0
+  let runs = 0
+  const app = createServer({
+    logger: false,
+    providerRegistry: {
+      resolve: () => { throw new Error('secret/registry/path') }
+    },
+    scenarioLoader: async () => { scenarioLoads += 1; return scenario },
+    runFactory: () => {
+      runs += 1
+      throw new Error('must not create')
+    }
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({ method: 'POST', url: '/api/runs', payload: {
+    authorizedPlan: planRequest()
+  } })
+  assert.equal(response.statusCode, 500)
+  assert.equal(response.json().error, 'Provider registry failed')
+  assert.equal(response.body.includes('secret'), false)
+  assert.equal(scenarioLoads, 0)
+  assert.equal(runs, 0)
+})
+
+test('server provider-registry mode reject resolution do registry khác cấp', async t => {
+  const otherRegistry = createProviderRegistry([{
+    declaration: {
+      schemaVersion: 1,
+      kind: 'server-probe', id: 'paper-probe', version: '1.0.0', instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorization: { id: 'approval-fixture-a', scope: ['artifact-observe'] },
+      targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+    },
+    port: {}
+  }])
+  let scenarioLoads = 0
+  let runs = 0
+  const app = createServer({
+    logger: false,
+    providerRegistry: { resolve: input => otherRegistry.resolve(input) },
+    scenarioLoader: async () => { scenarioLoads += 1; return scenario },
+    runFactory: () => {
+      runs += 1
+      throw new Error('must not create')
+    }
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({ method: 'POST', url: '/api/runs', payload: {
+    authorizedPlan: planRequest()
+  } })
+  assert.equal(response.statusCode, 400)
+  assert.equal(response.json().error, 'Authorized plan is invalid')
+  assert.equal(scenarioLoads, 0)
+  assert.equal(runs, 0)
+})
+
+test('server provider-registry mode reject forged registry resolution trước scenario/run', async t => {
+  let scenarioLoads = 0
+  let runs = 0
+  const app = createServer({
+    logger: false,
+    providerRegistry: {
+      resolve: () => ({
+        schemaVersion: 1,
+        scenario: 'queue-test',
+        providers: []
+      })
+    },
+    scenarioLoader: async () => { scenarioLoads += 1; return scenario },
+    runFactory: () => {
+      runs += 1
+      throw new Error('must not create')
+    }
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({ method: 'POST', url: '/api/runs', payload: {
+    authorizedPlan: planRequest()
+  } })
+  assert.equal(response.statusCode, 400)
+  assert.equal(response.json().error, 'Authorized plan is invalid')
+  assert.equal(scenarioLoads, 0)
+  assert.equal(runs, 0)
+})
+
+test('server provider-registry mode snapshot registry option đúng một lần', async t => {
+  const actualRegistry = createProviderRegistry([{
+    declaration: {
+      schemaVersion: 1,
+      kind: 'server-probe', id: 'paper-probe', version: '1.0.0', instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorization: { id: 'approval-fixture-a', scope: ['artifact-observe'] },
+      targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+    },
+    port: {}
+  }])
+  let reads = 0
+  const app = createServer({
+    logger: false,
+    get providerRegistry() {
+      reads += 1
+      if (reads > 1) throw new Error('secret/registry/path')
+      return actualRegistry
+    },
+    scenarioLoader: async () => scenario,
+    runFactory: () => ({
+      id: 'snapshot-registry', status: 'queued', start: async () => {}, cancel: () => {},
+      persistCancelled: async () => {}, view: () => ({}), report: () => ({})
+    })
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({ method: 'POST', url: '/api/runs', payload: {
+    authorizedPlan: planRequest()
+  } })
+  assert.equal(response.statusCode, 202)
+  assert.equal(reads, 1)
+})
+
+test('server provider-registry mode reject scenario loader mismatch trước run creation', async t => {
+  const registry = createProviderRegistry([{
+    declaration: {
+      schemaVersion: 1,
+      kind: 'server-probe', id: 'paper-probe', version: '1.0.0', instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorization: { id: 'approval-fixture-a', scope: ['artifact-observe'] },
+      targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+    },
+    port: {}
+  }])
+  let runs = 0
+  const app = createServer({
+    logger: false,
+    providerRegistry: registry,
+    scenarioLoader: async () => scenarioSchema.parse({
+      name: 'different-scenario', steps: [{ id: 'wait', action: 'wait', durationMs: 1 }]
+    }),
+    runFactory: () => {
+      runs += 1
+      throw new Error('must not create')
+    }
+  })
+  t.after(() => app.close())
+
+  const response = await app.inject({ method: 'POST', url: '/api/runs', payload: {
+    authorizedPlan: planRequest()
+  } })
+  assert.equal(response.statusCode, 400)
+  assert.equal(runs, 0)
+})
+
+test('server provider-registry mode fail closed trước scenario/run khi provider thiếu hoặc plan malformed', async t => {
+  const registry = createProviderRegistry([{
+    declaration: {
+      schemaVersion: 1,
+      kind: 'server-probe', id: 'paper-probe', version: '1.0.0', instanceId: 'fixture-a',
+      capabilities: ['jvm-observation'],
+      authorization: { id: 'approval-fixture-a', scope: ['artifact-observe'] },
+      targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+    },
+    port: {}
+  }])
+  let scenarioLoads = 0
+  let runs = 0
+  const app = createServer({
+    logger: false,
+    providerRegistry: registry,
+    scenarioLoader: async () => { scenarioLoads += 1; return scenario },
+    runFactory: () => {
+      runs += 1
+      return {
+        id: 'must-not-create', status: 'queued', start: async () => {}, cancel: () => {},
+        persistCancelled: async () => {}, view: () => ({}), report: () => ({})
+      }
+    }
+  })
+  t.after(() => app.close())
+
+  const missing = await app.inject({
+    method: 'POST', url: '/api/runs', payload: {
+      authorizedPlan: {
+        schemaVersion: 1,
+        scenario: 'queue-test',
+        providers: [{
+          kind: 'server-probe', id: 'missing-probe', version: '1.0.0', instanceId: 'fixture-a',
+          capabilities: ['jvm-observation'], authorizationId: 'approval-fixture-a',
+          requiredScope: ['artifact-observe'], targetRoot: 'fixtures/paper-a', mutationClass: 'observe-only'
+        }]
+      }
+    }
+  })
+  assert.equal(missing.statusCode, 409)
+  assert.equal(missing.json().failure.code, 'INCONCLUSIVE_PROVIDER_UNAVAILABLE')
+  assert.equal(missing.json().failure.boundedDetail, 'Required provider is unavailable or unauthorized')
+
+  const malformed = await app.inject({
+    method: 'POST', url: '/api/runs', payload: { scenario: 'queue-test' }
+  })
+  assert.equal(malformed.statusCode, 400)
+  assert.equal(scenarioLoads, 0)
+  assert.equal(runs, 0)
 })
 
 test('closing the API cancels queued and active runs and waits for idle', async () => {

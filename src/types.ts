@@ -33,6 +33,21 @@ export interface RunManifest {
   capability?: CapabilityManifest
   scenario: { name: string; sha256: string }
   signedProviderEvidence?: SignedProviderEvidenceReference
+  authorizedPlan?: Readonly<{
+    schemaVersion: 1
+    scenario: string
+    providers: ReadonlyArray<Readonly<{
+      schemaVersion: 1
+      kind: 'minecraft-client' | 'paper-process' | 'server-probe' | 'filesystem-snapshot' | 'sqlite-readonly' | 'log-observer' | 'vision-frame'
+      id: string
+      version: string
+      instanceId?: string
+      capabilities: readonly string[]
+      authorization: Readonly<{ id: string; scope: readonly string[] }>
+      targetRoot: string
+      mutationClass: 'observe-only' | 'read-only' | 'client-session' | 'isolated-process-lifecycle'
+    }>>
+  }>
   qa?: {
     project: string
     fixture: string

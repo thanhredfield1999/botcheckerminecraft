@@ -8,11 +8,19 @@ import { RunQueue } from './queue.js'
 import type { RunStatus } from './types.js'
 import { runtimeCapabilityManifest, type CapabilityManifest } from './capability-manifest.js'
 import {
+  assertProviderRegistryResolution,
+  InvalidAuthorizedPlanError,
+  ProviderAdmissionError,
+  type ProviderRegistry,
+  type ResolvedAuthorizedPlan
+} from './provider-registry.js'
+import {
   loadArtifactTargetBindingFile,
   type ArtifactTargetBinding
 } from './target-binding.js'
 
-const createRunSchema = z.object({ scenario: z.string().regex(/^[a-zA-Z0-9_-]+$/) })
+const createRunSchema = z.strictObject({ scenario: z.string().regex(/^[a-zA-Z0-9_-]+$/) })
+const createAuthorizedRunSchema = z.strictObject({ authorizedPlan: z.unknown() })
 
 interface ManagedRun {
   readonly id: string
@@ -27,7 +35,11 @@ interface ManagedRun {
 interface ServerOptions {
   queueCapacity?: number
   scenarioLoader?: (directory: string, name: string) => Promise<Scenario>
-  runFactory?: (scenario: Scenario) => ManagedRun
+  runFactory?: (
+    scenario: Scenario,
+    resolvedPlan?: Readonly<ResolvedAuthorizedPlan>
+  ) => ManagedRun
+  providerRegistry?: ProviderRegistry
   capabilityManifestCollector?: () => CapabilityManifest
   targetBindingFile?: string
   targetBindingLoader?: (file: string) => ArtifactTargetBinding
@@ -39,6 +51,7 @@ export function createServer(options: ServerOptions = {}) {
   const runs = new Map<string, ManagedRun>()
   const queue = new RunQueue(options.queueCapacity ?? config.queueCapacity)
   const scenarioLoader = options.scenarioLoader ?? loadScenario
+  const providerRegistry = options.providerRegistry
   const capabilityManifest = options.runFactory
     ? undefined
     : (options.capabilityManifestCollector ?? runtimeCapabilityManifest)()
@@ -46,13 +59,17 @@ export function createServer(options: ServerOptions = {}) {
   const targetBinding = options.runFactory || !targetBindingFile
     ? undefined
     : (options.targetBindingLoader ?? loadArtifactTargetBindingFile)(targetBindingFile)
-  const runFactory = options.runFactory ?? ((scenario: Scenario) => {
+  const runFactory = options.runFactory ?? ((
+    scenario: Scenario,
+    resolvedPlan?: Readonly<ResolvedAuthorizedPlan>
+  ) => {
     if (!capabilityManifest) throw new Error('Capability manifest unavailable')
     return new TestRun(scenario, config.minecraft, config.reportDir, {
       protocolDiagnosticsEnabled: config.protocolDiagnosticsEnabled,
       sourceRevision: capabilityManifest.git.commit,
       capabilityManifest,
-      ...(targetBinding ? { targetBinding } : {})
+      ...(targetBinding ? { targetBinding } : {}),
+      ...(resolvedPlan ? { authorizedPlan: resolvedPlan } : {})
     })
   })
 
@@ -64,9 +81,31 @@ export function createServer(options: ServerOptions = {}) {
   })
 
   app.post('/api/runs', async (request, reply) => {
-    const body = createRunSchema.parse(request.body)
-    const scenario = await scenarioLoader(config.scenarioDir, body.scenario)
-    const run = runFactory(scenario)
+    let scenarioName: string
+    let resolvedPlan: Readonly<ResolvedAuthorizedPlan> | undefined
+    if (providerRegistry) {
+      try {
+        const body = createAuthorizedRunSchema.parse(request.body)
+        resolvedPlan = providerRegistry.resolve(body.authorizedPlan)
+        assertProviderRegistryResolution(providerRegistry, resolvedPlan)
+      } catch (error) {
+        if (error instanceof ProviderAdmissionError) {
+          return reply.code(409).send({ failure: error.failure })
+        }
+        if (error instanceof InvalidAuthorizedPlanError || error instanceof z.ZodError) {
+          return reply.code(400).send({ error: 'Authorized plan is invalid' })
+        }
+        return reply.code(500).send({ error: 'Provider registry failed' })
+      }
+      scenarioName = resolvedPlan.scenario
+    } else {
+      scenarioName = createRunSchema.parse(request.body).scenario
+    }
+    const scenario = await scenarioLoader(config.scenarioDir, scenarioName)
+    if (resolvedPlan && scenario.name !== resolvedPlan.scenario) {
+      return reply.code(400).send({ error: 'Authorized plan is invalid' })
+    }
+    const run = runFactory(scenario, resolvedPlan)
     try {
       queue.enqueue({ id: run.id, run: () => run.start(), cancel: () => run.cancel() })
     } catch (error) {

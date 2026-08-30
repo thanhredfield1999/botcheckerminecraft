@@ -98,6 +98,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
   assert.ok(manifest.sources.some(source => source.path === 'src/runner.ts'))
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'immutable-artifacts')?.mode, 'runtime-wired')
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'route-oracle')?.mode, 'runtime-wired')
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'authorized-provider-registry'),
+    { name: 'authorized-provider-registry', mode: 'runtime-wired' }
+  )
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'multi-client')?.mode, 'library-only')
   assert.deepEqual(manifest.capabilities.find(capability => capability.name === 'signed-provider-claim')?.mode, 'library-only')
   assert.deepEqual(
@@ -359,6 +363,24 @@ test('Paper JVM observation result codecs chỉ là transport-neutral libraries'
     }
   }
   assert.deepEqual(importers, ['src/paper-jvm-observation-byte-provider.ts'])
+})
+
+test('authorized provider registry chỉ admission metadata và được server runtime wire', async () => {
+  const registrySource = await readFile('src/provider-registry.ts', 'utf8')
+  const serverSource = await readFile('src/server.ts', 'utf8')
+  const files = (await readdir('src')).filter(file => file.endsWith('.ts')).sort()
+  const importers: string[] = []
+  for (const file of files) {
+    const source = await readFile(`src/${file}`, 'utf8')
+    if (/(?:from\s+['"][^'"]*provider-registry|(?:import|require)\(\s*['"][^'"]*provider-registry)/.test(source)) {
+      importers.push(`src/${file}`)
+    }
+  }
+
+  assert.deepEqual(importers, ['src/runner.ts', 'src/server.ts'])
+  assert.match(serverSource, /providerRegistry\.resolve/)
+  assert.doesNotMatch(registrySource, /node:http|node:net|node:fs|fetch\s*\(|process\.env|org\.bukkit|io\.papermc/)
+  assert.doesNotMatch(registrySource, /\.start\s*\(|\.stop\s*\(|\.restart\s*\(|\.observe\s*\(|\.invoke\s*\(/)
 })
 
 test('Paper JVM canonical-byte provider chỉ compose codec vào observer contract', async () => {

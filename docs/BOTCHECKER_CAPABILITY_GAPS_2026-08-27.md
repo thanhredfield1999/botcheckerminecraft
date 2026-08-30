@@ -72,29 +72,49 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
 
 ### P0.2. Live provider registry thay cho callback skeleton
 
-**OBSERVED**
+**VERIFIED offline/API partial (2026-08-31)**
 
-Các file `persistence-runner.ts`, `crash-recovery-runner.ts`, `gui-runner.ts`, `gameplay-runner.ts`, `multi-client-runner.ts` chủ yếu nhận callback `before/restart/after`, `crash/recovery`, `observe`, v.v. API `server.ts` hiện chỉ tạo `TestRun` từ một scenario Mineflayer; không có endpoint/provider wiring cho các evaluator trên.
+- `createProviderRegistry` hiện nhận bảy typed kind `minecraft-client`,
+  `paper-process`, `server-probe`, `filesystem-snapshot`, `sqlite-readonly`,
+  `log-observer`, `vision-frame`; snapshot declaration và resolve strict schema-v1
+  `authorizedPlan` bằng exact identity/version/instance, capability set,
+  authorization ID/scope, logical target root và mutation class.
+- Khi inject registry, `server.ts` chỉ nhận `{ authorizedPlan }`, resolve trước
+  scenario I/O/run creation, reject resolution giả hoặc scenario-loader mismatch và
+  trả structured `INCONCLUSIVE_PROVIDER_UNAVAILABLE` khi provider thiếu/mismatch.
+  Chế độ không inject registry vẫn giữ request `{ scenario }` tương thích.
+- `TestRun` chỉ nhận same-process resolution do registry cấp, bind frozen metadata-only
+  plan vào report và không serialize live provider port. Capability
+  `authorized-provider-registry` được report là `runtime-wired` cho admission path.
+- TDD bao phủ missing/mismatch/duplicate/malformed/credential-like input, hostile
+  getters, forged/cross-registry resolution, cross-scenario plan và immutable report.
+  Focused exact-current `47/47` PASS; full ordered gate
+  `627 total / 623 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build và
+  diff-check PASS.
+- Independent review tìm thấy Proxy-array cardinality TOCTOU có thể lộ registration
+  thứ 33 sau guard 32 phần tử. Finding được reproduce RED, fix bằng fail-closed
+  top-level Proxy trước bounded snapshot, và correction review `deleg_e42805e2` xác
+  nhận CLOSED/PASS `0/0/0/0`; registry/server `11/11` mỗi suite, Proxy
+  TOCTOU/sanitization `8/8`, immutable fixed-Proxy snapshots `6/6` PASS.
 
-**Tác động thực tế**
+**Tác động thực tế còn lại**
 
-- ItemGuard phải dùng Python sealer + Java smoke probe + Mineflayer `.mjs` riêng.
-- ForceItem/BastionForge duy trì hàng chục journey script riêng cho restart, hard-kill, concurrency, combat, GUI và packet.
-- Contract unit xanh không đồng nghĩa live provider đã tồn tại.
+- Registry mới chỉ admission metadata, không gọi bất kỳ provider port nào;
+  authorization ID/scope do caller cấu hình, chưa chứng minh approval provenance.
+- Các callback skeleton trong `persistence-runner.ts`, `crash-recovery-runner.ts`,
+  `gui-runner.ts`, `gameplay-runner.ts`, `multi-client-runner.ts` chưa được migrate.
+- Chưa có Paper process/scheduler/transport/restart provider hoặc controlled fixture;
+  contract/unit xanh không đồng nghĩa live provider đã tồn tại.
+- ItemGuard/ForceItem/BastionForge vẫn cần các script orchestration riêng cho journey
+  restart, hard-kill, concurrency, combat, GUI và packet.
 
 **NEEDED**
 
-- Provider registry typed, ví dụ:
-  - `minecraft-client`;
-  - `paper-process`;
-  - `server-probe`;
-  - `filesystem-snapshot`;
-  - `sqlite-readonly`;
-  - `log-observer`;
-  - `vision-frame`.
-- Provider declaration phải có capability, scope, authorization ID, target root và mutation class.
-- Plan compiler phải fail-closed nếu thiếu provider; không silently `skipped` rồi tổng hợp thành kết quả dễ hiểu nhầm.
-- Endpoint submit `authorizedPlan`, không chỉ tên scenario.
+- Định nghĩa typed operation contract cho từng provider và chỉ invoke sau admission.
+- Migrate evaluator runners sang resolved provider ports, giữ authorization/boundary
+  metadata xuyên suốt từng phase và fail closed khi operation unavailable.
+- Thêm Paper lifecycle provider isolated có approval/root/hash/port/PID/session guards.
+- Chạy controlled fixture end-to-end và bind runtime evidence; chưa nâng claim trước đó.
 
 **Acceptance**
 
@@ -531,4 +551,7 @@ Ba slice này loại phần lớn Python/`.mjs` orchestration lặp lại đang 
 - ItemGuard runtime evidence và external orchestration scripts cho ground merge/GUI UAT.
 - ForceItem/BastionForge `run/runtime-harness` concurrency/restart/combat journeys.
 
-Trạng thái: **OBSERVED backlog**, chưa sửa source BotChecker và chưa chạy production/live server trong audit này.
+Trạng thái: **IMPLEMENTED PARTIAL / VERIFIED OFFLINE-API**. Nhiều P0 primitives và
+provider admission đã được triển khai, test và bind vào source hiện tại; các acceptance
+controlled Paper/lifecycle/restart/concurrency cùng production/live-server verification
+vẫn chưa đạt. Không có production deploy/restart/live test trong đợt cập nhật này.

@@ -1,6 +1,6 @@
 # BotChecker Current State
 
-Last reviewed: 2026-08-30
+Last reviewed: 2026-08-31
 
 ## Baseline
 
@@ -10,6 +10,37 @@ Last reviewed: 2026-08-30
   a private HTTP API.
 
 ## Implemented Behavior
+
+## 2026-08-31 — Authorized provider-registry admission
+
+- `VERIFIED offline/API partial`: `createProviderRegistry` snapshots up to 32 typed
+  provider declarations and resolves strict schema-v1 `authorizedPlan` requirements by
+  exact kind/id/version/instance, capability set, authorization ID/scope, logical target
+  root and mutation class. Missing or mismatched providers fail closed as structured
+  `INCONCLUSIVE_PROVIDER_UNAVAILABLE` before scenario I/O or run creation.
+- When an injected registry is configured, `POST /api/runs` accepts only
+  `{ authorizedPlan }`, validates a module-issued immutable resolution, loads the exact
+  named scenario, rejects loader/name mismatch, then passes that resolution to the run
+  factory. Without a registry, the existing `{ scenario }` endpoint remains compatible.
+- `TestRun` accepts only same-process resolutions issued by this registry, rejects forged
+  or cross-scenario objects, snapshots hostile dependency getters once, and writes only
+  frozen provider declaration/authorization metadata to `manifest.authorizedPlan`; live
+  provider ports are never serialized.
+- Capability `authorized-provider-registry` is `runtime-wired` because `server.ts` uses
+  admission resolution. Focused exact-current gate is `47/47` PASS. Full ordered gate is
+  `627 total / 623 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build and
+  diff-check PASS.
+- Independent review found a Proxy-array cardinality TOCTOU that could expose a hidden
+  33rd registration after the 32-entry guard. The issue was reproduced RED, fixed by
+  rejecting a top-level Proxy container before bounded snapshotting, then confirmed
+  CLOSED by correction review `deleg_e42805e2` PASS (`0/0/0/0`). Reviewer registry and
+  server suites passed `11/11` each; Proxy TOCTOU/sanitization probes passed `8/8` and
+  immutable fixed-Proxy snapshot probes passed `6/6`.
+- This slice performs admission only: the registry never invokes a provider. The
+  declaration's authorization ID/scope is caller-configured metadata, not proof of
+  approval provenance. It adds no Paper process lifecycle, scheduler, transport,
+  restart, filesystem/SQLite/log/vision provider execution, controlled fixture
+  evidence, custody or release eligibility.
 
 ## 2026-08-30 — Canonical-byte observation provider adapter
 

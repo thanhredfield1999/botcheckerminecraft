@@ -239,6 +239,7 @@ export function buildCapabilityManifest(facts: CapabilityManifestFacts): Capabil
 }
 
 const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runtime-wired' | 'library-only' }>> = {
+  'authorized-provider-registry': { module: 'provider-registry', mode: 'runtime-wired' },
   'compatibility-matrix': { module: 'compatibility-matrix', mode: 'library-only' },
   'crash-recovery': { module: 'crash-recovery-contract', mode: 'library-only' },
   'evidence-bundle': { module: 'evidence-bundle', mode: 'runtime-wired' },

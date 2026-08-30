@@ -39,6 +39,11 @@ import { buildGameplayReport, buildMultiClientReport } from './journey-reports.j
 import type { GameplayEvaluation } from './gameplay-contract.js'
 import type { MultiClientEvaluation } from './multi-client-contract.js'
 import type { CapabilityManifest } from './capability-manifest.js'
+import {
+  assertResolvedAuthorizedPlan,
+  InvalidAuthorizedPlanError,
+  type ResolvedAuthorizedPlan
+} from './provider-registry.js'
 import { writeEvidenceBundle, type EvidenceBundleInput } from './evidence-bundle.js'
 import {
   artifactTargetBindingSha256,
@@ -90,6 +95,33 @@ function immutableEvidenceBinding(targetBinding?: ArtifactTargetBinding): RunMan
   return Object.freeze(binding)
 }
 
+function immutableAuthorizedPlan(
+  input?: Readonly<ResolvedAuthorizedPlan>
+): Readonly<NonNullable<RunManifest['authorizedPlan']>> | undefined {
+  if (!input) return undefined
+  const providers = input.providers.map(provider => Object.freeze({
+    schemaVersion: 1 as const,
+    kind: provider.declaration.kind,
+    id: provider.declaration.id,
+    version: provider.declaration.version,
+    ...(provider.declaration.instanceId === undefined
+      ? {}
+      : { instanceId: provider.declaration.instanceId }),
+    capabilities: Object.freeze([...provider.declaration.capabilities]),
+    authorization: Object.freeze({
+      id: provider.declaration.authorization.id,
+      scope: Object.freeze([...provider.declaration.authorization.scope])
+    }),
+    targetRoot: provider.declaration.targetRoot,
+    mutationClass: provider.declaration.mutationClass
+  }))
+  return Object.freeze({
+    schemaVersion: 1 as const,
+    scenario: input.scenario,
+    providers: Object.freeze(providers)
+  })
+}
+
 interface TestRunDependencies {
   createBot?: (options: MinecraftOptions) => Bot
   prepareNavigation?: (bot: Bot) => void
@@ -99,6 +131,7 @@ interface TestRunDependencies {
   sourceRevision?: string
   capabilityManifest?: CapabilityManifest
   targetBinding?: ArtifactTargetBinding
+  authorizedPlan?: Readonly<ResolvedAuthorizedPlan>
   signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
   qaExecution?: {
     executionId: string
@@ -225,6 +258,7 @@ export class TestRun {
   private readonly completedStepWindowGenerations = new Map<string, number>()
   private readonly sourceRevision?: string
   private readonly evidenceBinding: RunManifest['evidence']
+  private readonly authorizedPlan?: Readonly<NonNullable<RunManifest['authorizedPlan']>>
   private readonly signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
   private signedProviderEvidenceReference?: SignedProviderEvidenceReference
 
@@ -246,6 +280,17 @@ export class TestRun {
     }
     this.sourceRevision = sourceRevision
     this.evidenceBinding = immutableEvidenceBinding(dependencies.targetBinding)
+    let authorizedPlan: Readonly<ResolvedAuthorizedPlan> | undefined
+    try {
+      authorizedPlan = dependencies.authorizedPlan
+      if (authorizedPlan !== undefined) assertResolvedAuthorizedPlan(authorizedPlan)
+    } catch {
+      throw new InvalidAuthorizedPlanError()
+    }
+    this.authorizedPlan = immutableAuthorizedPlan(authorizedPlan)
+    if (this.authorizedPlan && this.authorizedPlan.scenario !== scenario.name) {
+      throw new Error('Authorized plan does not match scenario')
+    }
     this.signedProviderEvidenceFactory = signedProviderEvidenceFactory
     if (signedProviderEvidenceFactory
       && (this.evidenceBinding.evidenceGrade !== 'artifact-bound'
@@ -1267,6 +1312,7 @@ export class TestRun {
       ...(this.signedProviderEvidenceReference
         ? { signedProviderEvidence: this.signedProviderEvidenceReference }
         : {}),
+      ...(this.authorizedPlan ? { authorizedPlan: this.authorizedPlan } : {}),
       ...(this.scenario.qa ? {
         qa: {
           ...this.scenario.qa,

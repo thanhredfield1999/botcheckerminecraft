@@ -44,6 +44,22 @@ This is offline artifact provenance only. Reports remain
 `releaseEligible: false`; hashes and bundle seals do not prove that a JVM loaded
 those files and are not signatures.
 
+### Authorized provider admission (partial)
+
+A caller may inject `createProviderRegistry(...)` when creating the HTTP server.
+In that mode, `POST /api/runs` accepts a strict schema-v1 `authorizedPlan` instead
+of a bare scenario name. Admission requires an exact provider kind, identity,
+version, optional instance, capability set, authorization ID/scope, logical target
+root and mutation class. Missing or mismatched providers return structured
+`INCONCLUSIVE_PROVIDER_UNAVAILABLE` before scenario loading or run creation. The
+report records an immutable metadata-only plan; provider ports are not serialized.
+
+This is admission and provenance wiring only. Authorization ID/scope is
+caller-configured metadata, not proof of approval provenance. The registry does not
+invoke providers and supplies no Paper lifecycle, process, scheduler, transport,
+restart, filesystem, SQLite, log, vision, custody or release proof. Without an
+injected registry, the legacy `{ scenario }` request remains available.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,
