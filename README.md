@@ -114,7 +114,7 @@ challenge/target, invoke an injected observation callback, reassess its candidat
 CodeSource-file observation and delegate canonical signing without loading key
 material. It provides bounded timeout, cancellation and reentrancy handling, but
 does not consume nonce state or establish observer, clock, boot, server-instance,
-configuration or runtime truth. No production Paper/Bukkit probe adapter exists.
+configuration or runtime truth. No production Paper/Bukkit plugin adapter exists.
 An explicitly injected
 `TestRun` factory can now return one observation-bound envelope; the runner
 strict-checks its structural run/target/provider/artifact/observation binding,
@@ -130,6 +130,14 @@ artifact roles or observation time, effective configuration, key custody, runtim
 behavior, or release readiness. Capability manifest schema v2 binds its Java source,
 build script and compiled classes; legacy manifests without auxiliary code
 remain schema v1.
+
+The Java auxiliary library now exposes a library-only `PaperJvmObservationPort`
+contract for a future Paper plugin. A caller must capture a bounded context while
+its injected primary-thread predicate is true, then perform the one-shot artifact
+observation only where that predicate is false. The worker snapshots the supplied
+wall clock immediately before bounded observer I/O. Supplier errors are normalized,
+and no Bukkit/Paper object is retained. This port imports no Bukkit/Paper API and
+provides no scheduler, plugin lifecycle, transport, signing, custody or runtime wiring.
 
 The Java auxiliary library also contains a production canonical-byte builder for
 the `jvm-observation-bound-v2` profile. It snapshots and deterministically sorts

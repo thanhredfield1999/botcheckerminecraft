@@ -226,6 +226,10 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'jvm-observation-bound-claim-builder'),
     { name: 'jvm-observation-bound-claim-builder', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-jvm-observation-port'),
+    { name: 'paper-jvm-observation-port', mode: 'library-only' }
+  )
   const java = manifest.auxiliaryCode?.find(component => component.component === 'jvm-artifact-observer')
   assert.equal(java?.sourceRoot, 'java-src')
   assert.equal(java?.outputRoot, 'dist/java')
@@ -235,6 +239,9 @@ test('Java observation core được build và bind vào capability provenance',
     && sha256.test(source.sha256)))
   assert.ok(java?.sources.some(source =>
     source.path === 'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java'
+    && sha256.test(source.sha256)))
+  assert.ok(java?.sources.some(source =>
+    source.path === 'java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java'
     && sha256.test(source.sha256)))
   assert.deepEqual(java?.compiled, [])
 })
@@ -272,6 +279,24 @@ test('compiled capability collector bind Java class output, source và build scr
   assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmArtifactObserver.class')))
   assert.ok(java?.sources.some(source => source.path.endsWith('/JvmObservationBoundClaimBuilder.java')))
   assert.ok(java?.compiled.some(file => file.path.endsWith('/JvmObservationBoundClaimBuilder.class')))
+  assert.ok(java?.sources.some(source => source.path.endsWith('/PaperJvmObservationPort.java')))
+  assert.ok(java?.compiled.some(file => file.path.endsWith('/PaperJvmObservationPort.class')))
+})
+
+test('Paper JVM observation port chỉ là library boundary không runtime/signing wiring', async () => {
+  const source = await readFile(
+    'java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java',
+    'utf8'
+  )
+  assert.doesNotMatch(source, /org\.bukkit|io\.papermc|PrivateKey|KeyFactory|Signature|PKCS|PEM|JKS|KeyStore/)
+  assert.doesNotMatch(source, /java\.net|java\.nio\.file|System\.getenv|System\.getProperty/)
+  assert.doesNotMatch(source, /runner|report|HTTP|Socket|ServerSocket/)
+  assert.match(source, /PAPER_PRIMARY_THREAD_REQUIRED/)
+  assert.match(source, /PAPER_PRIMARY_THREAD_IO_REJECTED/)
+  assert.match(source, /JvmArtifactObserver\.observe/)
+  assert.match(source, /observation\.authoritative\(\)/)
+  assert.match(source, /observation\.provesLoadedBytecode\(\)/)
+  assert.match(source, /observation\.releaseEligible\(\)/)
 })
 
 test('Java production observation-bound builder không có key hoặc signing API', async () => {

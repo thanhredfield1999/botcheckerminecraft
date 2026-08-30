@@ -11,6 +11,27 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Paper JVM observation port contract
+
+- `VERIFIED offline/library-only partial`: `PaperJvmObservationPort` defines a
+  Java-only handoff contract for a future Paper plugin. `capture()` requires an
+  injected primary-thread predicate and snapshots only the anchor class, bounded
+  declared identity/limits, and claimed server/boot IDs; it retains no Bukkit object.
+- `observe()` rejects the Paper primary thread, snapshots the injected wall clock on
+  the worker immediately before bounded `JvmArtifactObserver` I/O, and returns the
+  existing non-authoritative observation posture. Each context is atomic one-shot;
+  thread/clock supplier failures are normalized without exposing callback messages.
+- Capability `paper-jvm-observation-port` is `library-only` and bound into Java
+  source/compiled provenance. The source imports no Bukkit/Paper, transport,
+  signer/private-key, runner/report/server or environment API.
+- Focused exact-current gate is `24/24` PASS. Full ordered gate is
+  `591 total / 587 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security/claim scan and diff-check PASS. Independent review
+  `deleg_d1732bb3` PASS with no blocker/high/medium or blocking low findings.
+- This is not a production Paper plugin or observer-to-signer adapter. Scheduler,
+  lifecycle/cancellation, transport, actual boot/server identity, trusted time,
+  custody, runtime truth and release admission remain `NOT VERIFIED` / false.
+
 ## 2026-08-30 — Generic observer-to-opaque-signer pipeline
 
 - `VERIFIED offline/library-only partial`: `SignedProviderObserverSigningPipeline`

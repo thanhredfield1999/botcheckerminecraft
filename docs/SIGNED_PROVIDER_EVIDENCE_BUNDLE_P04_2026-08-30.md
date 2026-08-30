@@ -135,8 +135,10 @@ Exact-current local results before documentation-only edits:
   exact challenge/target/candidate structure, reassesses the non-authoritative JVM
   observation and delegates canonical signing with bounded timeout/cancellation.
   It does not consume nonce state or prove observer/clock/boot/config/runtime truth.
-- No production Paper/Bukkit observer-to-signer adapter exists; the generic pipeline
-  has no server, runner, report or deployment importer.
+- A Java-only `PaperJvmObservationPort` contract now enforces primary-thread capture,
+  off-thread bounded one-shot observation and non-authoritative output. It imports no
+  Bukkit/Paper API and has no scheduler, lifecycle, transport, signer or deployment
+  wiring. No production Paper/Bukkit observer-to-signer plugin adapter exists.
 - Effective configuration, true boot/server-instance identity, trusted key custody,
   provisioning, trusted clock and controlled Paper evidence remain unverified.
 - No production deployment, restart, reload or live operation was performed.
