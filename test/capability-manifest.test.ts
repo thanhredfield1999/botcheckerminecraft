@@ -117,6 +117,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     { name: 'signed-provider-opaque-signing-adapter', mode: 'library-only' }
   )
   assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'signed-provider-observer-signing-pipeline'),
+    { name: 'signed-provider-observer-signing-pipeline', mode: 'library-only' }
+  )
+  assert.deepEqual(
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-ed25519-signer'),
     { name: 'google-cloud-kms-hsm-ed25519-signer', mode: 'library-only' }
   )
@@ -285,7 +289,7 @@ test('Java production observation-bound builder không có key hoặc signing AP
   assert.match(capabilitySource, /javaSources\.some\(source => source\.path[\s\S]*JvmObservationBoundClaimBuilder/)
 })
 
-test('opaque signing adapter không có private-key loader hoặc runtime wiring', async () => {
+test('opaque signing adapter chỉ có observer pipeline library-only làm importer', async () => {
   const source = await readFile('src/signed-provider-signing-adapter.ts', 'utf8')
   assert.doesNotMatch(source, /node:fs|process\.env|createPrivateKey|PrivateKey|PKCS|JKS|PEM|KeyStore/)
   assert.doesNotMatch(source, /SignedProviderClaimVerifier|verifyAndConsume|runner|report|server|Paper|Bukkit/)
@@ -294,13 +298,19 @@ test('opaque signing adapter không có private-key loader hoặc runtime wiring
   const sourceFiles = (await readdir('src', { recursive: true }))
     .filter(file => file.endsWith('.ts') && !file.endsWith('signed-provider-signing-adapter.ts'))
     .map(file => `src/${file}`)
+  const importers: string[] = []
   for (const file of sourceFiles) {
     const runtimeSource = await readFile(file, 'utf8')
-    assert.doesNotMatch(
-      runtimeSource,
-      /(?:from\s+['"][^'"]*signed-provider-signing-adapter|(?:import|require)\(\s*['"][^'"]*signed-provider-signing-adapter)/
-    )
+    if (/(?:from\s+['"][^'"]*signed-provider-signing-adapter|(?:import|require)\(\s*['"][^'"]*signed-provider-signing-adapter)/.test(runtimeSource)) {
+      importers.push(file)
+    }
   }
+  assert.deepEqual(importers, ['src/signed-provider-observer-signing-pipeline.ts'])
+  const pipeline = await readFile(importers[0]!, 'utf8')
+  assert.doesNotMatch(
+    pipeline,
+    /node:fs|process\.env|from\s+['"][^'"]*\/(?:runner|report|server)\.js['"]|Paper|Bukkit|verifyAndConsume/
+  )
 })
 
 test('Google Cloud KMS signer không nhận private key, credential hoặc runtime wiring', async () => {

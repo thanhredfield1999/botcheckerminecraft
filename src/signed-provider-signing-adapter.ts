@@ -49,10 +49,16 @@ export interface SignedProviderOpaqueSigningAdapterOptions {
   readonly wallNowMs?: () => number
 }
 
+export interface SignedProviderOpaqueSigningOperationOptions {
+  readonly signal?: AbortSignal
+}
+
 interface SigningOperationState {
   callbackStarted: boolean
   callbackSettled: boolean
   outerSettled: boolean
+  idle: Promise<void>
+  resolveIdle: () => void
 }
 
 function sameProvider(
@@ -129,48 +135,69 @@ export class SignedProviderOpaqueSigningAdapter {
 
   constructor(options: SignedProviderOpaqueSigningAdapterOptions) {
     if (!options || typeof options !== 'object') throw new Error('Opaque signing adapter options are invalid')
-    if (typeof options.signer !== 'function') throw new Error('Opaque signer callback is invalid')
-    assertSignedProviderClaimTrustStoreSnapshot(options.trustStore)
-    if (!Number.isSafeInteger(options.timeoutMs)
-      || options.timeoutMs <= 0
-      || options.timeoutMs > MAX_TIMEOUT_MS) {
+    const trustStore = options.trustStore
+    const descriptor = options.descriptor
+    const signer = options.signer
+    const timeoutMs = options.timeoutMs
+    const wallNowMs = options.wallNowMs
+    if (typeof signer !== 'function') throw new Error('Opaque signer callback is invalid')
+    assertSignedProviderClaimTrustStoreSnapshot(trustStore)
+    if (!Number.isSafeInteger(timeoutMs)
+      || timeoutMs <= 0
+      || timeoutMs > MAX_TIMEOUT_MS) {
       throw new Error('Opaque signer timeout is invalid')
     }
-    this.trustStore = options.trustStore
-    this.descriptor = validateDescriptor(options.descriptor)
-    this.signer = options.signer
-    this.timeoutMs = options.timeoutMs
-    this.wallNowMs = options.wallNowMs ?? Date.now
+    this.trustStore = trustStore
+    this.descriptor = validateDescriptor(descriptor)
+    this.signer = signer
+    this.timeoutMs = timeoutMs
+    this.wallNowMs = wallNowMs ?? Date.now
   }
 
   async createObservationBoundEnvelope(
-    input: ObservationBoundEnvelopeInput
+    input: ObservationBoundEnvelopeInput,
+    options: SignedProviderOpaqueSigningOperationOptions = {}
   ): Promise<Readonly<SignedProviderClaimEnvelopeV2>> {
     if (this.activeOperation) throw new Error('REENTRANT')
+    let resolveIdle: (() => void) | undefined
+    const idle = new Promise<void>(resolve => { resolveIdle = resolve })
     const operation: SigningOperationState = {
       callbackStarted: false,
       callbackSettled: false,
-      outerSettled: false
+      outerSettled: false,
+      idle,
+      resolveIdle: () => resolveIdle?.()
     }
     this.activeOperation = operation
     try {
-      return await this.createObservationBoundEnvelopeInternal(input, operation)
+      return await this.createObservationBoundEnvelopeInternal(input, operation, options.signal)
     } finally {
       operation.outerSettled = true
       this.releaseOperationIfSettled(operation)
     }
   }
 
+  whenIdle(): Promise<void> {
+    return this.activeOperation?.idle ?? Promise.resolve()
+  }
+
   private async createObservationBoundEnvelopeInternal(
     input: ObservationBoundEnvelopeInput,
-    operation: SigningOperationState
+    operation: SigningOperationState,
+    outerSignal: AbortSignal | undefined
   ): Promise<Readonly<SignedProviderClaimEnvelopeV2>> {
-    const signedContent = parseSignedProviderCanonicalContent({
-      schemaVersion: 2,
-      profile: 'jvm-observation-bound-v2',
-      claims: input?.claims,
-      jvmArtifactObservation: input?.jvmArtifactObservation
-    })
+    if (outerSignal?.aborted) throw new Error('Opaque signing operation cancelled')
+    let signedContent: ReturnType<typeof parseSignedProviderCanonicalContent>
+    try {
+      signedContent = parseSignedProviderCanonicalContent({
+        schemaVersion: 2,
+        profile: 'jvm-observation-bound-v2',
+        claims: input?.claims,
+        jvmArtifactObservation: input?.jvmArtifactObservation
+      })
+    } catch {
+      throw new Error('Opaque signing input is invalid')
+    }
     if (signedContent.schemaVersion !== 2) throw new Error('Observation-bound signed content is required')
 
     const key = this.trustStore.keys.find(candidate => candidate.keyId === this.descriptor.keyId)
@@ -192,6 +219,7 @@ export class SignedProviderOpaqueSigningAdapter {
     }
 
     const verificationTimeMs = safeNow(this.wallNowMs())
+    if (outerSignal?.aborted) throw new Error('Opaque signing operation cancelled')
     if (verificationTimeMs < key.notBeforeMs || verificationTimeMs >= key.notAfterMs) {
       throw new Error('Opaque signer key is outside its active window')
     }
@@ -201,6 +229,7 @@ export class SignedProviderOpaqueSigningAdapter {
     })
     const controller = new AbortController()
     let timer: NodeJS.Timeout | undefined
+    let cancel: (() => void) | undefined
     try {
       const request = Object.freeze({
         canonicalPayload: new Uint8Array(canonicalPayload),
@@ -215,8 +244,19 @@ export class SignedProviderOpaqueSigningAdapter {
         () => this.markCallbackSettled(operation),
         () => this.markCallbackSettled(operation)
       )
+      const cancellation = new Promise<never>((_, reject) => {
+        if (!outerSignal) return
+        cancel = () => {
+          const error = new Error('Opaque signing operation cancelled')
+          reject(error)
+          controller.abort(error)
+        }
+        outerSignal.addEventListener('abort', cancel, { once: true })
+        if (outerSignal.aborted) cancel()
+      })
       const signatureInput = await Promise.race([
         callbackResult,
+        cancellation,
         new Promise<never>((_, reject) => {
           timer = setTimeout(() => {
             const error = new Error('Opaque signer timed out')
@@ -227,6 +267,7 @@ export class SignedProviderOpaqueSigningAdapter {
       ])
       const signature = copyExactSignature(signatureInput)
       const postCallbackVerificationTimeMs = safeNow(this.wallNowMs())
+      if (outerSignal?.aborted) throw new Error('Opaque signing operation cancelled')
       if (postCallbackVerificationTimeMs < key.notBeforeMs
         || postCallbackVerificationTimeMs >= key.notAfterMs) {
         throw new Error('Opaque signer key is outside its active window')
@@ -246,6 +287,7 @@ export class SignedProviderOpaqueSigningAdapter {
       })
     } finally {
       if (timer) clearTimeout(timer)
+      if (cancel && outerSignal) outerSignal.removeEventListener('abort', cancel)
     }
   }
 
@@ -259,6 +301,7 @@ export class SignedProviderOpaqueSigningAdapter {
       && operation.outerSettled
       && (!operation.callbackStarted || operation.callbackSettled)) {
       this.activeOperation = undefined
+      operation.resolveIdle()
     }
   }
 }

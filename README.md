@@ -108,9 +108,14 @@ produce identical canonical UTF-8 bytes for the tested ASCII and supplementary-
 Unicode vectors. `TARGET_FILE_MATCH_NON_AUTHORITATIVE` only describes the target
 file; class-resource/base-entry consistency remains explicitly informational.
 
-The observer and assessment still have no signing or private-key API. The optional
-signed-provider v2 profile can bind their canonical observation bytes to a fresh
-challenge, but no production probe/signer adapter exists. An explicitly injected
+The observer and assessment still have no signing or private-key API. A generic
+library-only observer-to-opaque-signer pipeline can now validate one exact v2
+challenge/target, invoke an injected observation callback, reassess its candidate
+CodeSource-file observation and delegate canonical signing without loading key
+material. It provides bounded timeout, cancellation and reentrancy handling, but
+does not consume nonce state or establish observer, clock, boot, server-instance,
+configuration or runtime truth. No production Paper/Bukkit probe adapter exists.
+An explicitly injected
 `TestRun` factory can now return one observation-bound envelope; the runner
 strict-checks its structural run/target/provider/artifact/observation binding,
 persists it in the create-new bundle and writes an exact report reference. The

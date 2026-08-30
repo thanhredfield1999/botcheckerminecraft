@@ -131,7 +131,12 @@ Exact-current local results before documentation-only edits:
   this verifier remains a separate explicit consumer.
 - Default HTTP server and release admission do not configure the factory or call
   this verifier.
-- No production Paper/Bukkit observer-to-signer adapter exists.
+- A generic library-only observer-to-opaque-signer pipeline now exists. It validates
+  exact challenge/target/candidate structure, reassesses the non-authoritative JVM
+  observation and delegates canonical signing with bounded timeout/cancellation.
+  It does not consume nonce state or prove observer/clock/boot/config/runtime truth.
+- No production Paper/Bukkit observer-to-signer adapter exists; the generic pipeline
+  has no server, runner, report or deployment importer.
 - Effective configuration, true boot/server-instance identity, trusted key custody,
   provisioning, trusted clock and controlled Paper evidence remain unverified.
 - No production deployment, restart, reload or live operation was performed.

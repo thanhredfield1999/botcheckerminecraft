@@ -298,6 +298,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'signed-provider-signing-adapter',
     mode: 'library-only'
   },
+  'signed-provider-observer-signing-pipeline': {
+    module: 'signed-provider-observer-signing-pipeline',
+    mode: 'library-only'
+  },
   'signed-provider-observation-bound-claim': {
     module: 'signed-provider-claim',
     mode: 'library-only'

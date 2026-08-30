@@ -11,6 +11,38 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Generic observer-to-opaque-signer pipeline
+
+- `VERIFIED offline/library-only partial`: `SignedProviderObserverSigningPipeline`
+  composes an injected observation provider with the existing opaque signing
+  adapter for one exact `jvm-observation-bound-v2` challenge and artifact-bound
+  `server-probe` target. It does not open Paper, Bukkit, HTTP, runner or report APIs.
+- Before observer/signing side effects, it recomputes challenge identity, matches
+  profile/provider/binding, rejects stale challenges and pins the exact candidate.
+  It strict-parses and independently reassesses the returned non-authoritative JVM
+  observation, rejects stale/future observation time and candidate hash mismatch,
+  then delegates canonical signing without reading key material.
+- Observer and opaque-signer stages have bounded timeout, sanitized callback errors,
+  caller cancellation, late-result suppression and reentrancy locks held until the
+  outstanding callback settles. Lost-abort races around injected clock/policy calls
+  are rechecked. The pipeline itself does not consume the verifier nonce; replay is
+  rejected only by the separate verifier.
+- Capability `signed-provider-observer-signing-pipeline` is `library-only`. The
+  opaque signing adapter has exactly this new source importer; import-graph tests
+  still reject runner/report/server/Paper/Bukkit or private-key/environment wiring.
+- Initial independent review `deleg_ddcd5af1` found hostile getter/error paths that
+  could expose callback-controlled messages. RED counterexamples now normalize
+  challenge, observation-result, claimed-identity and opaque-signing inputs before
+  observer/signer side effects; top-level constructor getters are snapshotted once.
+- Focused exact-current gate is `59/59` PASS. Full ordered gate is
+  `587 total / 583 pass / 0 fail / 4 skip`; typecheck, TypeScript/Java build,
+  added-line security/claim scan and diff-check PASS. Exact-current correction
+  review `deleg_9efbe346` PASS with no blocker/high/medium; initial findings CLOSED.
+- This is a generic compositor contract, not a production Paper/Bukkit adapter.
+  Effective config, boot/server-instance truth, trusted observer deployment,
+  custody/provisioning, trusted time, runtime wiring and release admission remain
+  `NOT VERIFIED` / false.
+
 ## 2026-08-30 — Optional TestRun signed-provider evidence persistence
 
 - `VERIFIED offline/optional-runner partial`: `TestRun` can receive one injected

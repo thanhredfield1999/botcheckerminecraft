@@ -138,6 +138,51 @@ function adapterFor(
   })
 }
 
+test('opaque signing adapter snapshot top-level option getters đúng một lần', async () => {
+  const value = fixture()
+  const reads = { trustStore: 0, descriptor: 0, signer: 0, timeoutMs: 0, wallNowMs: 0 }
+  const safeDescriptor = {
+    keyId: value.key.keyId,
+    provider: value.key.provider,
+    opaqueKeyHandleId: 'opaque-top-level-snapshot'
+  }
+  const safeSigner = (request: Parameters<ConstructorParameters<
+    typeof SignedProviderOpaqueSigningAdapter
+  >[0]['signer']>[0]) => sign(null, request.canonicalPayload, value.pair.privateKey)
+  const options = {
+    get trustStore() {
+      reads.trustStore += 1
+      return reads.trustStore === 1 ? value.trustStore : { ...value.trustStore }
+    },
+    get descriptor() {
+      reads.descriptor += 1
+      return reads.descriptor === 1
+        ? safeDescriptor
+        : { ...safeDescriptor, opaqueKeyHandleId: 'secret/path' }
+    },
+    get signer() {
+      reads.signer += 1
+      return reads.signer === 1 ? safeSigner : () => new Uint8Array(64)
+    },
+    get timeoutMs() {
+      reads.timeoutMs += 1
+      return reads.timeoutMs === 1 ? 1_000 : 0
+    },
+    get wallNowMs() {
+      reads.wallNowMs += 1
+      return reads.wallNowMs === 1 ? () => value.clock.wall : () => 100_000
+    }
+  }
+  const adapter = new SignedProviderOpaqueSigningAdapter(options)
+
+  const envelope = await adapter.createObservationBoundEnvelope({
+    claims: value.claims,
+    jvmArtifactObservation: value.jvmArtifactObservation
+  })
+  assert.equal(value.verifier.verifyAndConsume(envelope).nonceConsumed, true)
+  assert.deepEqual(reads, { trustStore: 1, descriptor: 1, signer: 1, timeoutMs: 1, wallNowMs: 1 })
+})
+
 test('opaque signing adapter ký sync callback rồi verifier riêng consume envelope v2', async () => {
   const value = fixture()
   let callbackCalls = 0
@@ -290,6 +335,31 @@ test('opaque signing adapter snapshot input trước callback mutation', async (
   assert.equal(envelope.claims.loadedArtifacts[0]!.sha256, '1'.repeat(64))
   assert.equal(envelope.jvmArtifactObservation.codeSourceFileSha256, '1'.repeat(64))
   assert.equal(value.verifier.verifyAndConsume(envelope).nonceConsumed, true)
+})
+
+test('opaque signing adapter sanitize hostile input getter trước callback', async () => {
+  const value = fixture()
+  const fields = ['claims', 'jvmArtifactObservation'] as const
+  for (const field of fields) {
+    const sensitive = `secret/signing-input/${field}`
+    const input = {
+      claims: value.claims,
+      jvmArtifactObservation: value.jvmArtifactObservation
+    }
+    Object.defineProperty(input, field, {
+      enumerable: true,
+      get() { throw new Error(sensitive) }
+    })
+    const adapter = adapterFor(value, () => { throw new Error('must not sign') })
+    await assert.rejects(
+      () => adapter.createObservationBoundEnvelope(input),
+      error => {
+        assert.equal(String(error), 'Error: Opaque signing input is invalid')
+        assert.equal(String(error).includes(sensitive), false)
+        return true
+      }
+    )
+  }
 })
 
 test('opaque signing adapter reject policy mismatch trước callback', async () => {
@@ -515,6 +585,58 @@ test('opaque signing adapter timeout abort, bỏ late result và dùng lại đ�
   const envelope = await adapter.createObservationBoundEnvelope(input)
   assert.equal(calls, 2)
   assert.equal(value.verifier.verifyAndConsume(envelope).nonceConsumed, true)
+})
+
+test('opaque signing adapter caller abort truyền vào signer và giữ khóa tới settle', async () => {
+  const value = fixture()
+  const controller = new AbortController()
+  let observedSignal: AbortSignal | undefined
+  let started: (() => void) | undefined
+  let resolveLate: ((signature: Uint8Array) => void) | undefined
+  const signerStarted = new Promise<void>(resolve => { started = resolve })
+  const adapter = adapterFor(value, request => {
+    observedSignal = request.signal
+    started?.()
+    return new Promise(resolve => { resolveLate = resolve })
+  })
+  const input = {
+    claims: value.claims,
+    jvmArtifactObservation: value.jvmArtifactObservation
+  }
+
+  const operation = adapter.createObservationBoundEnvelope(input, { signal: controller.signal })
+  await signerStarted
+  controller.abort()
+  await assert.rejects(operation, /cancelled/i)
+  assert.equal(observedSignal?.aborted, true)
+  await assert.rejects(() => adapter.createObservationBoundEnvelope(input), /REENTRANT/)
+
+  resolveLate?.(new Uint8Array(64))
+  await new Promise(resolve => setImmediate(resolve))
+})
+
+test('opaque signing adapter không bỏ lỡ abort xảy ra trong pre-callback policy', async () => {
+  const value = fixture()
+  const controller = new AbortController()
+  let signerCalls = 0
+  const adapter = adapterFor(value, () => {
+    signerCalls += 1
+    return new Uint8Array(64)
+  }, {
+    wallNowMs: () => {
+      controller.abort()
+      return value.clock.wall
+    }
+  })
+
+  await assert.rejects(
+    () => adapter.createObservationBoundEnvelope({
+      claims: value.claims,
+      jvmArtifactObservation: value.jvmArtifactObservation
+    }, { signal: controller.signal }),
+    /cancelled/i
+  )
+  assert.equal(signerCalls, 0)
 })
 
 test('opaque signing adapter reject reentrancy nhưng outer call vẫn hoàn tất', async () => {
