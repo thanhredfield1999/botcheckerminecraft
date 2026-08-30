@@ -111,7 +111,12 @@ file; class-resource/base-entry consistency remains explicitly informational.
 The observer and assessment still have no signing or private-key API. The optional
 signed-provider v2 profile can bind their canonical observation bytes to a fresh
 challenge, but no production probe/signer adapter exists and the profile is not
-connected to Paper, the HTTP server, reports, or release admission. It does not
+connected to Paper, the HTTP server, runner persistence, or release admission. A
+separate library-only P0.4 verifier can re-verify an already sealed report plus
+signed-provider evidence artifact, including exact run/scenario/capability/target
+binding and Ed25519/JVM-observation consistency. It does not create that artifact,
+authenticate the report verdict, prove the challenge was issued, or establish
+freshness/replay/nonce consumption. It does not
 prove which bytecode the JVM defined or executed, the truth of caller-declared
 artifact roles or observation time, effective configuration, key custody, runtime
 behavior, or release readiness. Capability manifest schema v2 binds its Java source,

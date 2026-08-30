@@ -148,6 +148,10 @@ test('runtime capability collector bind exact current repo snapshot mà không m
     manifest.capabilities.find(capability => capability.name === 'google-cloud-kms-hsm-policy-attestation-bridge'),
     { name: 'google-cloud-kms-hsm-policy-attestation-bridge', mode: 'library-only' }
   )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'signed-provider-evidence-bundle-verifier'),
+    { name: 'signed-provider-evidence-bundle-verifier', mode: 'library-only' }
+  )
   assert.ok(manifest.sources.some(source => source.path === 'src/signed-provider-challenge-store.ts'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === 'mineflayer' && dependency.version === '4.37.1'))
   assert.ok(manifest.dependencies.some(dependency => dependency.name === '@google-cloud/kms' && dependency.version === '6.0.0'))
@@ -483,6 +487,33 @@ test('D4d trust-root policy và compositor giữ exact library-only import graph
   }
   assert.deepEqual(policyImporters, ['src/google-cloud-kms-hsm-trust-root-policy-attestation.ts'])
   assert.deepEqual(compositorImporters, [])
+})
+
+test('P0.4 signed-provider bundle verifier giữ library-only import graph', async () => {
+  const moduleName = 'signed-provider-evidence-bundle'
+  const source = await readFile(`src/${moduleName}.ts`, 'utf8')
+  assert.doesNotMatch(
+    source,
+    /node:child_process|process\.env|createPrivateKey|generateKeyPair|KeyManagementServiceClient|asymmetricSign\s*\(/
+  )
+  assert.doesNotMatch(source, /from\s+['"].*(?:runner|server|report-persistence)/)
+
+  const productionFiles = [
+    ...(await readdir('src', { recursive: true }))
+      .filter(file => file.endsWith('.ts') && !file.endsWith(`${moduleName}.ts`))
+      .map(file => `src/${file}`),
+    ...(await readdir('scripts', { recursive: true }))
+      .filter(file => /\.(?:[cm]?js|ts)$/.test(file))
+      .map(file => `scripts/${file}`)
+  ]
+  const importers: string[] = []
+  for (const file of productionFiles) {
+    const runtimeSource = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*signed-provider-evidence-bundle|(?:import|require)\(\s*['"][^'"]*signed-provider-evidence-bundle)/.test(runtimeSource)) {
+      importers.push(file)
+    }
+  }
+  assert.deepEqual(importers, [])
 })
 
 test('capability manifest reject auxiliary aggregate vượt total byte bound', () => {

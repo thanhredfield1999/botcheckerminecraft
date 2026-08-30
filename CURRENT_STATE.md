@@ -11,6 +11,42 @@ Last reviewed: 2026-08-30
 
 ## Implemented Behavior
 
+## 2026-08-30 — Signed-provider sealed evidence verifier P0.4
+
+- `VERIFIED offline/library-only partial`: a separate compositor verifies one
+  sealed bundle containing exactly one report and one canonical
+  `jvm-observation-bound-v2` provider-evidence artifact. It independently checks
+  seal/artifact integrity, report reference, run/scenario/capability/target
+  binding, canonical challenge identity, signed structural time window, Ed25519
+  trust policy and exact non-authoritative candidate JVM observation.
+- The generic bundle layer now exposes a deep-frozen verified snapshot using
+  canonical base64 strings rather than writable `Buffer` aliases. Writer and
+  verifier enforce a `64 MiB` aggregate artifact-byte cap before destination or
+  artifact I/O, in addition to the existing per-artifact/count limits.
+- Public output distinguishes bundle integrity from authenticity. Bundle/report
+  authenticity, report-verdict authentication, challenge issuance, freshness,
+  replay/consume, trusted time, trust-store provenance/rollback, key custody,
+  loaded-bytecode proof, runtime wiring, production readiness and release
+  eligibility remain explicit `false`.
+- Capability `signed-provider-evidence-bundle-verifier` is `library-only`; the
+  module has no downstream production importer. `TestRun`, HTTP server, report
+  persistence and Paper/Bukkit paths do not generate/call this API.
+- Initial implementation review FAIL found one HIGH: hostile Proxy cardinality could
+  pass `length=1`, make `.map()` materialize `129` artifacts, then leave partial
+  files before late schema rejection. RED reproduced this. The writer now rejects
+  Proxy collections before trusting `length`, snapshots top-level/artifact fields,
+  and requires exact dense own indices plus stable cardinality before filesystem
+  I/O. A second RED covers a Proxy lying through both `ownKeys` and `length`.
+- Exact-current focused evidence/P0.4 core `20/20` PASS; focused broader gate
+  `63/63` PASS; full ordered gate `561 total / 557 pass / 0 fail / 4 skip`;
+  typecheck, TypeScript/Java build, static scan and diff-check PASS.
+- Claim/import review PASS `0/0/0/0`. Final exact-current correction review
+  `deleg_167e22f7` PASS `0/0/0/0`; the initial Proxy-cardinality HIGH is `CLOSED`.
+- P0.4 remains `PARTIAL`: production observer-to-signer adapter, trusted custody,
+  effective config/boot/server-instance truth, runner/server/release wiring and
+  controlled Paper evidence remain `NOT VERIFIED`.
+- Evidence: `docs/SIGNED_PROVIDER_EVIDENCE_BUNDLE_P04_2026-08-30.md`.
+
 ## 2026-08-30 — Caller-supplied trust-root policy checkpoint D4d
 
 - `VERIFIED offline/library-only` at source/test/build level: a strict schema-v1

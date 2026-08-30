@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { access, lstat, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import { types as utilTypes } from 'node:util'
 import { z } from 'zod'
 import { writeImmutableArtifact } from './evidence-writer.js'
 import {
@@ -15,6 +16,7 @@ const SAFE_FILE_NAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,199}$/
 const MAX_ARTIFACTS = 128
 const MAX_SEAL_BYTES = 256 * 1024
 const MAX_VERIFY_ARTIFACT_BYTES = 16 * 1024 * 1024
+const MAX_VERIFY_BUNDLE_ARTIFACT_BYTES = 64 * 1024 * 1024
 
 const runIdSchema = z.string().uuid().or(z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/))
 const artifactRoleSchema = z.enum([
@@ -41,6 +43,20 @@ const evidenceBundleManifestSchema = bundlePayloadSchema.extend({
 export type EvidenceArtifactRole = z.infer<typeof artifactRoleSchema>
 export type EvidenceArtifactDescriptor = z.infer<typeof artifactDescriptorSchema>
 export type EvidenceBundleManifest = z.infer<typeof evidenceBundleManifestSchema>
+
+export interface EvidenceBundleArtifactSnapshot {
+  readonly descriptor: EvidenceArtifactDescriptor
+  readonly contentBase64: string
+}
+
+export interface EvidenceBundleVerifiedSnapshot {
+  readonly manifest: Readonly<
+    Omit<EvidenceBundleManifest, 'artifacts'> & {
+      readonly artifacts: ReadonlyArray<Readonly<EvidenceArtifactDescriptor>>
+    }
+  >
+  readonly artifacts: ReadonlyArray<EvidenceBundleArtifactSnapshot>
+}
 
 export interface EvidenceBundleInput {
   runId: string
@@ -84,6 +100,25 @@ function validateFileName(fileName: string): string {
     throw new Error(`Invalid evidence file name: ${fileName}`)
   }
   return fileName
+}
+
+function assertExactArtifactCollectionKeys(
+  artifacts: ReadonlyArray<unknown>,
+  expectedCount: number
+): void {
+  const keys = Reflect.ownKeys(artifacts)
+  if (keys.length !== expectedCount + 1 || !keys.includes('length')) {
+    throw new Error('Evidence artifact collection cardinality changed')
+  }
+  for (let index = 0; index < expectedCount; index += 1) {
+    if (!keys.includes(String(index))) {
+      throw new Error('Evidence artifact collection cardinality changed')
+    }
+  }
+  if (keys.some(key => key !== 'length'
+    && (typeof key !== 'string' || !/^(?:0|[1-9][0-9]*)$/.test(key)))) {
+    throw new Error('Evidence artifact collection cardinality changed')
+  }
 }
 
 function assertRunBinding(
@@ -142,22 +177,58 @@ export async function writeEvidenceBundle(
   sealFileName: string,
   input: EvidenceBundleInput
 ): Promise<EvidenceBundleManifest> {
-  if (input.artifacts.length === 0 || input.artifacts.length > MAX_ARTIFACTS) {
+  const runIdInput = input.runId
+  const scenarioSha256Input = input.scenarioSha256
+  const capabilitySourceFingerprintInput = input.capabilitySourceFingerprint
+  const targetBindingSha256Input = input.targetBindingSha256
+  const artifactsInput = input.artifacts
+  if (!Array.isArray(artifactsInput) || utilTypes.isProxy(artifactsInput)) {
+    throw new Error('Evidence artifact collection Proxy is not allowed')
+  }
+  const initialArtifactCount = artifactsInput.length
+  if (!Number.isSafeInteger(initialArtifactCount)
+    || initialArtifactCount === 0
+    || initialArtifactCount > MAX_ARTIFACTS) {
     throw new Error('Evidence artifact count is outside bundle bounds')
   }
-  const runId = runIdSchema.parse(input.runId)
-  const scenarioSha256 = z.string().regex(SHA256_PATTERN).parse(input.scenarioSha256)
-  const capabilitySourceFingerprint = input.capabilitySourceFingerprint === undefined
+  assertExactArtifactCollectionKeys(artifactsInput, initialArtifactCount)
+  const runId = runIdSchema.parse(runIdInput)
+  const scenarioSha256 = z.string().regex(SHA256_PATTERN).parse(scenarioSha256Input)
+  const capabilitySourceFingerprint = capabilitySourceFingerprintInput === undefined
     ? undefined
-    : z.string().regex(SHA256_PATTERN).parse(input.capabilitySourceFingerprint)
-  const targetBindingSha256 = input.targetBindingSha256 === undefined
+    : z.string().regex(SHA256_PATTERN).parse(capabilitySourceFingerprintInput)
+  const targetBindingSha256 = targetBindingSha256Input === undefined
     ? undefined
-    : z.string().regex(SHA256_PATTERN).parse(input.targetBindingSha256)
-  const artifacts = input.artifacts.map(artifact => ({
-    role: artifactRoleSchema.parse(artifact.role),
-    fileName: validateFileName(artifact.fileName),
-    content: Buffer.from(artifact.content)
-  }))
+    : z.string().regex(SHA256_PATTERN).parse(targetBindingSha256Input)
+  const artifacts: Array<{
+    role: EvidenceArtifactRole
+    fileName: string
+    content: Buffer
+  }> = []
+  for (let index = 0; index < initialArtifactCount; index += 1) {
+    const artifact = artifactsInput[index]
+    if (!artifact) throw new Error('Evidence artifact collection cardinality changed')
+    const roleInput = artifact.role
+    const fileNameInput = artifact.fileName
+    const contentInput = artifact.content
+    artifacts.push({
+      role: artifactRoleSchema.parse(roleInput),
+      fileName: validateFileName(fileNameInput),
+      content: Buffer.from(contentInput)
+    })
+  }
+  if (artifactsInput.length !== initialArtifactCount) {
+    throw new Error('Evidence artifact collection cardinality changed')
+  }
+  assertExactArtifactCollectionKeys(artifactsInput, initialArtifactCount)
+  let aggregateInputBytes = 0
+  for (const artifact of artifacts) {
+    aggregateInputBytes += artifact.content.byteLength
+    if (!Number.isSafeInteger(aggregateInputBytes)
+      || aggregateInputBytes > MAX_VERIFY_BUNDLE_ARTIFACT_BYTES) {
+      throw new Error('Evidence bundle aggregate artifact byte bound exceeded')
+    }
+  }
   const names = artifacts.map(artifact => artifact.fileName)
   if (new Set(names).size !== names.length || names.includes(sealFileName)) {
     throw new Error('Duplicate evidence artifact file name')
@@ -215,6 +286,14 @@ async function verifyEvidenceBundleWithContent(
   if (new Set(names).size !== names.length || names.includes(sealFileName)) {
     throw new Error('Evidence bundle contains duplicate artifact')
   }
+  let aggregateBytes = 0
+  for (const artifact of manifest.artifacts) {
+    aggregateBytes += artifact.bytes
+    if (!Number.isSafeInteger(aggregateBytes)
+      || aggregateBytes > MAX_VERIFY_BUNDLE_ARTIFACT_BYTES) {
+      throw new Error('Evidence bundle aggregate artifact byte bound exceeded')
+    }
+  }
   const contents = new Map<string, Buffer>()
   for (const artifact of manifest.artifacts) {
     const content = await readBoundedRegularFile(
@@ -234,6 +313,25 @@ export async function verifyEvidenceBundle(
   sealFileName: string
 ): Promise<EvidenceBundleManifest> {
   return (await verifyEvidenceBundleWithContent(directory, sealFileName)).manifest
+}
+
+export async function verifyEvidenceBundleSnapshot(
+  directory: string,
+  sealFileName: string
+): Promise<EvidenceBundleVerifiedSnapshot> {
+  const { manifest, contents } = await verifyEvidenceBundleWithContent(directory, sealFileName)
+  const frozenArtifacts = Object.freeze(manifest.artifacts.map(descriptor => Object.freeze({
+    ...descriptor
+  })))
+  const frozenManifest = Object.freeze({ ...manifest, artifacts: frozenArtifacts })
+  return Object.freeze({
+    manifest: frozenManifest,
+    artifacts: Object.freeze(frozenArtifacts.map(descriptor => {
+      const content = contents.get(descriptor.fileName)
+      if (!content) throw new Error('Verified evidence artifact content is unavailable')
+      return Object.freeze({ descriptor, contentBase64: content.toString('base64') })
+    }))
+  })
 }
 
 const artifactBoundEvidenceSchema = z.strictObject({

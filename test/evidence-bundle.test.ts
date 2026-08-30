@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, readdir, rm, truncate, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
-import { verifyEvidenceBundle, writeEvidenceBundle } from '../src/evidence-bundle.js'
+import {
+  verifyEvidenceBundle,
+  verifyEvidenceBundleSnapshot,
+  writeEvidenceBundle
+} from '../src/evidence-bundle.js'
 
 test('evidence bundle ghi artifacts create-new, seal canonical và verify read-back', async () => {
   const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-'))
@@ -138,6 +143,125 @@ test('evidence bundle bind seal và report filename với runId', async () => {
       runId: 'run-7', scenarioSha256: '8'.repeat(64),
       artifacts: [{ role: 'report', fileName: 'other.json', content: 'report' }]
     }), /report.*runId/i)
+    assert.deepEqual(await readdir(directory), [])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('verified evidence snapshot chỉ expose immutable canonical base64', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-snapshot-api-'))
+  try {
+    await writeEvidenceBundle(directory, 'run-8.bundle.json', {
+      runId: 'run-8', scenarioSha256: '9'.repeat(64),
+      artifacts: [{ role: 'report', fileName: 'run-8.json', content: 'verified-bytes' }]
+    })
+    const snapshot = await verifyEvidenceBundleSnapshot(directory, 'run-8.bundle.json')
+    assert.equal(Object.isFrozen(snapshot), true)
+    assert.equal(Object.isFrozen(snapshot.manifest), true)
+    assert.equal(Object.isFrozen(snapshot.manifest.artifacts), true)
+    assert.equal(Object.isFrozen(snapshot.manifest.artifacts[0]), true)
+    assert.equal(Object.isFrozen(snapshot.artifacts), true)
+    assert.equal(Object.isFrozen(snapshot.artifacts[0]), true)
+    assert.equal(snapshot.artifacts[0]?.contentBase64, Buffer.from('verified-bytes').toString('base64'))
+    assert.equal('content' in (snapshot.artifacts[0] ?? {}), false)
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('evidence bundle verifier reject aggregate descriptor bytes trước artifact I/O', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-aggregate-'))
+  try {
+    const payload = {
+      schemaVersion: 1,
+      runId: 'run-9',
+      scenarioSha256: '9'.repeat(64),
+      artifacts: Array.from({ length: 5 }, (_, index) => ({
+        role: index === 0 ? 'report' : 'other',
+        fileName: index === 0 ? 'run-9.json' : `run-9-${index}.bin`,
+        bytes: 16 * 1024 * 1024,
+        sha256: `${index}`.repeat(64)
+      }))
+    }
+    const manifest = {
+      ...payload,
+      bundleSha256: createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+    }
+    await writeFile(path.join(directory, 'run-9.bundle.json'), JSON.stringify(manifest))
+    await assert.rejects(
+      verifyEvidenceBundle(directory, 'run-9.bundle.json'),
+      /aggregate.*byte|byte.*aggregate/i
+    )
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('evidence bundle writer reject aggregate bytes trước persist', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-write-aggregate-'))
+  const shared = new Uint8Array(13 * 1024 * 1024)
+  try {
+    await assert.rejects(writeEvidenceBundle(directory, 'run-10.bundle.json', {
+      runId: 'run-10',
+      scenarioSha256: 'a'.repeat(64),
+      artifacts: Array.from({ length: 5 }, (_, index) => ({
+        role: index === 0 ? 'report' as const : 'other' as const,
+        fileName: index === 0 ? 'run-10.json' : `run-10-${index}.bin`,
+        content: shared
+      }))
+    }), /aggregate.*byte|byte.*aggregate/i)
+    assert.deepEqual(await readdir(directory), [])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('evidence bundle writer reject Proxy cardinality trước persist', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-proxy-count-'))
+  const target = Array.from({ length: 129 }, (_, index) => ({
+    role: index === 0 ? 'report' as const : 'other' as const,
+    fileName: index === 0 ? 'run-11.json' : `run-11-${index}.bin`,
+    content: 'x'
+  }))
+  let lengthReads = 0
+  const artifacts = new Proxy(target, {
+    get(value, property, receiver) {
+      if (property === 'length') {
+        lengthReads += 1
+        return lengthReads <= 2 ? 1 : 129
+      }
+      return Reflect.get(value, property, receiver)
+    }
+  })
+  try {
+    await assert.rejects(writeEvidenceBundle(directory, 'run-11.bundle.json', {
+      runId: 'run-11', scenarioSha256: 'b'.repeat(64), artifacts
+    }), /cardinality|artifact count|proxy/i)
+    assert.deepEqual(await readdir(directory), [])
+  } finally {
+    await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('evidence bundle writer reject Proxy nói dối ownKeys và length', async () => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'botchecker-bundle-proxy-ownkeys-'))
+  const target = Array.from({ length: 129 }, (_, index) => ({
+    role: index === 0 ? 'report' as const : 'other' as const,
+    fileName: index === 0 ? 'run-12.json' : `run-12-${index}.bin`,
+    content: 'x'
+  }))
+  const artifacts = new Proxy(target, {
+    get(value, property, receiver) {
+      if (property === 'length') return 1
+      return Reflect.get(value, property, receiver)
+    },
+    ownKeys() { return ['0', 'length'] }
+  })
+  try {
+    await assert.rejects(writeEvidenceBundle(directory, 'run-12.bundle.json', {
+      runId: 'run-12', scenarioSha256: 'c'.repeat(64), artifacts
+    }), /proxy|cardinality|artifact count/i)
     assert.deepEqual(await readdir(directory), [])
   } finally {
     await rm(directory, { recursive: true, force: true })
