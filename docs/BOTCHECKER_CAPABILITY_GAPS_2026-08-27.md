@@ -218,6 +218,20 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
 - Evidence session-lock vẫn non-atomic, freshness chưa thiết lập,
   `sessionLockFactsAuthoritative:false`, không chứng minh lock thuộc Paper/PID đã quan sát,
   Paper/JVM/process/boot identity, zero players, lifecycle/approval/restart/crash/release.
+- `createPaperProcessOnlinePlayerObserver` hiện có library-only observation từ hai
+  Minecraft server-list responses ổn định tại fixed `127.0.0.1` + provider-bound port,
+  fixed version/protocol `1.21.11` / `774`, timeout close `5 s` và pong `1 s`. Nó reject unavailable,
+  malformed, wrong-version và changing replies; issued result bind root/port/binding.
+  Đây chỉ là unauthenticated protocol counter-evidence, không phải Bukkit player state:
+  `onlinePlayerFactsAuthoritative:false`, `provesBukkitOnlinePlayers:false`,
+  `provesZeroOnlinePlayers:false`, non-atomic, freshness chưa thiết lập và
+  `usableForCleanPreflight:false`. Không có compositor: fact `onlinePlayers` vẫn
+  caller-supplied/untrusted pending Paper/Bukkit adapter + authenticated transport.
+  Focused gate `6 pass / 0 fail`; final ordered gate `683 total / 677 pass / 0 fail /
+  6 skip`, typecheck/build/diff-check PASS. Review `deleg_27f030c9` đã tìm
+  `OP-MEDIUM-001`: response name `1.21.11` nhưng protocol spoofed vẫn được nhận.
+  Regression RED → GREEN pin exact protocol `774`; correction review exact tree
+  `deleg_ae76c47b` PASS `0 BLOCKER / 0 HIGH / 0 MEDIUM / 0 LOW`.
 
 **REMAINING / NEEDED**
 
@@ -234,8 +248,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 - Tiếp tục harden TCP/PID/session-lock observations thành trusted boot/process identity
   nếu có trust source phù hợp; hiện Windows observations chỉ bỏ caller-supplied port/PID/
-  session-lock khỏi compositor mới, chưa authoritative. Thêm zero-player collector thay
-  vì tin caller facts. Các observations vẫn không atomic/fresh và không chứng minh JVM/
+  session-lock khỏi compositor mới, chưa authoritative. Thêm authoritative zero-player
+  collector thay vì tin caller facts; server-list collector hiện chỉ là counter-evidence.
+  Các observations vẫn không atomic/fresh và không chứng minh JVM/
   Paper đã load executable hoặc config bytes.
 - Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;

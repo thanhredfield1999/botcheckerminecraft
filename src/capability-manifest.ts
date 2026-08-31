@@ -312,6 +312,10 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'paper-process-session-lock-observer',
     mode: 'library-only'
   },
+  'paper-process-online-player-observation': {
+    module: 'paper-process-online-player-observer',
+    mode: 'library-only'
+  },
   'paper-process-provider-preflight': { module: 'paper-process-provider', mode: 'library-only' },
   'protocol-diagnostics': { module: 'protocol-diagnostic', mode: 'runtime-wired' },
   'route-oracle': { module: 'route-oracle', mode: 'runtime-wired' },

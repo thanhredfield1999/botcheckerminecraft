@@ -407,6 +407,7 @@ test('Paper process provider preflight chỉ là library-only dry-run không lif
   }
   assert.deepEqual(importers, [
     'src/paper-process-filesystem-observer.ts',
+    'src/paper-process-online-player-observer.ts',
     'src/paper-process-session-lock-observer.ts'
   ])
 })

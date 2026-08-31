@@ -175,6 +175,22 @@ importer. The two probes are non-atomic, freshness is `not-established`, and
 the observed PID, Paper/JVM/process/boot identity, zero players, lifecycle, restart,
 crash, approval provenance or release eligibility.
 
+### Localhost server-list online-player observation (library only)
+
+`createPaperProcessOnlinePlayerObserver(...)` sends two status requests only to the
+factory-bound `127.0.0.1` configured port with exact Minecraft version/protocol
+`1.21.11` / `774`.
+It accepts only equal, bounded `players.online`/`players.max` responses that report
+exact `1.21.11` / `774`; unavailable, malformed, wrong-version or changing replies fail closed.
+
+The module-issued frozen result is `library-only` and has no runtime importer. It is
+unauthenticated server-list protocol data—not Bukkit player state—and is non-atomic with
+freshness `not-established`. Its explicit posture is
+`onlinePlayerFactsAuthoritative:false`, `provesBukkitOnlinePlayers:false`,
+`provesZeroOnlinePlayers:false`, and `usableForCleanPreflight:false`. It never supplies
+or validates the preflight `onlinePlayers` fact, and cannot prove zero players, Paper/JVM
+identity, lifecycle, approval, restart/crash or release eligibility.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,

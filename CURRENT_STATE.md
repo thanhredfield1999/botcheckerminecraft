@@ -11,6 +11,31 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Localhost server-list online-player observation
+
+- `VERIFIED offline/library-only partial`: `createPaperProcessOnlinePlayerObserver`
+  issues a frozen observation from two consecutive Minecraft status replies to only the
+  factory-bound `127.0.0.1` port, using fixed protocol version `1.21.11` / `774`,
+  a `5 s` close timeout and `1 s` pong timeout. It accepts only equal bounded reported
+  `players.online`/`players.max` values and requires the reply to report exact
+  `1.21.11` / `774`.
+  Unavailable, malformed, wrong-version or changing replies fail with a sanitized error.
+- The observation binds the configured root, port and target-binding SHA-256 and is
+  module-issued/frozen. Capability `paper-process-online-player-observation` is
+  `library-only` with no runtime importer.
+- This is unauthenticated server-list protocol output, not Bukkit state:
+  `onlinePlayerFactsAuthoritative:false`, `provesBukkitOnlinePlayers:false`,
+  `provesZeroOnlinePlayers:false`, non-atomic, freshness `not-established` and
+  `usableForCleanPreflight:false`. It is deliberately not composed into a preflight;
+  the caller-supplied `onlinePlayers` fact remains untrusted pending a Paper/Bukkit
+  adapter plus authenticated transport and controlled runtime evidence.
+- Focused gate passed `6 pass / 0 fail`; ordered final gate passed `683 total / 677
+  pass / 0 fail / 6 skip`, with typecheck, TypeScript/Java build and diff-check PASS.
+  Independent review `deleg_27f030c9` found `OP-MEDIUM-001` (version-name match
+  accepted a spoofed protocol); its RED fixture was corrected by pinning protocol `774`.
+  Exact correction review `deleg_ae76c47b` passed `0 BLOCKER / 0 HIGH / 0 MEDIUM /
+  0 LOW`. This remains offline/library evidence, not controlled Paper runtime proof.
+
 ## 2026-08-31 — Windows configured session-lock observation
 
 - `VERIFIED offline/library-only partial`: `createWindowsPaperProcessSessionLockObserver`

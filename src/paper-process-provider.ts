@@ -18,6 +18,7 @@ const PRODUCTION_ROOT_PARTS = new Set(['live', 'prod', 'production', 'server', '
 const paperProcessProviderCapabilities = new WeakSet<object>()
 const paperProcessProviderMetadata = new WeakMap<object, Readonly<{
   approvedRoot: string
+  port: number
   sessionLockLogicalPath: string
   targetBindingSha256: string
 }>>()
@@ -153,6 +154,7 @@ export function assertPaperProcessProvider(input: unknown): asserts input is Pap
 
 export function paperProcessProviderObservationMetadata(input: unknown): Readonly<{
   approvedRoot: string
+  port: number
   sessionLockLogicalPath: string
   targetBindingSha256: string
 }> {
@@ -300,6 +302,7 @@ export function createPaperProcessProvider(input: unknown): PaperProcessProvider
     paperProcessProviderCapabilities.add(provider)
     paperProcessProviderMetadata.set(provider, Object.freeze({
       approvedRoot: config.approvedRoot,
+      port: config.port,
       sessionLockLogicalPath: config.sessionLockLogicalPath,
       targetBindingSha256
     }))
