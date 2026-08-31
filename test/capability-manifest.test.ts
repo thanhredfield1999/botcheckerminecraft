@@ -416,9 +416,20 @@ test('Paper process filesystem observer chỉ là library-only bounded read khô
     { name: 'paper-process-executable-artifact-file-observation', mode: 'library-only' }
   )
   assert.match(source, /executableArtifactFileBytesObserved: true/)
-  assert.match(source, /configurationArtifactsObserved: false/)
+  assert.match(source, /configurationArtifactFileBytesObserved: false/)
   assert.match(source, /observedArtifactRoles/)
-  assert.doesNotMatch(source, /filesystemFactsObserved/)
+  assert.doesNotMatch(source, /filesystemFactsObserved|configurationArtifactsObserved|allDeclaredArtifactFileBytesObserved/)
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-process-configuration-artifact-file-observation'),
+    { name: 'paper-process-configuration-artifact-file-observation', mode: 'library-only' }
+  )
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-process-declared-artifact-file-preflight'),
+    { name: 'paper-process-declared-artifact-file-preflight', mode: 'library-only' }
+  )
+  assert.match(source, /configurationArtifactFileBytesObserved: true/)
+  assert.match(source, /allDeclaredArtifactFileBytesIndividuallyObserved: true/)
+  assert.match(source, /provesPaperLoadedConfiguration: false/)
   assert.match(source, /filesystemObservationAtomic: false/)
   assert.match(source, /filesystemObservationFreshness: 'not-established'/)
   assert.match(source, /provesJvmLoadedBytes: false/)

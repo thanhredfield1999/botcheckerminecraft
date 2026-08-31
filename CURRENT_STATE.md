@@ -11,6 +11,31 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Paper declared configuration artifact file observation
+
+- `VERIFIED offline/library-only partial`: `createPaperProcessConfigurationFilesystemObserver`
+  synchronously observes every declared `role=config` file below one configured isolated
+  root, including valid zero-byte files. It applies the shared canonical parent,
+  symlink/junction, regular-file, single-link, descriptor/path race and exact SHA-256
+  guards with config-specific bounds of `16 MiB/file` and `64 MiB` aggregate.
+- The module-issued deeply frozen output contains only declared logical ID/path/hash
+  metadata, exact count and the narrow posture
+  `configurationArtifactFileBytesObserved:true`, `filesystemObservationAtomic:false`,
+  freshness `not-established` and `provesPaperLoadedConfiguration:false`.
+- `preflightPaperProcessWithDeclaredArtifactFileObservations` accepts only exact
+  module-issued executable/config observations for the same root and target-binding hash
+  plus a factory-issued provider. Its immutable preview says
+  `allDeclaredArtifactFileBytesIndividuallyObserved:true`; this is explicitly not a
+  cross-file atomic snapshot or proof that Paper loaded any executable/config bytes.
+- Capabilities `paper-process-configuration-artifact-file-observation` and
+  `paper-process-declared-artifact-file-preflight` are `library-only` with no runtime
+  importer. The current exact code gate passed `652 total / 646 pass / 0 fail / 6 skip`;
+  typecheck, TypeScript/Java build, security scan and diff-check passed.
+- This synchronous library I/O must not run on the HTTP/event-loop or Paper server-thread
+  path. It does not inspect sockets, PID/session lock, players or a JVM; prove approval
+  provenance/freshness; mutate files; execute lifecycle; or create restart/crash/release
+  evidence.
+
 ## 2026-08-31 — Paper executable artifact file observation
 
 - `VERIFIED offline/library-only partial`: `createPaperProcessFilesystemObserver`
@@ -24,7 +49,7 @@ Last reviewed: 2026-08-31
   `PaperProcessProvider`; forged observations and custom providers fail before provider
   invocation, while target-binding hash mismatch fails before any preview is returned.
 - The role-scoped output says `executableArtifactFileBytesObserved:true`,
-  `configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+  `configurationArtifactFileBytesObserved:false`, exact frozen `observedArtifactRoles`,
   `filesystemObservationAtomic:false`, freshness `not-established` and
   `provesJvmLoadedBytes:false`. Capability
   `paper-process-executable-artifact-file-observation` is `library-only` and has no
@@ -38,10 +63,11 @@ Last reviewed: 2026-08-31
   by the role-scoped posture above, and correction review `deleg_ceed4c73` confirmed the
   finding CLOSED with PASS `0/0/0/0`. The external-hardlink containment bypass was also
   reproduced RED and corrected GREEN with the single-link guard.
-- This is synchronous library I/O for an isolated tool path, not an event-loop/server
-  runtime consumer. It does not observe config bytes, sockets, PID/session lock, players
-  or JVM-loaded bytes; provide cross-file atomicity/freshness; start/stop Paper; prove
-  approval provenance; or create lifecycle/restart/crash/release evidence.
+- This executable-only observation is synchronous library I/O for an isolated tool path,
+  not an event-loop/server runtime consumer. By itself it does not observe config bytes;
+  neither filesystem observer inspects sockets, PID/session lock, players or JVM-loaded
+  bytes, provides cross-file atomicity/freshness, starts/stops Paper, proves approval
+  provenance, or creates lifecycle/restart/crash/release evidence.
 
 ## 2026-08-31 — Paper process dry-run preflight
 
@@ -64,9 +90,9 @@ Last reviewed: 2026-08-31
   passed `0/0/0/0`; its provider/capability suite passed `31/31` and custom
   optional-probe/freeze/root-case/getter/scope-order probes passed.
 - The dry-run provider itself does not inspect the filesystem, sockets, PID/session
-  state, players or a running JVM. The separate library-only executable artifact file
-  observer above may supply only the role-scoped file-byte portion; all remaining facts
-  and lifecycle/release non-claims stay unchanged.
+  state, players or a running JVM. Separate library-only executable and configuration
+  artifact observers may supply only their role-scoped file-byte portions; all remaining
+  facts and lifecycle/release non-claims stay unchanged.
 
 ## 2026-08-31 — Authorized provider-registry admission
 

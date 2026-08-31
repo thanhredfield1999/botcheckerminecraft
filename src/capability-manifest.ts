@@ -284,6 +284,14 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
   'multi-account': { module: 'multi-account-runner', mode: 'library-only' },
   'multi-client': { module: 'multi-client-runner', mode: 'library-only' },
   persistence: { module: 'persistence-contract', mode: 'library-only' },
+  'paper-process-configuration-artifact-file-observation': {
+    module: 'paper-process-filesystem-observer',
+    mode: 'library-only'
+  },
+  'paper-process-declared-artifact-file-preflight': {
+    module: 'paper-process-filesystem-observer',
+    mode: 'library-only'
+  },
   'paper-process-executable-artifact-file-observation': {
     module: 'paper-process-filesystem-observer',
     mode: 'library-only'

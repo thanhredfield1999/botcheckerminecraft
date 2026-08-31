@@ -108,7 +108,7 @@ test('filesystem observer đọc exact bytes thành immutable observation và co
       root: current.root,
       targetBindingSha256: artifactTargetBindingSha256(current.binding),
       executableArtifactFileBytesObserved: true,
-      configurationArtifactsObserved: false,
+      configurationArtifactFileBytesObserved: false,
       observedArtifactRoles: ['candidate', 'paper', 'probe'],
       filesystemObservationAtomic: false,
       filesystemObservationFreshness: 'not-established',
@@ -129,7 +129,7 @@ test('filesystem observer đọc exact bytes thành immutable observation và co
       processFacts()
     )
     assert.equal(preview.executableArtifactFileBytesObserved, true)
-    assert.equal(preview.configurationArtifactsObserved, false)
+    assert.equal(preview.configurationArtifactFileBytesObserved, false)
     assert.deepEqual(preview.observedArtifactRoles, ['candidate', 'paper', 'probe'])
     assert.equal(Object.isFrozen(preview.observedArtifactRoles), true)
     assert.equal(preview.filesystemObservationAtomic, false)
@@ -176,7 +176,7 @@ test('filesystem observer ghi rõ config artifacts ngoài scope khi config bytes
     }).observe()
     assert.equal('filesystemFactsObserved' in observation, false)
     assert.equal(observation.executableArtifactFileBytesObserved, true)
-    assert.equal(observation.configurationArtifactsObserved, false)
+    assert.equal(observation.configurationArtifactFileBytesObserved, false)
     assert.deepEqual(observation.observedArtifactRoles, ['candidate', 'paper', 'probe'])
     assert.equal(Object.isFrozen(observation.observedArtifactRoles), true)
     const preview = preflightPaperProcessWithFilesystemObservation(
@@ -184,7 +184,7 @@ test('filesystem observer ghi rõ config artifacts ngoài scope khi config bytes
     )
     assert.equal('filesystemFactsObserved' in preview, false)
     assert.equal(preview.executableArtifactFileBytesObserved, true)
-    assert.equal(preview.configurationArtifactsObserved, false)
+    assert.equal(preview.configurationArtifactFileBytesObserved, false)
   } finally {
     await rm(current.root, { recursive: true, force: true })
   }

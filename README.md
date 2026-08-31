@@ -88,12 +88,32 @@ Only a module-issued immutable observation can be composed with an exact factory
 
 The output is deliberately role-scoped:
 `executableArtifactFileBytesObserved:true`,
-`configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+`configurationArtifactFileBytesObserved:false`, exact frozen `observedArtifactRoles`,
 `filesystemObservationAtomic:false`, freshness `not-established` and
-`provesJvmLoadedBytes:false`. It does not inspect config artifacts, sockets, PID/session
-lock, players or a JVM, and it does not prove that Paper loaded those bytes. The module
-has no runtime importer and should not be called from the HTTP/event-loop path; it adds
-no lifecycle, mutation, restart, crash, approval-provenance or release proof.
+`provesJvmLoadedBytes:false`. By itself it does not inspect config artifacts, sockets,
+PID/session lock, players or a JVM, and it does not prove that Paper loaded those bytes.
+
+### Paper configuration artifact file observation (library only)
+
+`createPaperProcessConfigurationFilesystemObserver(...)` synchronously reads every
+exact declared `role=config` file, including zero-byte files, under the same isolated-root
+policy. It applies canonical parent, symlink/junction, regular-file, single-link,
+descriptor/path race and exact SHA-256 guards with `16 MiB/file` and `64 MiB` aggregate
+bounds. Its deeply frozen output contains only logical ID/path/hash metadata and says
+`configurationArtifactFileBytesObserved:true`, observation non-atomic, freshness
+`not-established` and `provesPaperLoadedConfiguration:false`.
+
+`preflightPaperProcessWithDeclaredArtifactFileObservations(...)` composes only
+module-issued executable/config observations for the same root and exact target-binding
+hash with a factory-issued provider. The preview says
+`allDeclaredArtifactFileBytesIndividuallyObserved:true`: every artifact file declared in
+that binding was observed separately, not atomically. This does not prove Paper loaded
+those executable or configuration bytes, or that they remain fresh after return.
+
+All three capabilities remain `library-only` with no runtime importer. This synchronous
+I/O must not run on the HTTP/event-loop or Paper server-thread path. It inspects no
+socket, PID/session lock, player or JVM state and adds no lifecycle, mutation, restart,
+crash, approval-provenance or release proof.
 
 ### Signed provider claims (library only)
 

@@ -16,9 +16,12 @@ import {
 
 const MAX_ARTIFACT_BYTES = 128 * 1024 * 1024
 const MAX_AGGREGATE_BYTES = 256 * 1024 * 1024
+const MAX_CONFIG_ARTIFACT_BYTES = 16 * 1024 * 1024
+const MAX_CONFIG_AGGREGATE_BYTES = 64 * 1024 * 1024
 const CREDENTIAL_PATTERN = /(password|passwd|secret|token|credential|api[_-]?key|bearer)/i
 const PRODUCTION_ROOT_PARTS = new Set(['live', 'prod', 'production', 'server', 'minecraftserver'])
 const observationCapabilities = new WeakSet<object>()
+const configurationObservationCapabilities = new WeakSet<object>()
 
 const absoluteRootSchema = z.string().min(1).max(1024).superRefine((value, context) => {
   if (value !== value.normalize('NFC')
@@ -42,7 +45,7 @@ export interface PaperProcessFilesystemObservation {
   readonly root: string
   readonly targetBindingSha256: string
   readonly executableArtifactFileBytesObserved: true
-  readonly configurationArtifactsObserved: false
+  readonly configurationArtifactFileBytesObserved: false
   readonly observedArtifactRoles: readonly ('candidate' | 'paper' | 'probe')[]
   readonly filesystemObservationAtomic: false
   readonly filesystemObservationFreshness: 'not-established'
@@ -58,14 +61,46 @@ export interface PaperProcessFilesystemObserver {
   observe(): Readonly<PaperProcessFilesystemObservation>
 }
 
+export interface PaperProcessConfigurationArtifactObservation {
+  readonly logicalId: string
+  readonly logicalPath: string
+  readonly sha256: string
+}
+
+export interface PaperProcessConfigurationFilesystemObservation {
+  readonly schemaVersion: 1
+  readonly root: string
+  readonly targetBindingSha256: string
+  readonly configurationArtifactFileBytesObserved: true
+  readonly observedConfigurationArtifactCount: number
+  readonly filesystemObservationAtomic: false
+  readonly filesystemObservationFreshness: 'not-established'
+  readonly provesPaperLoadedConfiguration: false
+  readonly artifacts: readonly Readonly<PaperProcessConfigurationArtifactObservation>[]
+}
+
+export interface PaperProcessConfigurationFilesystemObserver {
+  observe(): Readonly<PaperProcessConfigurationFilesystemObservation>
+}
+
 export type PaperProcessFilesystemDryRunPreview = Readonly<
   PaperProcessDryRunPreview & {
     readonly executableArtifactFileBytesObserved: true
-    readonly configurationArtifactsObserved: false
+    readonly configurationArtifactFileBytesObserved: false
     readonly observedArtifactRoles: readonly ('candidate' | 'paper' | 'probe')[]
     readonly filesystemObservationAtomic: false
     readonly filesystemObservationFreshness: 'not-established'
     readonly provesJvmLoadedBytes: false
+  }
+>
+
+export type PaperProcessDeclaredArtifactFilesDryRunPreview = Readonly<
+  Omit<PaperProcessFilesystemDryRunPreview, 'configurationArtifactFileBytesObserved' | 'observedArtifactRoles'> & {
+    readonly configurationArtifactFileBytesObserved: true
+    readonly allDeclaredArtifactFileBytesIndividuallyObserved: true
+    readonly observedArtifactRoles: readonly ('candidate' | 'config' | 'paper' | 'probe')[]
+    readonly configurationArtifacts: readonly Readonly<PaperProcessConfigurationArtifactObservation>[]
+    readonly provesPaperLoadedConfiguration: false
   }
 >
 
@@ -85,10 +120,30 @@ export class PaperProcessFilesystemPreflightError extends Error {
   }
 }
 
+export class PaperProcessConfigurationFilesystemObservationError extends Error {
+  constructor() {
+    super('Paper process configuration filesystem observation rejected')
+    this.name = 'PaperProcessConfigurationFilesystemObservationError'
+    Object.freeze(this)
+  }
+}
+
+export class PaperProcessDeclaredArtifactFilesPreflightError extends Error {
+  constructor() {
+    super('Paper process declared artifact files preflight rejected')
+    this.name = 'PaperProcessDeclaredArtifactFilesPreflightError'
+    Object.freeze(this)
+  }
+}
+
 interface PreparedArtifact {
-  readonly role: 'paper' | 'candidate' | 'probe'
+  readonly role: 'paper' | 'candidate' | 'probe' | 'config'
+  readonly logicalId: string
+  readonly logicalPath: string
   readonly file: string
   readonly expectedSha256: string
+  readonly maxBytes: number
+  readonly allowEmpty: boolean
   readonly before: BigIntStats
 }
 
@@ -133,9 +188,12 @@ function sameFile(left: BigIntStats, right: BigIntStats): boolean {
 
 function prepareArtifact(
   approvedRoot: string,
+  logicalId: string,
   logicalPath: string,
   role: PreparedArtifact['role'],
-  expectedSha256: string
+  expectedSha256: string,
+  maxBytes: number,
+  allowEmpty: boolean
 ): PreparedArtifact {
   assertCanonicalDirectory(approvedRoot)
   const parts = logicalPath.split('/')
@@ -152,11 +210,11 @@ function prepareArtifact(
   const before = fs.lstatSync(file, { bigint: true })
   if (!before.isFile() || before.isSymbolicLink()
     || before.nlink !== 1n
-    || before.size <= 0n || before.size > BigInt(MAX_ARTIFACT_BYTES)
+    || (!allowEmpty && before.size === 0n) || before.size < 0n || before.size > BigInt(maxBytes)
     || fs.realpathSync.native(file) !== file) {
     throw new Error()
   }
-  return Object.freeze({ role, file, expectedSha256, before })
+  return Object.freeze({ role, logicalId, logicalPath, file, expectedSha256, maxBytes, allowEmpty, before })
 }
 
 function readPreparedArtifact(prepared: PreparedArtifact, approvedRoot: string): string {
@@ -177,9 +235,12 @@ function readPreparedArtifact(prepared: PreparedArtifact, approvedRoot: string):
 
     const pathAfter = prepareArtifact(
       approvedRoot,
-      path.relative(approvedRoot, prepared.file).split(path.sep).join('/'),
+      prepared.logicalId,
+      prepared.logicalPath,
       prepared.role,
-      prepared.expectedSha256
+      prepared.expectedSha256,
+      prepared.maxBytes,
+      prepared.allowEmpty
     )
     if (!sameFile(descriptorAfter, pathAfter.before)) throw new Error()
     const observedSha256 = createHash('sha256').update(content).digest('hex')
@@ -192,6 +253,14 @@ function readPreparedArtifact(prepared: PreparedArtifact, approvedRoot: string):
 
 function assertIssuedObservation(input: unknown): asserts input is Readonly<PaperProcessFilesystemObservation> {
   if (typeof input !== 'object' || input === null || !observationCapabilities.has(input)) throw new Error()
+}
+
+function assertIssuedConfigurationObservation(
+  input: unknown
+): asserts input is Readonly<PaperProcessConfigurationFilesystemObservation> {
+  if (typeof input !== 'object' || input === null || !configurationObservationCapabilities.has(input)) {
+    throw new Error()
+  }
 }
 
 export function createPaperProcessFilesystemObserver(input: unknown): PaperProcessFilesystemObserver {
@@ -211,9 +280,12 @@ export function createPaperProcessFilesystemObserver(input: unknown): PaperProce
         try {
           const prepared = artifacts.map(artifact => prepareArtifact(
             config.approvedRoot,
+            artifact.logicalId,
             artifact.logicalPath,
             artifact.role,
-            artifact.sha256
+            artifact.sha256,
+            MAX_ARTIFACT_BYTES,
+            false
           ))
           const aggregateBytes = prepared.reduce((total, artifact) => total + artifact.before.size, 0n)
           if (aggregateBytes > BigInt(MAX_AGGREGATE_BYTES)) throw new Error()
@@ -224,8 +296,8 @@ export function createPaperProcessFilesystemObserver(input: unknown): PaperProce
           const candidate = hashes.get('candidate')
           const probe = hashes.get('probe')
           if (!paper || !candidate) throw new Error()
-          const observedArtifactRoles = Object.freeze(
-            prepared.map(artifact => artifact.role).sort(compareText)
+          const observedArtifactRoles: readonly ('candidate' | 'paper' | 'probe')[] = Object.freeze(
+            artifacts.map(artifact => artifact.role).sort(compareText)
           )
           const artifactSha256 = Object.freeze({
             paper,
@@ -237,7 +309,7 @@ export function createPaperProcessFilesystemObserver(input: unknown): PaperProce
             root: config.approvedRoot,
             targetBindingSha256,
             executableArtifactFileBytesObserved: true as const,
-            configurationArtifactsObserved: false as const,
+            configurationArtifactFileBytesObserved: false as const,
             observedArtifactRoles,
             filesystemObservationAtomic: false as const,
             filesystemObservationFreshness: 'not-established' as const,
@@ -254,6 +326,65 @@ export function createPaperProcessFilesystemObserver(input: unknown): PaperProce
     return Object.freeze(observer)
   } catch {
     throw new Error('Paper process filesystem observer configuration is invalid')
+  }
+}
+
+export function createPaperProcessConfigurationFilesystemObserver(
+  input: unknown
+): PaperProcessConfigurationFilesystemObserver {
+  try {
+    const config = parseConfiguration(input)
+    const binding = validateArtifactTargetBinding(config.targetBinding)
+    if (binding.provider.kind !== 'paper-process') throw new Error()
+    assertCanonicalDirectory(config.approvedRoot)
+    const artifacts = binding.artifacts.filter(
+      (artifact): artifact is ArtifactTargetBinding['artifacts'][number] & { role: 'config' } =>
+        artifact.role === 'config'
+    )
+    if (artifacts.length === 0) throw new Error()
+    const targetBindingSha256 = artifactTargetBindingSha256(binding)
+    const observer = {
+      observe(): Readonly<PaperProcessConfigurationFilesystemObservation> {
+        try {
+          const prepared = artifacts.map(artifact => prepareArtifact(
+            config.approvedRoot,
+            artifact.logicalId,
+            artifact.logicalPath,
+            artifact.role,
+            artifact.sha256,
+            MAX_CONFIG_ARTIFACT_BYTES,
+            true
+          ))
+          const aggregateBytes = prepared.reduce((total, artifact) => total + artifact.before.size, 0n)
+          if (aggregateBytes > BigInt(MAX_CONFIG_AGGREGATE_BYTES)) throw new Error()
+          const observedArtifacts = Object.freeze(prepared
+            .map(artifact => Object.freeze({
+              logicalId: artifact.logicalId,
+              logicalPath: artifact.logicalPath,
+              sha256: readPreparedArtifact(artifact, config.approvedRoot)
+            }))
+            .sort((left, right) => compareText(left.logicalId, right.logicalId)))
+          const observation = Object.freeze({
+            schemaVersion: 1 as const,
+            root: config.approvedRoot,
+            targetBindingSha256,
+            configurationArtifactFileBytesObserved: true as const,
+            observedConfigurationArtifactCount: observedArtifacts.length,
+            filesystemObservationAtomic: false as const,
+            filesystemObservationFreshness: 'not-established' as const,
+            provesPaperLoadedConfiguration: false as const,
+            artifacts: observedArtifacts
+          })
+          configurationObservationCapabilities.add(observation)
+          return observation
+        } catch {
+          throw new PaperProcessConfigurationFilesystemObservationError()
+        }
+      }
+    }
+    return Object.freeze(observer)
+  } catch {
+    throw new Error('Paper process configuration filesystem observer configuration is invalid')
   }
 }
 
@@ -287,7 +418,7 @@ export function preflightPaperProcessWithFilesystemObservation(
     return Object.freeze({
       ...preview,
       executableArtifactFileBytesObserved: true as const,
-      configurationArtifactsObserved: false as const,
+      configurationArtifactFileBytesObserved: false as const,
       observedArtifactRoles: observationInput.observedArtifactRoles,
       filesystemObservationAtomic: false as const,
       filesystemObservationFreshness: 'not-established' as const,
@@ -295,5 +426,39 @@ export function preflightPaperProcessWithFilesystemObservation(
     })
   } catch {
     throw new PaperProcessFilesystemPreflightError()
+  }
+}
+
+export function preflightPaperProcessWithDeclaredArtifactFileObservations(
+  provider: unknown,
+  executableObservationInput: unknown,
+  configurationObservationInput: unknown,
+  processFactsInput: unknown
+): PaperProcessDeclaredArtifactFilesDryRunPreview {
+  try {
+    assertPaperProcessProvider(provider)
+    assertIssuedObservation(executableObservationInput)
+    assertIssuedConfigurationObservation(configurationObservationInput)
+    if (executableObservationInput.root !== configurationObservationInput.root
+      || executableObservationInput.targetBindingSha256
+        !== configurationObservationInput.targetBindingSha256) throw new Error()
+    const preview = preflightPaperProcessWithFilesystemObservation(
+      provider,
+      executableObservationInput,
+      processFactsInput
+    )
+    const observedArtifactRoles = Object.freeze([
+      ...new Set([...preview.observedArtifactRoles, 'config' as const])
+    ].sort(compareText))
+    return Object.freeze({
+      ...preview,
+      configurationArtifactFileBytesObserved: true as const,
+      allDeclaredArtifactFileBytesIndividuallyObserved: true as const,
+      observedArtifactRoles,
+      configurationArtifacts: configurationObservationInput.artifacts,
+      provesPaperLoadedConfiguration: false as const
+    })
+  } catch {
+    throw new PaperProcessDeclaredArtifactFilesPreflightError()
   }
 }

@@ -143,10 +143,26 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
   isolated root. Nó reject non-canonical/symlink/junction/non-regular/multi-hardlink,
   path/descriptor metadata change, hash mismatch, `>128 MiB/file` và `>256 MiB`
   aggregate; observation chỉ được compose khi module-issued và target-binding hash khớp.
-- Posture role-scoped bắt buộc là `executableArtifactFileBytesObserved:true`,
-  `configurationArtifactsObserved:false`, exact frozen `observedArtifactRoles`,
+- Posture executable role-scoped bắt buộc là
+  `executableArtifactFileBytesObserved:true`,
+  `configurationArtifactFileBytesObserved:false`, exact frozen `observedArtifactRoles`,
   non-atomic, freshness `not-established` và không chứng minh JVM-loaded bytes.
-- Focused exact-current của slice mới `39 pass / 0 fail / 1 Windows symlink EPERM skip`;
+- `createPaperProcessConfigurationFilesystemObserver` đã quan sát từng exact declared
+  `role=config` file, kể cả zero-byte file, bằng cùng canonical parent/symlink/junction/
+  regular-file/single-link/descriptor-race/hash guards; config bounds riêng là
+  `16 MiB/file` và `64 MiB` aggregate. Issued frozen output chỉ giữ logical ID/path/hash,
+  báo `configurationArtifactFileBytesObserved:true`, non-atomic, freshness chưa thiết lập
+  và `provesPaperLoadedConfiguration:false`.
+- `preflightPaperProcessWithDeclaredArtifactFileObservations` chỉ compose issued
+  executable/config observations có cùng root + exact target-binding hash với
+  factory-issued provider. `allDeclaredArtifactFileBytesIndividuallyObserved:true` chỉ
+  chứng minh mỗi declared artifact file được đọc riêng, không phải atomic snapshot,
+  filesystem-wide claim hoặc Paper-loaded config/JVM bytes.
+- Hai capability mới `paper-process-configuration-artifact-file-observation` và
+  `paper-process-declared-artifact-file-preflight` đều `library-only`, không runtime
+  importer. Exact code gate đạt `652 total / 646 pass / 0 fail / 6 skip`; typecheck,
+  TypeScript/Java build, security scan và diff-check PASS.
+- Focused exact-current của executable slice `39 pass / 0 fail / 1 Windows symlink EPERM skip`;
   full ordered gate `642 total / 637 pass / 0 fail / 5 skip`; typecheck,
   TypeScript/Java build, security/claim scan và diff-check PASS. Initial review
   `deleg_85402dd8` tìm MEDIUM `PPFSO-MEDIUM-001` do field cũ overclaim whole filesystem;
@@ -171,11 +187,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 `crash-recovery-runner.ts` chỉ gọi callback bên ngoài; chưa thực thi/kiểm chứng crash boundary.
 
-- Mở rộng read-only collector riêng cho declared config artifacts nếu lifecycle policy
-  cần config-byte proof; slice hiện ghi rõ `configurationArtifactsObserved:false`.
 - Thêm authoritative socket/PID/session-lock và zero-player collectors thay vì tin
-  caller facts. Executable artifact file observation hiện tại không chứng minh các facts
-  đó, không atomic/fresh và không chứng minh JVM đã load bytes.
+  caller facts. Declared artifact file observations hiện không chứng minh các facts đó,
+  không atomic/fresh và không chứng minh JVM/Paper đã load executable hoặc config bytes.
 - Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;
   - readiness marker + health probe;
@@ -189,8 +203,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 - Library-only dry-run hiện hiển thị toàn bộ planned mutation và fail closed trên
   caller-supplied mismatch trước mọi mutation; chưa chứng minh facts đến từ OS/Paper.
-- Executable artifact root/path/hash mismatch hiện fail trước mutation ở library layer;
-  port/PID/player/approval vẫn cần authoritative collectors và controlled runtime trước
+- Declared executable/config artifact root/path/hash mismatch hiện fail trước mutation ở
+  library layer; observation vẫn per-file, non-atomic và freshness chưa thiết lập.
+  Port/PID/player/approval vẫn cần authoritative collectors và controlled runtime trước
   khi acceptance tổng thể được đóng.
 - Clean restart và authorized crash test tạo evidence phase-bound, không cần orchestration script ngoài.
 
