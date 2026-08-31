@@ -179,6 +179,9 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
   strict complete-row parse, exact `LISTENING` + port, PID validate/dedupe/sort và hai
   snapshot liên tiếp phải cùng owner set. Malformed/partial/oversized/changing output
   fail sanitized; real loopback test quan sát đúng current Node PID.
+- Backend chỉ hỗ trợ exact system path/layout trên; không resolve `%SystemRoot%`, không
+  search `PATH`, không nhận caller-supplied executable. Header grammar localized hoặc
+  Windows layout khác fail closed và cần một backend riêng được review trước khi hỗ trợ.
 - Issued frozen TCP observation bind root/port/target-binding hash. Compositor mới chỉ
   nhận issued executable/config/TCP observations cùng root/binding và provider port,
   loại caller-supplied port/PID facts; forged/occupied/mismatch/extra fields fail closed.
@@ -189,6 +192,9 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
   local port `1..65535` và safe PID `>=0` trên mọi TCP row trước filtering, vẫn chấp
   nhận `TIME_WAIT` PID `0`, còn exact target `LISTENING` owner phải có PID `>0`.
   Exact-current correction review `deleg_a029212f` PASS `0/0/0/0`.
+- Docs review finding `LOW-001` đã `CLOSED`: gap report nay ghi cùng exact-path,
+  `%SystemRoot%`/`PATH`, caller-executable và alternate layout/locale nonclaims với
+  source, `CURRENT_STATE.md` và `README.md`.
 - Evidence này chỉ chứng minh output `netstat` cho configured listener/PID list ở hai
   thời điểm gần nhau. Nó vẫn non-atomic, freshness chưa thiết lập,
   `tcpListenerFactsAuthoritative:false`, không chứng minh Paper/JVM/process identity,
