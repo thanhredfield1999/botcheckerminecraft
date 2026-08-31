@@ -38,5 +38,5 @@ test('Paper process TCP listener observer chỉ là Windows library-only OS snap
       importers.push(`src/${file}`)
     }
   }
-  assert.deepEqual(importers, [])
+  assert.deepEqual(importers, ['src/paper-process-session-lock-observer.ts'])
 })

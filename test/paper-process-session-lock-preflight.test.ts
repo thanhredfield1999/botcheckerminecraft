@@ -12,27 +12,32 @@ import {
 } from '../src/paper-process-filesystem-observer.js'
 import { createPaperProcessProvider } from '../src/paper-process-provider.js'
 import {
-  createWindowsPaperProcessTcpListenerObserver,
-  PaperProcessDeclaredArtifactAndTcpListenerPreflightError,
-  preflightPaperProcessWithDeclaredArtifactAndTcpListenerObservations
+  createWindowsPaperProcessSessionLockObserver,
+  PaperProcessDeclaredArtifactTcpAndSessionLockPreflightError,
+  preflightPaperProcessWithDeclaredArtifactTcpAndSessionLockObservations
+} from '../src/paper-process-session-lock-observer.js'
+import {
+  createWindowsPaperProcessTcpListenerObserver
 } from '../src/paper-process-tcp-listener-observer.js'
 import { buildArtifactTargetBinding } from '../src/target-binding.js'
 
 const sha256 = (content: string) => createHash('sha256').update(content).digest('hex')
 
-async function fixture() {
-  const root = await mkdtemp(path.join(tmpdir(), 'botchecker-paper-tcp-preflight-'))
+async function fixture(bindingId = 'paper-process-session-lock-preflight-fixture') {
+  const root = await mkdtemp(path.join(tmpdir(), 'botchecker-paper-lock-preflight-'))
   const paper = 'paper-bytes'
   const candidate = 'candidate-bytes'
   const config = 'enabled: true\n'
   await mkdir(path.join(root, 'server'), { recursive: true })
   await mkdir(path.join(root, 'plugins', 'Plugin'), { recursive: true })
+  await mkdir(path.join(root, 'world'), { recursive: true })
   await writeFile(path.join(root, 'server', 'paper.jar'), paper)
   await writeFile(path.join(root, 'plugins', 'Plugin.jar'), candidate)
   await writeFile(path.join(root, 'plugins', 'Plugin', 'config.yml'), config)
+  await writeFile(path.join(root, 'world', 'session.lock'), Buffer.from('☃', 'utf8'))
   const binding = buildArtifactTargetBinding({
     schemaVersion: 1,
-    bindingId: 'paper-process-tcp-preflight-fixture',
+    bindingId,
     provider: {
       kind: 'paper-process', id: 'paper-process-fixture',
       version: '1.0.0', instanceId: 'fixture-a'
@@ -74,7 +79,6 @@ function provider(root: string, binding: ReturnType<typeof buildArtifactTargetBi
 function remainingFacts() {
   return {
     schemaVersion: 1,
-    sessionLockPresent: false,
     onlinePlayers: 0,
     authorizationId: 'approval-fixture-a',
     requiredScope: ['isolated-fixture', 'process-preflight']
@@ -85,25 +89,26 @@ async function withNetstat<T>(output: string, action: () => T): Promise<T> {
   const original = childProcess.execFileSync
   Object.defineProperty(childProcess, 'execFileSync', {
     configurable: true,
-    value: () => output
+    value: (command: unknown, ...args: unknown[]) =>
+      command === 'C:\\Windows\\System32\\netstat.exe'
+        ? output
+        : original(command as never, ...(args as never[]))
   })
   syncBuiltinESMExports()
   try {
     return action()
   } finally {
-    Object.defineProperty(childProcess, 'execFileSync', {
-      configurable: true,
-      value: original
-    })
+    Object.defineProperty(childProcess, 'execFileSync', { configurable: true, value: original })
     syncBuiltinESMExports()
   }
 }
 
-test('declared-artifact preflight lấy clean port/PID facts từ issued TCP observation', {
-  skip: process.platform === 'win32' ? false : 'Slice hiện chỉ hỗ trợ Windows netstat'
+test('declared-artifact/TCP preflight lấy clean session-lock fact từ issued observation', {
+  skip: process.platform === 'win32' ? false : 'Slice hiện chỉ hỗ trợ Windows file locking'
 }, async () => {
   const current = await fixture()
   try {
+    const paper = provider(current.root, current.binding)
     const executable = createPaperProcessFilesystemObserver({
       schemaVersion: 1, approvedRoot: current.root, targetBinding: current.binding
     }).observe()
@@ -113,25 +118,26 @@ test('declared-artifact preflight lấy clean port/PID facts từ issued TCP obs
     const tcp = await withNetstat(
       '  TCP    0.0.0.0:135    0.0.0.0:0    LISTENING    4',
       () => createWindowsPaperProcessTcpListenerObserver({
-      schemaVersion: 1,
-      approvedRoot: current.root,
-      port: 25580,
-      targetBinding: current.binding
+        schemaVersion: 1, approvedRoot: current.root, port: 25580,
+        targetBinding: current.binding
       }).observe()
     )
+    const lock = createWindowsPaperProcessSessionLockObserver(paper).observe()
 
-    const preview = preflightPaperProcessWithDeclaredArtifactAndTcpListenerObservations(
-      provider(current.root, current.binding), executable, configuration, tcp, remainingFacts()
+    const preview = preflightPaperProcessWithDeclaredArtifactTcpAndSessionLockObservations(
+      paper, executable, configuration, tcp, lock, remainingFacts()
     )
 
-    assert.equal(preview.configuredTcpPortListenerOwnersObserved, true)
-    assert.equal(preview.configuredTcpPortListening, false)
-    assert.deepEqual(preview.configuredTcpPortOwningPids, [])
-    assert.equal(Object.isFrozen(preview.configuredTcpPortOwningPids), true)
-    assert.equal(preview.tcpListenerObservationStableAcrossTwoReads, true)
-    assert.equal(preview.tcpListenerObservationAtomic, false)
-    assert.equal(preview.tcpListenerObservationFreshness, 'not-established')
-    assert.equal(preview.tcpListenerFactsAuthoritative, false)
+    assert.equal(preview.configuredSessionLockByteRangeStateObserved, true)
+    assert.equal(preview.configuredSessionLockLogicalPath, 'world/session.lock')
+    assert.equal(preview.configuredSessionLockFilePresent, true)
+    assert.equal(preview.configuredSessionLockMarkerValidated, true)
+    assert.equal(preview.activeSessionLockObserved, false)
+    assert.equal(preview.sessionLockObservationStableAcrossTwoReads, true)
+    assert.equal(preview.sessionLockObservationTemporarilyAcquiresLockWhenClean, true)
+    assert.equal(preview.sessionLockObservationAtomic, false)
+    assert.equal(preview.sessionLockObservationFreshness, 'not-established')
+    assert.equal(preview.sessionLockFactsAuthoritative, false)
     assert.equal(preview.provesPaperProcessIdentity, false)
     assert.equal(preview.factsAuthoritative, false)
     assert.equal(preview.mutationAllowed, false)
@@ -141,83 +147,61 @@ test('declared-artifact preflight lấy clean port/PID facts từ issued TCP obs
   }
 })
 
-test('TCP preflight reject forged, occupied, mismatched và caller-injected process facts', {
-  skip: process.platform === 'win32' ? false : 'Slice hiện chỉ hỗ trợ Windows netstat'
+test('session-lock preflight reject forged, mismatched và caller-injected lock facts', {
+  skip: process.platform === 'win32' ? false : 'Slice hiện chỉ hỗ trợ Windows file locking'
 }, async () => {
   const current = await fixture()
-  const otherRoot = await mkdtemp(path.join(tmpdir(), 'botchecker-paper-tcp-other-'))
+  const other = await fixture('paper-process-session-lock-other-binding')
   try {
+    const paper = provider(current.root, current.binding)
     const executable = createPaperProcessFilesystemObserver({
       schemaVersion: 1, approvedRoot: current.root, targetBinding: current.binding
     }).observe()
     const configuration = createPaperProcessConfigurationFilesystemObserver({
       schemaVersion: 1, approvedRoot: current.root, targetBinding: current.binding
     }).observe()
-    const cleanOutput = '  TCP    0.0.0.0:135    0.0.0.0:0    LISTENING    4'
-    const clean = await withNetstat(cleanOutput, () =>
-      createWindowsPaperProcessTcpListenerObserver({
-        schemaVersion: 1,
-        approvedRoot: current.root,
-        port: 25580,
+    const tcp = await withNetstat(
+      '  TCP    0.0.0.0:135    0.0.0.0:0    LISTENING    4',
+      () => createWindowsPaperProcessTcpListenerObserver({
+        schemaVersion: 1, approvedRoot: current.root, port: 25580,
         targetBinding: current.binding
-      }).observe())
-    const occupiedOutput = '  TCP    0.0.0.0:25580    0.0.0.0:0    LISTENING    1234'
-    const occupied = await withNetstat(occupiedOutput, () =>
-      createWindowsPaperProcessTcpListenerObserver({
-        schemaVersion: 1,
-        approvedRoot: current.root,
-        port: 25580,
-        targetBinding: current.binding
-      }).observe())
-    const otherRootObservation = await withNetstat(cleanOutput, () =>
-      createWindowsPaperProcessTcpListenerObserver({
-        schemaVersion: 1,
-        approvedRoot: otherRoot,
-        port: 25580,
-        targetBinding: current.binding
-      }).observe())
-    const otherBinding = buildArtifactTargetBinding({
-      schemaVersion: 1,
-      bindingId: 'paper-process-tcp-other-binding',
-      provider: current.binding.provider,
-      authorization: current.binding.authorization,
-      artifacts: current.binding.artifacts
-    })
-    const otherBindingObservation = await withNetstat(cleanOutput, () =>
-      createWindowsPaperProcessTcpListenerObserver({
-        schemaVersion: 1,
-        approvedRoot: current.root,
-        port: 25580,
-        targetBinding: otherBinding
-      }).observe())
-    const paper = provider(current.root, current.binding)
+      }).observe()
+    )
+    const clean = createWindowsPaperProcessSessionLockObserver(paper).observe()
+    const otherBinding = createWindowsPaperProcessSessionLockObserver(
+      provider(other.root, other.binding)
+    ).observe()
+    await rm(path.join(current.root, 'world', 'session.lock'))
+    const missing = createWindowsPaperProcessSessionLockObserver(paper).observe()
     const invalid: Array<{ observation: unknown; facts: unknown }> = [
       { observation: { ...clean }, facts: remainingFacts() },
-      { observation: occupied, facts: remainingFacts() },
-      { observation: otherRootObservation, facts: remainingFacts() },
-      { observation: otherBindingObservation, facts: remainingFacts() },
-      { observation: clean, facts: { ...remainingFacts(), port: 25580, pid: null } }
+      { observation: missing, facts: remainingFacts() },
+      { observation: otherBinding, facts: remainingFacts() },
+      { observation: clean, facts: { ...remainingFacts(), sessionLockPresent: false } }
     ]
 
     for (const entry of invalid) {
       assert.throws(
-        () => preflightPaperProcessWithDeclaredArtifactAndTcpListenerObservations(
-          paper, executable, configuration, entry.observation, entry.facts
+        () => preflightPaperProcessWithDeclaredArtifactTcpAndSessionLockObservations(
+          paper, executable, configuration, tcp, entry.observation, entry.facts
         ),
         error => {
-          assert.equal(error instanceof PaperProcessDeclaredArtifactAndTcpListenerPreflightError, true)
+          assert.equal(
+            error instanceof PaperProcessDeclaredArtifactTcpAndSessionLockPreflightError,
+            true
+          )
           assert.equal(
             String(error),
-            'PaperProcessDeclaredArtifactAndTcpListenerPreflightError: '
-              + 'Paper process declared artifact and TCP listener preflight rejected'
+            'PaperProcessDeclaredArtifactTcpAndSessionLockPreflightError: '
+              + 'Paper process declared artifact, TCP and session lock preflight rejected'
           )
-          assert.equal(String(error).includes(otherRoot), false)
+          assert.equal(String(error).includes(other.root), false)
           return true
         }
       )
     }
   } finally {
     await rm(current.root, { recursive: true, force: true })
-    await rm(otherRoot, { recursive: true, force: true })
+    await rm(other.root, { recursive: true, force: true })
   }
 })

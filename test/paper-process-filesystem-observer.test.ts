@@ -73,6 +73,7 @@ function provider(root: string, binding: ReturnType<typeof buildArtifactTargetBi
     approvedRoot: root,
     logicalRoot: 'fixtures/paper-a',
     port: 25580,
+    sessionLockLogicalPath: 'world/session.lock',
     authorization: {
       id: 'approval-fixture-a',
       scope: ['isolated-fixture', 'process-preflight']

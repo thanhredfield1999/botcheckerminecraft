@@ -54,6 +54,7 @@ function provider() {
     approvedRoot: root,
     logicalRoot: 'fixtures/paper-a',
     port: 25580,
+    sessionLockLogicalPath: 'world/session.lock',
     authorization: {
       id: 'approval-fixture-a',
       scope: ['isolated-fixture', 'process-preflight']
@@ -170,6 +171,7 @@ test('Paper process provider reject Proxy scope containers fail closed', () => {
       schemaVersion: 1,
       id: 'paper-process-fixture', version: '1.0.0', instanceId: 'fixture-a',
       approvedRoot: root, logicalRoot: 'fixtures/paper-a', port: 25580,
+      sessionLockLogicalPath: 'world/session.lock',
       authorization: { id: 'approval-fixture-a', scope: proxiedScope },
       targetBinding: binding()
     }),
@@ -195,6 +197,7 @@ test('Paper process provider không invoke caller callback và sanitize hostile 
       schemaVersion: 1,
       id: 'paper-process-fixture', version: '1.0.0', instanceId: 'fixture-a',
       approvedRoot: root, logicalRoot: 'fixtures/paper-a', port: 25580,
+      sessionLockLogicalPath: 'world/session.lock',
       authorization: { id: 'approval-fixture-a', scope: ['isolated-fixture', 'process-preflight'] },
       targetBinding: Object.defineProperty({}, 'provider', {
         get() { throw new Error('secret/binding/path') }
@@ -220,6 +223,7 @@ test('Paper process provider reject production-like root, malformed config và h
         schemaVersion: 1,
         id: 'paper-process-fixture', version: '1.0.0', instanceId: 'fixture-a',
         approvedRoot, logicalRoot: 'fixtures/paper-a', port: 25580,
+        sessionLockLogicalPath: 'world/session.lock',
         authorization: { id: 'approval-fixture-a', scope: ['isolated-fixture', 'process-preflight'] },
         targetBinding: binding()
       }),

@@ -405,7 +405,10 @@ test('Paper process provider preflight chỉ là library-only dry-run không lif
       importers.push(`src/${file}`)
     }
   }
-  assert.deepEqual(importers, ['src/paper-process-filesystem-observer.ts'])
+  assert.deepEqual(importers, [
+    'src/paper-process-filesystem-observer.ts',
+    'src/paper-process-session-lock-observer.ts'
+  ])
 })
 
 test('Paper process filesystem observer chỉ là library-only bounded read không lifecycle I/O', async () => {
@@ -444,7 +447,10 @@ test('Paper process filesystem observer chỉ là library-only bounded read khô
       importers.push(`src/${file}`)
     }
   }
-  assert.deepEqual(importers, ['src/paper-process-tcp-listener-observer.ts'])
+  assert.deepEqual(importers, [
+    'src/paper-process-session-lock-observer.ts',
+    'src/paper-process-tcp-listener-observer.ts'
+  ])
 })
 
 test('Paper JVM canonical-byte provider chỉ compose codec vào observer contract', async () => {

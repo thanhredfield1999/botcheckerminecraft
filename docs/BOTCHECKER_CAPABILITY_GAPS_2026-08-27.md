@@ -199,6 +199,25 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
   thời điểm gần nhau. Nó vẫn non-atomic, freshness chưa thiết lập,
   `tcpListenerFactsAuthoritative:false`, không chứng minh Paper/JVM/process identity,
   boot identity, session-lock/player/lifecycle/approval/release truth.
+- `createWindowsPaperProcessSessionLockObserver` đã thêm bounded Windows-only observation
+  cho provider-bound path có exact basename `session.lock`: fixed
+  `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`, static script, timeout
+  `5 s`, output cap `1 KiB`, path chỉ qua UTF-8 stdin và không `%SystemRoot%`/`PATH`/
+  caller-supplied executable. Exact unlocked marker là UTF-8 `☃`; clean probe tạm lock/
+  unlock byte range `0..1`, chỉ HResult `0x80070021` được phân loại `LOCKED`.
+- Canonical-parent, regular-file, single-link, marker/size, before/after metadata,
+  cross-read identity và junction/hardlink/race guards fail closed. Active Java
+  `FileChannel.lock()` và Unicode-root fixtures PASS. Active lock ghi rõ marker chưa được
+  validate; missing file chỉ là counter-evidence và không qua compositor clean.
+- Issued observation bind exact root/target-binding/path. Compositor mới loại
+  caller-supplied `sessionLockPresent`, reject missing/active/forged/mismatch, và chỉ còn
+  nhận online-player/authorization metadata. Hai capability vẫn `library-only`, không
+  runtime importer. Focused gate `75 total / 73 pass / 0 fail / 2 skip`; full ordered gate
+  `677 total / 671 pass / 0 fail / 6 skip`; typecheck, build và diff-check PASS.
+  Exact-current review `deleg_491b8548` PASS `0 BLOCKER / 0 HIGH / 0 MEDIUM / 0 LOW`.
+- Evidence session-lock vẫn non-atomic, freshness chưa thiết lập,
+  `sessionLockFactsAuthoritative:false`, không chứng minh lock thuộc Paper/PID đã quan sát,
+  Paper/JVM/process/boot identity, zero players, lifecycle/approval/restart/crash/release.
 
 **REMAINING / NEEDED**
 
@@ -213,11 +232,11 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 `crash-recovery-runner.ts` chỉ gọi callback bên ngoài; chưa thực thi/kiểm chứng crash boundary.
 
-- Tiếp tục harden TCP/PID observation thành trusted boot/process identity nếu có trust
-  source phù hợp; hiện Windows `netstat` observation chỉ bỏ caller-supplied port/PID khỏi
-  compositor, chưa authoritative. Thêm session-lock và zero-player collectors thay vì
-  tin caller facts. Các observations vẫn không atomic/fresh và không chứng minh JVM/Paper
-  đã load executable hoặc config bytes.
+- Tiếp tục harden TCP/PID/session-lock observations thành trusted boot/process identity
+  nếu có trust source phù hợp; hiện Windows observations chỉ bỏ caller-supplied port/PID/
+  session-lock khỏi compositor mới, chưa authoritative. Thêm zero-player collector thay
+  vì tin caller facts. Các observations vẫn không atomic/fresh và không chứng minh JVM/
+  Paper đã load executable hoặc config bytes.
 - Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;
   - readiness marker + health probe;
@@ -233,9 +252,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
   caller-supplied mismatch trước mọi mutation; chưa chứng minh facts đến từ OS/Paper.
 - Declared executable/config artifact root/path/hash mismatch hiện fail trước mutation ở
   library layer; observation vẫn per-file, non-atomic và freshness chưa thiết lập.
-  Port/PID hiện có Windows library observation nhưng chưa trusted/boot-bound;
-  session-lock/player/approval vẫn cần authoritative collectors và controlled runtime
-  trước khi acceptance tổng thể được đóng.
+  Port/PID/session-lock hiện có Windows library observations nhưng chưa trusted/boot-bound;
+  player/approval vẫn cần authoritative collectors và controlled runtime trước khi
+  acceptance tổng thể được đóng.
 - Clean restart và authorized crash test tạo evidence phase-bound, không cần orchestration script ngoài.
 
 ### P0.4. Evidence bundle append-only và exact candidate binding

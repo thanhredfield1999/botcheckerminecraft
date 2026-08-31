@@ -146,6 +146,35 @@ They do not authenticate `netstat` provenance, bind a boot/JVM executable identi
 prove no other Paper process exists, inspect session lock/players, or provide lifecycle,
 restart, crash, approval-provenance or release evidence.
 
+### Windows configured session-lock observation (library only)
+
+`createWindowsPaperProcessSessionLockObserver(...)` observes only the provider-bound
+logical path whose basename is exact `session.lock`. It invokes fixed
+`C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe` with a static script, a
+`5 s` timeout and `1 KiB` output cap. The canonical path is transported only through
+explicit UTF-8 stdin; the module does not resolve `%SystemRoot%`, search `PATH`, accept a
+caller-supplied executable or interpolate the path into the PowerShell command.
+
+The observer requires canonical parents and a regular single-link lock file. An unlockable
+file must contain exact UTF-8 `☃`; the clean probe temporarily acquires/releases byte range
+`0..1`. Only Windows HResult `0x80070021` is treated as lock contention. All other I/O
+errors, malformed output, marker/size mismatch, hardlinks, parent junctions, metadata/path
+races, file replacement between probes or changing state fail closed. Active Java
+`FileChannel.lock()` contention is observed as `activeSessionLockObserved:true`, but its
+marker is explicitly unvalidated because Windows prevents reading the locked range.
+
+`preflightPaperProcessWithDeclaredArtifactTcpAndSessionLockObservations(...)` composes
+only issued executable/config/TCP/session-lock observations sharing the exact provider,
+root, target-binding hash and configured lock path. It rejects missing or active locks,
+forgery/mismatch and caller-injected `sessionLockPresent`; only online-player and
+authorization metadata remain caller-supplied.
+
+Both session-lock capabilities are Windows-only and `library-only`, with no runtime
+importer. The two probes are non-atomic, freshness is `not-established`, and
+`sessionLockFactsAuthoritative:false`. This does not prove the lock belongs to Paper or
+the observed PID, Paper/JVM/process/boot identity, zero players, lifecycle, restart,
+crash, approval provenance or release eligibility.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,

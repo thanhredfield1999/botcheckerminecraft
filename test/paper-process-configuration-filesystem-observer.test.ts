@@ -70,6 +70,7 @@ function provider(root: string, binding: ReturnType<typeof buildArtifactTargetBi
     schemaVersion: 1,
     id: 'paper-process-fixture', version: '1.0.0', instanceId: 'fixture-a',
     approvedRoot: root, logicalRoot: 'fixtures/paper-a', port: 25580,
+    sessionLockLogicalPath: 'world/session.lock',
     authorization: {
       id: 'approval-fixture-a', scope: ['isolated-fixture', 'process-preflight']
     },

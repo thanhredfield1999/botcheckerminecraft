@@ -16,6 +16,11 @@ const SAFE_PATH_PART = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/
 const CREDENTIAL_PATTERN = /(password|passwd|secret|token|credential|api[_-]?key|bearer)/i
 const PRODUCTION_ROOT_PARTS = new Set(['live', 'prod', 'production', 'server', 'minecraftserver'])
 const paperProcessProviderCapabilities = new WeakSet<object>()
+const paperProcessProviderMetadata = new WeakMap<object, Readonly<{
+  approvedRoot: string
+  sessionLockLogicalPath: string
+  targetBindingSha256: string
+}>>()
 const OPERATIONS = Object.freeze([
   'backup-fixture',
   'start-paper',
@@ -52,6 +57,18 @@ const logicalRootSchema = z.string().min(1).max(240).superRefine((value, context
     context.addIssue({ code: 'custom', message: 'Invalid logical root' })
   }
 })
+const logicalFileSchema = z.string().min(1).max(240).superRefine((value, context) => {
+  if (value !== value.normalize('NFC')
+    || value.startsWith('/')
+    || /^[a-zA-Z]:/.test(value)
+    || value.includes('\\')
+    || path.posix.normalize(value) !== value
+    || path.posix.basename(value) !== 'session.lock'
+    || value.split('/').some(part => part === '.' || part === '..' || !SAFE_PATH_PART.test(part))
+    || CREDENTIAL_PATTERN.test(value)) {
+    context.addIssue({ code: 'custom', message: 'Invalid logical file path' })
+  }
+})
 const absoluteRootSchema = z.string().min(1).max(1024).superRefine((value, context) => {
   if (value !== value.normalize('NFC')
     || !path.isAbsolute(value)
@@ -75,6 +92,7 @@ const configSchema = z.strictObject({
   approvedRoot: absoluteRootSchema,
   logicalRoot: logicalRootSchema,
   port: z.number().int().min(1).max(65_535),
+  sessionLockLogicalPath: logicalFileSchema,
   authorization: authorizationSchema,
   targetBinding: z.unknown()
 })
@@ -133,6 +151,17 @@ export function assertPaperProcessProvider(input: unknown): asserts input is Pap
   }
 }
 
+export function paperProcessProviderObservationMetadata(input: unknown): Readonly<{
+  approvedRoot: string
+  sessionLockLogicalPath: string
+  targetBindingSha256: string
+}> {
+  assertPaperProcessProvider(input)
+  const metadata = paperProcessProviderMetadata.get(input)
+  if (!metadata) throw new Error('Paper process provider observation metadata is unavailable')
+  return metadata
+}
+
 function compareText(left: string, right: string): number {
   return left < right ? -1 : left > right ? 1 : 0
 }
@@ -176,7 +205,7 @@ function snapshotAuthorization(input: unknown): Record<string, unknown> {
 function parseConfiguration(input: unknown): z.infer<typeof configSchema> {
   const snapshot = strictSnapshot(input, [
     'schemaVersion', 'id', 'version', 'instanceId', 'approvedRoot', 'logicalRoot',
-    'port', 'authorization', 'targetBinding'
+    'port', 'sessionLockLogicalPath', 'authorization', 'targetBinding'
   ])
   snapshot.authorization = snapshotAuthorization(snapshot.authorization)
   return configSchema.parse(snapshot)
@@ -269,6 +298,11 @@ export function createPaperProcessProvider(input: unknown): PaperProcessProvider
       }
     })
     paperProcessProviderCapabilities.add(provider)
+    paperProcessProviderMetadata.set(provider, Object.freeze({
+      approvedRoot: config.approvedRoot,
+      sessionLockLogicalPath: config.sessionLockLogicalPath,
+      targetBindingSha256
+    }))
     return provider
   } catch {
     throw new Error('Paper process provider configuration is invalid')

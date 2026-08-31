@@ -11,6 +11,42 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Windows configured session-lock observation
+
+- `VERIFIED offline/library-only partial`: `createWindowsPaperProcessSessionLockObserver`
+  observes the provider-bound logical path whose basename must be exact `session.lock`.
+  It invokes only fixed
+  `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe` with a static script,
+  `5 s` timeout and `1 KiB` output cap. The canonical absolute path is sent only as
+  UTF-8 stdin, not interpolated into the command or resolved through `%SystemRoot%`/`PATH`.
+- Existing files must be canonical regular single-link files with the exact three-byte
+  UTF-8 snowman marker when unlockable. Parent junctions, hardlinks, malformed markers,
+  unsupported paths, metadata/path races and file-identity replacement between reads
+  fail closed. The probe temporarily acquires/releases byte range `0..1` when clean;
+  only Windows lock-violation HResult `0x80070021` is classified as `LOCKED`, while other
+  I/O errors fail closed. A real Java `FileChannel.lock()` fixture observed the active
+  lock, and a Unicode-root fixture verified the stdin encoding boundary.
+- The issued frozen observation binds exact root, target-binding SHA-256 and configured
+  logical path, and requires equal state plus equal file identity/metadata across two
+  consecutive probes. Active locks explicitly have `sessionLockMarkerValidated:false`
+  because Windows prevents reading the locked range; a missing file is preserved only as
+  counter-evidence, not accepted as a clean preflight result.
+- `preflightPaperProcessWithDeclaredArtifactTcpAndSessionLockObservations` accepts only
+  issued executable/config/TCP/session-lock observations for the same provider/root/
+  binding/path. It derives `sessionLockPresent` from the issued observation and rejects
+  missing, active, forged, mismatched or caller-injected lock facts; remaining caller
+  facts are limited to online-player and authorization metadata.
+- Capabilities `paper-process-session-lock-observation` and
+  `paper-process-declared-artifact-tcp-session-lock-preflight` remain `library-only` with
+  no runtime importer. Focused exact-current gate passed `75 total / 73 pass / 0 fail /
+  2 Windows symlink EPERM skips`; full ordered gate passed `677 total / 671 pass / 0 fail /
+  6 skip`; typecheck, TypeScript/Java build and diff-check passed. Exact-current independent
+  review `deleg_491b8548` passed `0 BLOCKER / 0 HIGH / 0 MEDIUM / 0 LOW`.
+- This is non-atomic Windows byte-range-lock evidence at two nearby read times. Freshness
+  is `not-established`, `sessionLockFactsAuthoritative:false`, and it does not prove the
+  lock belongs to Paper/the observed PID, Paper/JVM/process or boot identity, zero players,
+  lifecycle state, approval provenance, restart/crash behavior or release eligibility.
+
 ## 2026-08-31 — Windows configured TCP listener/PID observation
 
 - `VERIFIED offline/library-only partial`: `createWindowsPaperProcessTcpListenerObserver`
