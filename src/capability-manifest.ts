@@ -296,6 +296,14 @@ const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runti
     module: 'paper-process-filesystem-observer',
     mode: 'library-only'
   },
+  'paper-process-declared-artifact-tcp-listener-preflight': {
+    module: 'paper-process-tcp-listener-observer',
+    mode: 'library-only'
+  },
+  'paper-process-tcp-listener-observation': {
+    module: 'paper-process-tcp-listener-observer',
+    mode: 'library-only'
+  },
   'paper-process-provider-preflight': { module: 'paper-process-provider', mode: 'library-only' },
   'protocol-diagnostics': { module: 'protocol-diagnostic', mode: 'runtime-wired' },
   'route-oracle': { module: 'route-oracle', mode: 'runtime-wired' },

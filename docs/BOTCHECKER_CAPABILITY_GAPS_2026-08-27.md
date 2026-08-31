@@ -173,6 +173,26 @@ Không được báo lại các mục trên là “chưa có”. Gap nằm ở w
   security/claim scan và diff-check PASS. Independent review `deleg_05d8b30f` PASS
   `0/0/0/0`; targeted provider/capability `31/31` và custom optional-probe/freeze/
   root-case/getter/scope-order probes PASS.
+- `createWindowsPaperProcessTcpListenerObserver` đã thêm bounded Windows-only OS
+  observation cho exact configured TCP port: fixed
+  `C:\Windows\System32\netstat.exe -ano -p tcp`, timeout `5 s`, output cap `1 MiB`,
+  strict complete-row parse, exact `LISTENING` + port, PID validate/dedupe/sort và hai
+  snapshot liên tiếp phải cùng owner set. Malformed/partial/oversized/changing output
+  fail sanitized; real loopback test quan sát đúng current Node PID.
+- Issued frozen TCP observation bind root/port/target-binding hash. Compositor mới chỉ
+  nhận issued executable/config/TCP observations cùng root/binding và provider port,
+  loại caller-supplied port/PID facts; forged/occupied/mismatch/extra fields fail closed.
+  Hai capability TCP vẫn `library-only`, không runtime importer. Focused gate đạt
+  `60 pass / 0 fail / 2 Windows symlink EPERM skips`; full ordered gate đạt
+  `664 total / 658 pass / 0 fail / 6 skip`; typecheck, build, security và diff-check PASS.
+- Initial review finding `TCP-MEDIUM-001` đã `CLOSED` bằng RED→GREEN: parser validate
+  local port `1..65535` và safe PID `>=0` trên mọi TCP row trước filtering, vẫn chấp
+  nhận `TIME_WAIT` PID `0`, còn exact target `LISTENING` owner phải có PID `>0`.
+  Exact-current correction review `deleg_a029212f` PASS `0/0/0/0`.
+- Evidence này chỉ chứng minh output `netstat` cho configured listener/PID list ở hai
+  thời điểm gần nhau. Nó vẫn non-atomic, freshness chưa thiết lập,
+  `tcpListenerFactsAuthoritative:false`, không chứng minh Paper/JVM/process identity,
+  boot identity, session-lock/player/lifecycle/approval/release truth.
 
 **REMAINING / NEEDED**
 
@@ -187,9 +207,11 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
 
 `crash-recovery-runner.ts` chỉ gọi callback bên ngoài; chưa thực thi/kiểm chứng crash boundary.
 
-- Thêm authoritative socket/PID/session-lock và zero-player collectors thay vì tin
-  caller facts. Declared artifact file observations hiện không chứng minh các facts đó,
-  không atomic/fresh và không chứng minh JVM/Paper đã load executable hoặc config bytes.
+- Tiếp tục harden TCP/PID observation thành trusted boot/process identity nếu có trust
+  source phù hợp; hiện Windows `netstat` observation chỉ bỏ caller-supplied port/PID khỏi
+  compositor, chưa authoritative. Thêm session-lock và zero-player collectors thay vì
+  tin caller facts. Các observations vẫn không atomic/fresh và không chứng minh JVM/Paper
+  đã load executable hoặc config bytes.
 - Thêm lifecycle executor chỉ invoke sau registry admission và authoritative preflight:
   - zero-player check trước mutation;
   - readiness marker + health probe;
@@ -205,8 +227,9 @@ BotChecker không tự có Paper lifecycle provider. Các run thật phải dùn
   caller-supplied mismatch trước mọi mutation; chưa chứng minh facts đến từ OS/Paper.
 - Declared executable/config artifact root/path/hash mismatch hiện fail trước mutation ở
   library layer; observation vẫn per-file, non-atomic và freshness chưa thiết lập.
-  Port/PID/player/approval vẫn cần authoritative collectors và controlled runtime trước
-  khi acceptance tổng thể được đóng.
+  Port/PID hiện có Windows library observation nhưng chưa trusted/boot-bound;
+  session-lock/player/approval vẫn cần authoritative collectors và controlled runtime
+  trước khi acceptance tổng thể được đóng.
 - Clean restart và authorized crash test tạo evidence phase-bound, không cần orchestration script ngoài.
 
 ### P0.4. Evidence bundle append-only và exact candidate binding

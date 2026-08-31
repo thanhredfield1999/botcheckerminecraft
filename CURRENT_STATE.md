@@ -11,6 +11,43 @@ Last reviewed: 2026-08-31
 
 ## Implemented Behavior
 
+## 2026-08-31 — Windows configured TCP listener/PID observation
+
+- `VERIFIED offline/library-only partial`: `createWindowsPaperProcessTcpListenerObserver`
+  invokes only fixed `C:\Windows\System32\netstat.exe` with argv `-ano -p tcp`, a
+  `5 s` timeout and `1 MiB` output cap. It strict-parses the complete TCP table,
+  selects only exact configured-port `LISTENING` rows, validates/deduplicates/sorts
+  owner PIDs and requires two consecutive snapshots to return the same owner set.
+- Empty, unrecognizable, partially malformed, oversized, timed-out or changing output
+  fails with one sanitized error. A real loopback listener test observed the current
+  Node PID; issued output is deeply frozen and bound to the configured root, port and
+  exact target-binding SHA-256.
+- The backend intentionally supports only the exact `C:\Windows\System32\netstat.exe`
+  layout; it does not trust `%SystemRoot%`, search `PATH` or accept a caller-supplied
+  executable. Unrecognized/localized header grammar and other Windows layouts fail
+  closed pending a separately reviewed backend.
+- `preflightPaperProcessWithDeclaredArtifactAndTcpListenerObservations` composes only
+  module-issued TCP and declared-artifact observations for the same root/binding and
+  factory-issued provider port. It derives `portListening`/PID facts from the issued
+  TCP observation; callers may supply only session-lock/player/authorization facts.
+  Forged, occupied, root/binding mismatch and extra caller port/PID fields fail closed.
+- Capabilities `paper-process-tcp-listener-observation` and
+  `paper-process-declared-artifact-tcp-listener-preflight` remain `library-only` with
+  no runtime importer. Focused exact-current gate passed `60 pass / 0 fail / 2 Windows
+  symlink EPERM skips`; full ordered gate passed `664 total / 658 pass / 0 fail / 6
+  skip`; typecheck, TypeScript/Java build, security scan and diff-check passed.
+- Initial review finding `TCP-MEDIUM-001` is `CLOSED`: a RED fixture showed an
+  unrelated malformed TCP row could be skipped. The parser now validates every row's
+  local port (`1..65535`) and safe nonnegative PID before filtering, while preserving
+  Windows `TIME_WAIT` PID `0`; exact target `LISTENING` owners still require PID `>0`.
+  Exact-current correction review `deleg_a029212f` passed
+  `0 BLOCKER / 0 HIGH / 0 MEDIUM / 0 LOW`.
+- This is Windows `netstat` evidence for the configured TCP port and reported owner
+  PID list at two nearby read times. It is non-atomic, freshness is `not-established`,
+  `tcpListenerFactsAuthoritative:false`, and it does not prove Paper process identity,
+  executable/JVM identity, session-lock/player state, lifecycle, approval provenance,
+  restart/crash behavior or release eligibility.
+
 ## 2026-08-31 — Paper declared configuration artifact file observation
 
 - `VERIFIED offline/library-only partial`: `createPaperProcessConfigurationFilesystemObserver`

@@ -444,7 +444,7 @@ test('Paper process filesystem observer chỉ là library-only bounded read khô
       importers.push(`src/${file}`)
     }
   }
-  assert.deepEqual(importers, [])
+  assert.deepEqual(importers, ['src/paper-process-tcp-listener-observer.ts'])
 })
 
 test('Paper JVM canonical-byte provider chỉ compose codec vào observer contract', async () => {

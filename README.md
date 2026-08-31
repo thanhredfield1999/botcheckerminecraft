@@ -115,6 +115,37 @@ I/O must not run on the HTTP/event-loop or Paper server-thread path. It inspects
 socket, PID/session lock, player or JVM state and adds no lifecycle, mutation, restart,
 crash, approval-provenance or release proof.
 
+### Windows configured TCP listener/PID observation (library only)
+
+`createWindowsPaperProcessTcpListenerObserver(...)` invokes the fixed
+`C:\Windows\System32\netstat.exe` binary with fixed `-ano -p tcp` arguments, a
+`5 s` timeout and `1 MiB` output cap. It strict-parses the complete TCP table, selects
+only exact configured-port `LISTENING` rows, validates every local port and PID before
+filtering, then deduplicates/sorts owner PIDs. Windows `TIME_WAIT` PID `0` remains valid,
+but an exact target listener requires a positive PID. An issued frozen observation is
+returned only when two consecutive reads agree.
+Malformed/partial output, command failure, excessive output, owner changes and hostile
+configuration fail with sanitized errors.
+
+This slice intentionally supports only hosts whose Windows installation exposes that
+exact system path; it does not resolve `%SystemRoot%`, search `PATH`, or accept a caller-
+supplied executable. Unrecognized or localized header grammar also fails closed instead
+of being interpreted as an empty TCP table. Other layouts/locales require a separately
+reviewed backend.
+
+`preflightPaperProcessWithDeclaredArtifactAndTcpListenerObservations(...)` can compose
+that issued observation with issued executable/config observations for the same root,
+target-binding hash and factory-issued provider port. Port-listening/PID facts are no
+longer accepted from the remaining caller facts; session lock, players and authorization
+still are. The preview stays mutation-free and explicitly records non-atomic,
+freshness `not-established`, `tcpListenerFactsAuthoritative:false` and
+`provesPaperProcessIdentity:false`.
+
+Both TCP capabilities are Windows-only and `library-only`, with no runtime importer.
+They do not authenticate `netstat` provenance, bind a boot/JVM executable identity,
+prove no other Paper process exists, inspect session lock/players, or provide lifecycle,
+restart, crash, approval-provenance or release evidence.
+
 ### Signed provider claims (library only)
 
 The library includes a strict Ed25519 configured-key verifier for short-lived,
