@@ -72,6 +72,12 @@ function validatePlan(input: NegativePlanInput): void {
   for (const current of input.cases) {
     validateText(current.accountRef, 'account reference')
     if (CREDENTIAL_PATTERN.test(current.accountRef)) throw new Error('Credential-like account reference rejected')
+    // caseId phải bounded ngay ở tầng plan: nó là một nửa khóa định danh case,
+    // nên free text không kiểm soát sẽ làm identity nhập nhằng (audit BC-014).
+    if (typeof current.caseId !== 'string' || !/^[a-zA-Z0-9_-]{1,96}$/.test(current.caseId)) {
+      throw new Error('Invalid negative case ID')
+    }
+    if (CREDENTIAL_PATTERN.test(current.caseId)) throw new Error('Credential-like negative case ID rejected')
     if (!Array.isArray(current.authorization) || current.authorization.length > 8) {
       throw new Error('Negative case authorization must be bounded')
     }

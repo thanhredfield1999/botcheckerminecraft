@@ -1,0 +1,98 @@
+name: Verification gate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node-gate:
+    name: Node gate (${{ matrix.os }}, node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [22.18.0, 24]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      # javac phải có mặt trên MỌI nền tảng: thiếu nó thì ~48 test Java interop
+      # skip im lặng và job vẫn xanh. Skip gate bên dưới biến điều đó thành lỗi,
+      # nhưng cài JDK là cách đúng để chúng thực sự chạy.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # POSIX-only: Windows cưỡng bức kết thúc child process nên signal handler
+      # không nhận SIGINT/SIGTERM (hai test này skip trên win32 một cách chính đáng).
+      - name: Verify direct-entrypoint shutdown on POSIX
+        if: runner.os != 'Windows'
+        run: node --import tsx --test test/direct-entrypoint-shutdown.integration.test.ts
+
+      - name: Test with skip-coverage floor
+        run: npm run verify:coverage-floor
+
+      - name: Build (TypeScript + java-src + Paper adapter)
+        run: npm run build
+
+  paper-adapter-gradle:
+    name: Paper adapter Gradle build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Forward-compat gate là script Node; job này cần Node để chạy nó.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      # Chạy Gradle trực tiếp để một lỗi biên dịch adapter là lỗi CI rõ ràng,
+      # không bị che bởi nhánh SKIPPED của build wrapper.
+      - name: Build Paper adapter
+        working-directory: paper-bukkit-adapter
+        run: ./gradlew --no-daemon clean build
+
+      # Adapter compile theo SÀN 1.21.11 để giữ bytecode 21. Bước này chứng minh nó
+      # VẪN biên dịch được với paper-api mới nhất — nếu Paper xoá/đổi một API đang
+      # dùng thì CI đỏ ở đây, thay vì phát hiện trên server thật.
+      - name: Set up JDK 25 for forward API probe
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Verify forward compatibility with latest Paper API
+        env:
+          REQUIRE_FORWARD_COMPAT: '1'
+        run: npm run verify:paper-forward-compat

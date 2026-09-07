@@ -461,6 +461,93 @@ Start a run:
 
 The API listens on `127.0.0.1:8080` by default. Keep it private because scenarios can issue Minecraft commands.
 
+### API boundary (enforced in code since 2026-09-07)
+
+- Binding outside loopback is **fail-closed**: if `API_HOST` is not
+  `127.0.0.1`/`::1`/`localhost`, `API_CREDENTIAL` must be set and at least 16
+  characters, otherwise the process refuses to start.
+- When `API_CREDENTIAL` is set, every `/api/*` route requires
+  `Authorization: Bearer <credential>` and returns `401 {"error":"Unauthorized"}`
+  otherwise. The comparison is constant-time. `GET /health` stays open.
+- Error responses are fixed strings and never reflect internal detail: unknown
+  scenario returns `404 {"error":"Scenario not found"}`, malformed input returns
+  `400 {"error":"Request is invalid"}`, anything else returns
+  `500 {"error":"Internal error"}` with the detail logged server-side only.
+- Finished runs are evicted from the in-memory registry once the count exceeds
+  `MAX_RETAINED_RUNS` (default `64`). Active and queued runs are never evicted.
+  Sealed bundles stay on disk in `REPORT_DIR`; there is no HTTP route that reads
+  them back yet.
+- `MC_AUTH` accepts exactly `offline` or `microsoft`. Any other value (including
+  `Microsoft`) throws at startup instead of silently downgrading to offline
+  authentication.
+
+## Paper version support (1.21.11 → latest)
+
+Entity `requiredUuid` uses exact string identity in both count and pinned selectors;
+it is not case-folded like display-name search. Use the UUID exactly as observed.
+
+The Paper/Bukkit adapter and its KeyStore companion target **Paper 1.21.11 onward**.
+This is a support target, not proof that every later release works at runtime.
+
+How that is achieved, and why it is not the obvious choice:
+
+- Both modules compile against the **floor** (`1.21.11-R0.1-SNAPSHOT`) with
+  `JavaLanguageVersion.of(21)`. The forward probe uses JDK 25 with `--release 21`:
+  a newer compiler need not raise output bytecode, but compiling against a newer API
+  does not prove the code uses only APIs available at the floor.
+- Both `plugin.yml` files declare `api-version: '1.21.11'` — a minimum supported API,
+  not an exact-version pin.
+- `paperApiVersion` can override the compile API. Gradle may reject newer API
+  dependencies with the baseline Java 21 toolchain; use the separate forward probe
+  rather than changing the baseline target to bypass that check.
+
+Probe forward **compile** compatibility (the resolved version is printed):
+
+```bash
+npm run verify:paper-forward-compat
+```
+
+That command asks Maven for the newest stable `paper-api`, downloads it, and
+recompiles main sources from both modules at `--release 21`, excluding test sources.
+A compiler error leaves compatibility unverified; inspect diagnostics to distinguish
+API changes from JDK/classpath problems. Missing prerequisites report `SKIPPED` and
+`NOT verified` locally. With `REQUIRE_FORWARD_COMPAT=1` or `CI=true`, missing
+prerequisites exit nonzero. CI is configured to run the required probe on every push.
+
+Scope: this proves the API surface still exists and still compiles. It does not
+prove runtime behaviour is identical across versions — scheduler semantics, event
+ordering or ServicesManager changes would not surface at compile time.
+
+## Candidate 0.2.0 assertion boundaries
+
+- `assert_nearby_entity` with `exactly` or `maximum` requires at least three matching
+  samples spanning 200 ms. A mismatch resets the dwell. Counts/evidence are client
+  observations, not server/PDC authority or proof that a later duplicate cannot appear.
+  Schema requires `timeoutMs > 300` for the dwell plus polling margin. If the last
+  observation matches but stability samples are incomplete, timeout is inconclusive.
+  Minimum-only checks may pass immediately.
+- `assert_inventory` is a point-in-time count of client-owned slots and cursor.
+  Known storage windows use their player-slot projection; processing/unknown menus
+  or stale crafting inputs return `INCONCLUSIVE_INVENTORY_SCOPE`. Close the menu and
+  wait for inventory synchronization before asserting in those cases.
+- `drop_item` selects one matching slot; an explicit count cannot span stacks.
+  Mode 4 clicks do not use the cursor. Evidence records completed clicks, in-flight
+  uncertainty and client delta; `serverConfirmed` remains false, including after abort.
+- Entity/item selectors normalize NFC and use locale-independent lowercasing.
+- `capture`/`assert_capture` only inspect fresh events after their step starts.
+  Do not capture two burst response fields in consecutive steps without fresh responses.
+  Oversized events (>4096 characters) are skipped; empty or >512-character captures
+  are rejected, never truncated. Regex work is bounded to 25 ms per evaluation,
+  100 ms cumulative wall time and 128 evaluations per step. Budget exhaustion or
+  missing observations is inconclusive, not evidence of a product defect.
+- Negative text/dwell windows must finish strictly before the step timeout.
+- Draft consumer scenarios under `docs/dogfood-round2/` are not runnable approvals.
+  Offline contract tests do not substitute for the five plugins' own tests or Paper E2E.
+- Execution `status`/`summary.failed` describe whether steps completed, not whether a
+  product defect was established. Consume `verdict` (`PASS`/`FAIL`/`INCONCLUSIVE`) for
+  that distinction; incomplete observations can have status `failed` and an
+  `INCONCLUSIVE` verdict.
+
 ## GUI Safety
 
 Every event is printed with a `[BotChecker <runId>]` prefix and persisted in the report. A GUI is rendered as text before every click:

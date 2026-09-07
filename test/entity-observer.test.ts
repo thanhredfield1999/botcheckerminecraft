@@ -14,6 +14,22 @@ const entity = (id: number, uuid?: string, x = 1) => ({
   position: { x, y: 64, z: 0 }
 })
 
+test('R3-05: observer case-normalization trả về NFC sau lowercase', () => {
+  const npc = { ...entity(9, 'uuid-9'), displayName: 'J\u030Cade' }
+  const position = { x: 0, y: 64, z: 0 }
+  const pinned = pinUniqueEntity([npc], position, '\u01F0ade', 48, true)
+  assert.equal(pinned.entity, npc)
+  assert.equal(validateUniquePinnedEntity([npc], position, '\u01F0ade', 48, pinned.identity, npc), npc)
+})
+
+test('observer chuẩn hóa NFC ở pin và validate', () => {
+  const npc = { ...entity(9, 'uuid-9'), displayName: 'Mảnh Thành Trì' }
+  const query = npc.displayName.normalize('NFD')
+  const position = { x: 0, y: 64, z: 0 }
+  const pinned = pinUniqueEntity([npc], position, query, 48, true)
+  assert.equal(validateUniquePinnedEntity([npc], position, query, 48, pinned.identity, npc), npc)
+})
+
 test('observer từ chối nhiều entity trùng tên thay vì chọn nearest tùy tiện', () => {
   assert.throws(
     () => pinUniqueEntity([entity(1, 'uuid-1', 1), entity(2, 'uuid-2', 2)],

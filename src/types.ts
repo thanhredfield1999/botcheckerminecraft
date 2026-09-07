@@ -150,12 +150,13 @@ export interface RunManifest {
       mutationCount?: number
     }>
   }
-  target: { host: string; port: number; configuredVersion?: string }
+  target: { host: string; port: number; auth: 'offline' | 'microsoft'; configuredVersion?: string }
   observed: {
     negotiatedVersion?: string
     protocolVersion?: string | number
     serverWorld?: string
     dimension?: string
+    accountUuid?: string
   }
 }
 

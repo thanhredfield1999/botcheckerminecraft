@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "expectedProjects": 5,
+  "projects": [
+    {
+      "project": "VillageDefense",
+      "report": "docs/dogfood-round2/vd/report.json"
+    },
+    {
+      "project": "LivingNPC",
+      "report": "docs/dogfood-round2/ln/report.json"
+    },
+    {
+      "project": "ItemGuard",
+      "report": "docs/dogfood-round2/ig/report.json"
+    },
+    {
+      "project": "RestaurantTycoon",
+      "report": "docs/dogfood-round2/rt/report.json"
+    },
+    {
+      "project": "BastionForge",
+      "report": "docs/dogfood-round2/bf/report.json"
+    }
+  ],
+  "scope": "not Paper runtime dogfood"
+}

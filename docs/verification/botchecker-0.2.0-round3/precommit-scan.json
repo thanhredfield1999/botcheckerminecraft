@@ -1,0 +1,57 @@
+{
+  "scope": "Explicit candidate commit allowlist; no working-tree sweep",
+  "includedPaths": 214,
+  "excludedPaths": [
+    ".codegraph/.gitignore",
+    ".hermes/plans/2026-08-28_194936-botchecker-java-builder-opaque-signing.md",
+    "docs/evidence/round2-final-review-input.json",
+    "reports-anticheat-goal-2/08101b46-7dd6-4570-94ba-308482427737.json",
+    "reports-anticheat-goal-2/0f10d9ef-9be5-4fea-a591-9f6eb13320f0.json",
+    "reports-anticheat-goal-2/7249da34-bf7d-424f-b4b4-3d32f2e29069.json",
+    "reports-anticheat-goal-2/c534c050-e997-484d-b96a-eb235a832235.json",
+    "reports-anticheat-goal-2/e819637b-0aef-44d2-a99c-83fb4bc88e85.json",
+    "reports-anticheat-goal/7f4b0e7d-5fa3-4114-bcb8-e75ed6bc7792.json",
+    "reports-anticheat-goal/e06f714e-5ffd-4377-8356-0d0b7bfafb09.json",
+    "reports-anticheat/6d21bd4e-02b2-4ea9-892c-bb9943df4ca3.json"
+  ],
+  "potentialCredentialMatches": [
+    {
+      "path": "test/report-contract.test.ts",
+      "line": 30,
+      "kind": "literal_credential",
+      "disposition": "Synthetic redaction sentinel in existing test fixture, manually inspected; not an active credential"
+    },
+    {
+      "path": "test/runner-session.test.ts",
+      "line": 772,
+      "kind": "literal_credential",
+      "disposition": "Synthetic redaction sentinel in existing test fixture, manually inspected; not an active credential"
+    },
+    {
+      "path": "test/runner-session.test.ts",
+      "line": 904,
+      "kind": "literal_credential",
+      "disposition": "Synthetic redaction sentinel in existing test fixture, manually inspected; not an active credential"
+    },
+    {
+      "path": "test/runner-session.test.ts",
+      "line": 906,
+      "kind": "literal_credential",
+      "disposition": "Synthetic redaction sentinel in existing test fixture, manually inspected; not an active credential"
+    },
+    {
+      "path": "test/runner-session.test.ts",
+      "line": 914,
+      "kind": "literal_credential",
+      "disposition": "Synthetic redaction sentinel in existing test fixture, manually inspected; not an active credential"
+    }
+  ],
+  "privateKeysOrServiceTokensFound": false,
+  "wrapper": {
+    "version": "9.7.1",
+    "officialUrl": "https://services.gradle.org/distributions/gradle-9.7.1-wrapper.jar.sha256",
+    "sha256": "7a9ce74cff467ca1bf60a4fcd9f05185acceda4d0f382434d393e17864262c5d",
+    "matchesOfficial": true
+  },
+  "noPushOrDeploy": true
+}

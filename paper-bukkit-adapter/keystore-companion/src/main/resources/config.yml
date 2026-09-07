@@ -1,0 +1,19 @@
+# BotChecker KeyStore companion — NON-SECRET metadata only.
+#
+# This file must never contain a password, a private key, or key bytes. The password is
+# read from an environment variable that is supplied ONLY to the Paper JVM; Node, test
+# fixtures and CLI arguments must not receive or inherit it.
+#
+# Every field below is required. If any is missing or blank, the companion registers no
+# service and logs a fixed code — the adapter then stays inactive, which is intended.
+
+keystore:
+  # Absolute path to an externally provisioned PKCS12 file. Keep it OUTSIDE this
+  # repository and outside any world/backup directory.
+  path: ''
+
+  # Alias of the Ed25519 entry inside that PKCS12 file.
+  alias: ''
+
+  # NAME of the environment variable holding the KeyStore password — not the password.
+  password-environment-variable: ''

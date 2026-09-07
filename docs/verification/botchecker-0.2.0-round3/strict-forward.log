@@ -1,0 +1,6 @@
+
+> botcheckerminecraft@0.2.0 verify:paper-forward-compat
+> node scripts/verify-paper-forward-compat.mjs
+
+paper-forward-compat: latest stable paper-api = 26.2.build.121-stable
+paper-forward-compat: PASSED — 19 file compile sạch với paper-api 26.2.build.121-stable ở --release 21 (sàn build vẫn là 1.21.11).

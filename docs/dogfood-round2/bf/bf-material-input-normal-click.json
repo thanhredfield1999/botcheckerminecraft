@@ -1,0 +1,128 @@
+{
+  "name": "BastionForge — normal-click material into forge STONE input, then return (PLACEHOLDER FIXTURE — offline-authored, NEVER EXECUTED)",
+  "description": "Cap vat lieu bang lenh admin that '/bforge givematerial bastion_shard 3'. Left-click thuong tu phan tui trong view -> ForgeListener.moveFromPlayer dat vao STONE_SLOT 22; left-click lai slot 22 -> returnInput tra ve tui. LUU Y: assert_inventory KHONG doc custom name (chi item.name + vanilla displayName), nen phai dung 'amethyst_shard' o day; dung ten hien thi VN se false-PASS vinh vien. Khong shift-click, khong drag, khong number-key.",
+  "maxDurationMs": 240000,
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "baseline_no_vanilla_shard",
+      "action": "assert_inventory",
+      "itemIncludes": "amethyst_shard",
+      "exactly": 0,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "grant_material",
+      "action": "chat",
+      "message": "/bforge givematerial bastion_shard 3"
+    },
+    {
+      "id": "grant_settled",
+      "action": "wait",
+      "durationMs": 1500
+    },
+    {
+      "id": "material_in_bag_exact",
+      "action": "assert_inventory",
+      "itemIncludes": "amethyst_shard",
+      "exactly": 3,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "open_forge",
+      "action": "chat",
+      "message": "/bforge"
+    },
+    {
+      "id": "forge_visible",
+      "action": "wait_for_gui",
+      "titleIncludes": "Lò Rèn Thành Trì",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "stone_slot_empty_before",
+      "action": "assert_gui",
+      "titleIncludes": "Lò Rèn Thành Trì",
+      "topSlotCount": 54,
+      "items": [
+        {
+          "slot": 22,
+          "section": "top",
+          "slotEmpty": true
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "click_material_in_player_section",
+      "action": "click_gui",
+      "section": "player",
+      "nameIncludes": "Mảnh Thành Trì",
+      "button": "left",
+      "inspectDelayMs": 750,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "server_moved_item",
+      "action": "wait",
+      "durationMs": 1500
+    },
+    {
+      "id": "stone_slot_filled_after",
+      "action": "assert_gui",
+      "items": [
+        {
+          "slot": 22,
+          "section": "top",
+          "nameIncludes": "Mảnh Thành Trì",
+          "count": 3
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "bag_lost_the_stack",
+      "action": "assert_inventory",
+      "itemIncludes": "amethyst_shard",
+      "exactly": 0,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "click_stone_slot_to_return",
+      "action": "click_gui",
+      "slot": 22,
+      "section": "top",
+      "button": "left",
+      "inspectDelayMs": 750,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "return_settle",
+      "action": "wait",
+      "durationMs": 1500
+    },
+    {
+      "id": "stone_slot_empty_again",
+      "action": "assert_gui",
+      "items": [
+        {
+          "slot": 22,
+          "section": "top",
+          "slotEmpty": true
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "no_dupe_exactly_three",
+      "action": "assert_inventory",
+      "itemIncludes": "amethyst_shard",
+      "exactly": 3,
+      "timeoutMs": 10000
+    }
+  ]
+}

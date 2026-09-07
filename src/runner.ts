@@ -1,11 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
+import { Script } from 'node:vm'
 import runnerPackage from '../package.json' with { type: 'json' }
 import mineflayer, { type Bot } from 'mineflayer'
 import type { Entity } from 'prismarine-entity'
 import { Vec3 } from 'vec3'
 import type { Scenario, ScenarioStep } from './scenario.js'
-import { boundedGuiItems, boundedGuiSnapshot, formatGuiSnapshot, itemSearchText, sanitizeGuiText, snapshotGui } from './snapshot.js'
+import { boundedGuiItems, boundedGuiSnapshot, formatGuiSnapshot, inventoryItemSearchText, itemSearchText, sanitizeGuiText, snapshotGui } from './snapshot.js'
 import type {
   GuiSnapshot,
   RunManifest,
@@ -58,6 +59,7 @@ import {
 
 const { goals, Movements, pathfinder } = createRequire(import.meta.url)('mineflayer-pathfinder') as typeof import('mineflayer-pathfinder')
 const GIT_COMMIT_PATTERN = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/
+const MAX_CROSSING_OBSERVATIONS = 512
 
 interface MinecraftOptions {
   host: string
@@ -157,7 +159,7 @@ function verdictForStep(status: StepResult['status'], message: string): Verdict 
 }
 
 function normalizedSearchText(value: string): string {
-  return value.normalize('NFC').toLocaleLowerCase()
+  return value.normalize('NFC').toLowerCase().normalize('NFC')
 }
 
 type WorldAwareBot = Bot & {
@@ -254,6 +256,11 @@ export class TestRun {
   private session?: BotSession
   private cancelled = false
   private activeStepEvidence?: unknown
+  /**
+   * DF-05: kho biến sống suốt run. Bounded để không thành kênh rò bộ nhớ — số
+   * biến đã bị schema chặn ở 256 step, và mỗi giá trị cắt ở 512 ký tự.
+   */
+  private readonly captures = new Map<string, string>()
   private windowGeneration = 0
   private readonly completedStepWindowGenerations = new Map<string, number>()
   private readonly sourceRevision?: string
@@ -261,6 +268,51 @@ export class TestRun {
   private readonly authorizedPlan?: Readonly<NonNullable<RunManifest['authorizedPlan']>>
   private readonly signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
   private signedProviderEvidenceReference?: SignedProviderEvidenceReference
+  private attachedQaPlan?: NonNullable<RunManifest['qaPlan']>
+
+  /**
+   * Nhận kết quả QA plan do một producer thật sinh ra trước khi scenario chạy.
+   * Chỉ được gọi trước `start()`; sau đó manifest coi kết quả này là nguồn cho
+   * section `qaPlan`, ưu tiên hơn dependency inject sẵn.
+   */
+  attachQaPlan(kind: 'permission' | 'negative-security', result: unknown): void {
+    if (this.finishedAt) throw new Error('QA plan cannot be attached after the run finished')
+    const parsed = result as {
+      verdict: Verdict
+      project: string
+      fixture: string
+      accounts: readonly string[]
+      summary: { total: number; pass: number; fail: number; inconclusive: number }
+      cells?: ReadonlyArray<{
+        accountRef: string; verdict: Verdict; message: string; evidence?: unknown
+      }>
+      cases?: ReadonlyArray<{
+        accountRef: string; verdict: Verdict; message: string; evidence?: unknown
+      }>
+    }
+    const entries = parsed.cells ?? parsed.cases ?? []
+    this.attachedQaPlan = {
+      kind,
+      verdict: parsed.verdict,
+      project: parsed.project,
+      fixture: parsed.fixture,
+      accounts: [...parsed.accounts],
+      summary: { ...parsed.summary },
+      cells: entries.map(entry => {
+        const evidence = (entry.evidence ?? {}) as Record<string, unknown>
+        return this.withDefinedValues({
+          accountRef: String(entry.accountRef),
+          role: typeof evidence.role === 'string' ? evidence.role : undefined,
+          action: typeof evidence.action === 'string' ? evidence.action : undefined,
+          caseId: typeof evidence.caseId === 'string' ? evidence.caseId : undefined,
+          verdict: entry.verdict as Verdict,
+          message: String(entry.message),
+          authorizationCount: 0,
+          mutationCount: typeof evidence.mutationCount === 'number' ? evidence.mutationCount : undefined
+        }) as NonNullable<RunManifest['qaPlan']>['cells'][number]
+      })
+    }
+  }
 
   constructor(
     readonly scenario: Scenario,
@@ -413,7 +465,7 @@ export class TestRun {
 
   private async executeScenario(): Promise<void> {
     for (const step of this.scenario.steps) {
-      if (this.cancelled) return
+      if (this.cancelled || this.lifecycle.signal.aborted) return
       this.currentStep = step.id
       const started = new Date()
       this.activeStepEvidence = undefined
@@ -430,11 +482,24 @@ export class TestRun {
           step.id,
           timeout => stepController.abort(timeout)
         )
+        stepController.signal.throwIfAborted()
         this.steps.push({ id: step.id, action: step.action, status: 'passed', verdict: 'PASS', startedAt: started.toISOString(), durationMs: Date.now() - started.getTime(), message: 'Completed', evidence })
         this.record('step_passed', step.id, evidence)
       } catch (error) {
-        const rawMessage = error instanceof Error ? error.message : String(error)
-        const message = step.action === 'observe_crossing' && rawMessage === `Timeout: ${step.id}`
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        const interrupted = this.lifecycle.signal.reason
+        const rawMessage = this.lifecycle.signal.aborted
+          ? `INCONCLUSIVE_RUN_INTERRUPTED: ${interrupted instanceof Error ? interrupted.message : String(interrupted)}`
+          : errorMessage
+        const countObservation = this.activeStepEvidence as { satisfied?: boolean } | undefined
+        const message = (step.action === 'capture' || step.action === 'assert_capture')
+          && rawMessage === `Timeout: ${step.id}`
+          ? 'INCONCLUSIVE_CAPTURE_MISSING: no fresh matching text before timeout'
+          : step.action === 'assert_nearby_entity' && rawMessage === `Timeout: ${step.id}`
+            && (step.exactly !== undefined || step.maximum !== undefined)
+            && (!countObservation || countObservation.satisfied === true)
+          ? 'INCONCLUSIVE_ENTITY_COUNT: insufficient stable samples before timeout'
+          : step.action === 'observe_crossing' && rawMessage === `Timeout: ${step.id}`
           ? `INCONCLUSIVE_TRACKING: timeout before crossing proof (${step.timeoutMs} ms)`
           : step.action === 'assert_state' && rawMessage === `Timeout: ${step.id}`
             ? this.assertStateEvidenceMessage()
@@ -454,6 +519,7 @@ export class TestRun {
   }
 
   private async executeStep(step: ScenarioStep, signal: AbortSignal, eventCursor: number): Promise<unknown> {
+    signal.throwIfAborted()
     const bot = this.requireBot()
     switch (step.action) {
       case 'wait':
@@ -463,6 +529,30 @@ export class TestRun {
         bot.chat(step.message)
         return { sent: step.message }
       case 'wait_for_text': {
+        // DF-02: notText là khẳng định VẮNG MẶT nên ngữ nghĩa ngược hẳn: không
+        // poll-tới-khi-thấy mà phải chờ HẾT cửa sổ rồi mới kết luận. Thấy text
+        // giữa chừng là fail ngay, không đợi hết giờ.
+        if (step.notText !== undefined) {
+          const forbidden = normalizedSearchText(step.notText)
+          const deadline = Date.now() + step.durationMs!
+          const checkAbsent = () => {
+            const hit = this.events.slice(eventCursor).find(event =>
+              event.elapsedMs <= deadline - this.startedAt.getTime()
+              && (step.source === 'any' || event.type === step.source)
+              && normalizedSearchText(event.summary).includes(forbidden))
+            if (hit) {
+              throw new Error(`Forbidden text observed: ${step.notText} (${hit.summary.slice(0, 120)})`)
+            }
+          }
+          while (Date.now() < deadline) {
+            checkAbsent()
+            await wait(Math.min(100, Math.max(0, deadline - Date.now())), signal)
+          }
+          if (signal.aborted) throw new Error('Step aborted')
+          // Scan cả nhịp cuối; không tính event đến sau deadline nếu timer bị trễ.
+          checkAbsent()
+          return { absentFor: step.durationMs, notText: step.notText }
+        }
         const predicates = (step.allOf ?? [step.text!]).map(normalizedSearchText)
         const found = await this.poll(() => {
           const relativeIndex = this.events.slice(eventCursor).findIndex(event => {
@@ -631,6 +721,7 @@ export class TestRun {
             step.nameIncludes, step.maxDistance, pinned.identity, entity, step.requiredUuid)
         }
         await bot.lookAt(entity.position.offset(0, entity.height / 2, 0), true)
+        signal.throwIfAborted()
         if (pinned) {
           validateUniquePinnedEntity(
             Object.values(bot.entities), bot.entity.position,
@@ -649,14 +740,141 @@ export class TestRun {
         return this.withDefinedValues({ entity: entity.displayName ?? entity.name, uuid: step.requiredUuid, position: entity.position, gui: gui ? boundedGuiSnapshot(gui) : undefined })
       }
       case 'equip': {
-        const item = bot.inventory.items().find(candidate => `${candidate.name}\n${candidate.displayName}`.toLocaleLowerCase().includes(step.itemIncludes.toLocaleLowerCase()))
+        const item = bot.inventory.items().find(candidate => normalizedSearchText(inventoryItemSearchText(candidate)).includes(normalizedSearchText(step.itemIncludes)))
         if (!item) throw new Error(`Inventory item not found: ${step.itemIncludes}`)
         await bot.equip(item, step.destination)
         return { item: item.name, destination: step.destination }
       }
+      case 'drop_item': {
+        if (bot.currentWindow) throw new Error('Drop blocked while GUI is open')
+        if (bot.inventory.selectedItem) throw new Error('Drop blocked while cursor holds an item')
+        // DF-03: dùng thẳng API mineflayer thay vì bắt sản phẩm thêm command drop.
+        const item = bot.inventory.items().find(candidate =>
+          normalizedSearchText(inventoryItemSearchText(candidate)).includes(normalizedSearchText(step.itemIncludes)))
+        if (!item) throw new Error(`Inventory item not found: ${step.itemIncludes}`)
+        const available = item.count
+        if (step.count !== undefined && step.count > available) {
+          throw new Error(`Cannot drop ${step.count} ${step.itemIncludes}: only ${available} in selected slot ${item.slot}`)
+        }
+        const matchesItem = (candidate: typeof item) => normalizedSearchText(
+          inventoryItemSearchText(candidate)).includes(normalizedSearchText(step.itemIncludes))
+        const countMatching = () => bot.inventory.items().filter(matchesItem)
+          .reduce((sum, candidate) => sum + candidate.count, 0)
+        const before = countMatching()
+        const slot = item.slot
+        const requested = step.count ?? available
+        const wholeStack = requested === available
+        let completedClicks = 0
+        const observeDrop = (inFlight: boolean) => {
+          const remaining = countMatching()
+          const evidence = { item: item.name, slot, requested, before,
+            dropped: before - remaining, remaining, completedClicks, inFlight,
+            observation: 'client-inventory', serverConfirmed: false }
+          this.activeStepEvidence = evidence
+          return evidence
+        }
+        observeDrop(false)
+        // Mode 4 thả trực tiếp từ slot, không dùng cursor hay tự đóng GUI.
+        // Mỗi click kiểm lại boundary; không dùng transfer có chuỗi click ẩn.
+        for (let index = 0; index < (wholeStack ? 1 : requested); index++) {
+          if (signal.aborted) throw signal.reason
+          if (bot.currentWindow || bot.inventory.selectedItem) {
+            throw new Error('INCONCLUSIVE_DROP: GUI or cursor changed during drop')
+          }
+          if (bot.inventory.slots[slot] !== item) {
+            throw new Error('INCONCLUSIVE_DROP: selected slot changed during drop')
+          }
+          // Mineflayer có thể await trước khi chọn window nếu vừa đào ở hotbar.
+          // Chặn nhánh đó để guard và dispatch nằm trong cùng một nhịp đồng bộ.
+          const diggingBot = bot as Bot & { lastDigTime?: number; QUICK_BAR_START?: number }
+          if (slot >= (diggingBot.QUICK_BAR_START ?? 36) && diggingBot.lastDigTime != null
+            && Date.now() - diggingBot.lastDigTime < 500) {
+            throw new Error('INCONCLUSIVE_DROP: wait for dig cooldown before dropping')
+          }
+          observeDrop(true)
+          await bot.clickWindow(slot, wholeStack ? 1 : 0, 4)
+          completedClicks++
+          // A late library completion must not overwrite a subsequent step/report.
+          if (this.currentStep !== step.id || this.finishedAt) {
+            throw signal.reason ?? new Error('INCONCLUSIVE_DROP: run finished during click')
+          }
+          observeDrop(false)
+          if (signal.aborted) throw signal.reason
+        }
+        const evidence = observeDrop(false)
+        if (evidence.dropped !== requested) throw new Error('INCONCLUSIVE_DROP: observed inventory delta differs from request')
+        return evidence
+      }
+      case 'capture':
+      case 'assert_capture': {
+        const previous = this.captures.get(step.name)
+        if (step.action === 'assert_capture' && previous === undefined) {
+          throw new Error(`INCONCLUSIVE_CAPTURE_MISSING: no prior value for ${step.name}`)
+        }
+        // DF-05: cùng cơ chế tìm text như wait_for_text — poll cho tới khi thấy
+        // một event khớp pattern, rồi lấy nhóm đã chỉ định.
+        // Fixed code, primitive inputs only; pattern không bao giờ ghép vào JS.
+        // vm timeout ngắt được RegExp native khi event-loop timeout không thể chạy.
+        const matcher = new Script('new RegExp(pattern).exec(text)?.[group]')
+        let scannedThrough = eventCursor
+        let regexMs = 0
+        let evaluated = 0
+        const found = await this.poll(() => {
+          const end = this.events.length
+          for (let cursor = end - 1; cursor >= scannedThrough; cursor--) {
+            const event = this.events[cursor]
+            if (step.source !== 'any' && event.type !== step.source) continue
+            if (event.summary.length > 4096) continue
+            if (regexMs >= 100 || evaluated >= 128) {
+              throw new Error('INCONCLUSIVE_CAPTURE_PATTERN: total regex budget exhausted')
+            }
+            const began = performance.now()
+            evaluated++
+            let value: string | undefined
+            try {
+              value = matcher.runInNewContext({ pattern: step.pattern, text: event.summary, group: step.group }, {
+                timeout: Math.max(1, Math.min(25, Math.ceil(100 - regexMs))),
+                contextCodeGeneration: { strings: false, wasm: false }
+              }) as string | undefined
+            } catch {
+              throw new Error('INCONCLUSIVE_CAPTURE_PATTERN: regex exceeded execution budget or failed')
+            } finally {
+              regexMs += performance.now() - began
+            }
+            if (regexMs >= 100) {
+              throw new Error('INCONCLUSIVE_CAPTURE_PATTERN: total regex budget exhausted')
+            }
+            if (value !== undefined) return { value, event }
+          }
+          scannedThrough = end
+          return undefined
+        }, signal)
+
+        // Không cắt định danh: hai mã khác phần đuôi có thể bị so thành giống.
+        if (found.value.trim().length === 0) throw new Error('INCONCLUSIVE_CAPTURE_MISSING: empty capture value')
+        if (found.value.length > 512) throw new Error('Capture value exceeds 512 characters')
+        const value = found.value
+
+        if (step.action === 'capture') {
+          this.captures.set(step.name, value)
+          return { captured: step.name, value }
+        }
+
+        const matches = previous === value
+        if (matches !== step.equals) {
+          throw new Error(step.equals
+            ? `Giá trị ${step.name} đã đổi: trước "${previous}", sau "${value}"`
+            : `Giá trị ${step.name} không đổi ("${value}") — thao tác không có hiệu lực`)
+        }
+        return { captured: step.name, previous, value, equals: step.equals }
+      }
       case 'fish': {
         const before = this.inventoryCounts()
-        for (let attempt = 0; attempt < step.attempts; attempt++) await bot.fish()
+        for (let attempt = 0; attempt < step.attempts; attempt++) {
+          signal.throwIfAborted()
+          await bot.fish()
+          signal.throwIfAborted()
+        }
         const after = this.inventoryCounts()
         const beforeTotal = Object.values(before).reduce((sum, count) => sum + count, 0)
         const afterTotal = Object.values(after).reduce((sum, count) => sum + count, 0)
@@ -666,7 +884,7 @@ export class TestRun {
         return { before, after, attempts: step.attempts, inventoryGain: afterTotal - beforeTotal }
       }
       case 'plant': {
-        const seed = bot.inventory.items().find(item => `${item.name}\n${item.displayName}`.toLocaleLowerCase().includes(step.seedIncludes.toLocaleLowerCase()))
+        const seed = bot.inventory.items().find(item => normalizedSearchText(inventoryItemSearchText(item)).includes(normalizedSearchText(step.seedIncludes)))
         if (!seed) throw new Error(`Seed not found: ${step.seedIncludes}`)
         const soil = bot.findBlock({ matching: block => block.name === step.soil, maxDistance: 8 })
         if (!soil) throw new Error(`Nearby ${step.soil} not found`)
@@ -678,6 +896,7 @@ export class TestRun {
           () => bot.pathfinder.stop()
         )
         await bot.equip(seed, 'hand')
+        signal.throwIfAborted()
         await bot.placeBlock(soil, { x: 0, y: 1, z: 0 } as Vec3)
         const planted = await this.poll(() => {
           const block = bot.blockAt(soil.position.offset(0, 1, 0))
@@ -686,9 +905,23 @@ export class TestRun {
         return { seed: seed.name, soil: soil.position, plantedBlock: planted.name }
       }
       case 'assert_inventory': {
-        const count = bot.inventory.items().filter(item => `${item.name}\n${item.displayName}`.toLocaleLowerCase().includes(step.itemIncludes.toLocaleLowerCase())).reduce((sum, item) => sum + item.count, 0)
-        if (count < step.minimum) throw new Error(`Expected at least ${step.minimum} ${step.itemIncludes}, found ${count}`)
-        return { count }
+        // items() chỉ có slot 9–44: phải tính cả crafting input, giáp, off-hand
+        // và cursor. Slot 0 là crafting preview, không phải item sở hữu thêm.
+        const inventoryItems = this.observedInventoryItems()
+        const count = inventoryItems.filter(item => normalizedSearchText(inventoryItemSearchText(item)).includes(normalizedSearchText(step.itemIncludes))).reduce((sum, item) => sum + item.count, 0)
+        // DF-01: `exactly` là assertion duy nhất fail được khi dupe tạo thêm bản
+        // sao; `maximum` chứng minh "đã mất". Thông báo lỗi nêu cả kỳ vọng lẫn
+        // giá trị quan sát để evidence tự giải thích được.
+        if (step.exactly !== undefined && count !== step.exactly) {
+          throw new Error(`Expected exactly ${step.exactly} ${step.itemIncludes}, found ${count}`)
+        }
+        if (step.minimum !== undefined && count < step.minimum) {
+          throw new Error(`Expected at least ${step.minimum} ${step.itemIncludes}, found ${count}`)
+        }
+        if (step.maximum !== undefined && count > step.maximum) {
+          throw new Error(`Expected at most ${step.maximum} ${step.itemIncludes}, found ${count}`)
+        }
+        return { count, scope: 'player-owned-client-slots', serverConfirmed: false }
       }
       case 'assert_state': {
         return this.poll(() => {
@@ -700,6 +933,51 @@ export class TestRun {
         }, signal, 10)
       }
       case 'assert_nearby_entity': {
+        // DF-04: khi có ràng buộc số lượng thì phải ĐẾM, không chỉ tìm entity gần
+        // nhất — nếu không thì "merge còn 1" và "vẫn còn 2" cho cùng kết quả pass.
+        const wantsCount = step.exactly !== undefined
+          || step.minimum !== undefined || step.maximum !== undefined
+        if (wantsCount) {
+          const query = normalizedSearchText(step.nameIncludes)
+          // Upper bounds cần nhiều mẫu ổn định, không PASS ngay trước spawn packet.
+          const requiredStableMs = step.exactly !== undefined || step.maximum !== undefined ? 200 : 0
+          let stableSince: number | undefined
+          let stableSamples = 0
+          let samples = 0
+          const matches = await this.poll(() => {
+            const self = this.requireBot().entity.position
+            const found = Object.values(this.requireBot().entities).filter(candidate =>
+              candidate.position.distanceTo(self) <= step.maxDistance
+              && (step.requiredUuid === undefined
+                || candidate.uuid === step.requiredUuid)
+              && entityIdentityLabels(candidate).some(label =>
+                normalizedSearchText(label).includes(query)))
+            const count = found.length
+            const satisfied = (step.exactly === undefined || count === step.exactly)
+              && (step.minimum === undefined || count >= step.minimum)
+              && (step.maximum === undefined || count <= step.maximum)
+            samples++
+            if (satisfied) {
+              stableSince ??= Date.now()
+              stableSamples++
+            } else {
+              stableSince = undefined
+              stableSamples = 0
+            }
+            const stableMs = stableSince === undefined ? 0 : Date.now() - stableSince
+            const evidence = this.withDefinedValues({
+              count, satisfied, samples, stableSamples, stableMs, requiredStableMs,
+              scope: 'client-tracked-entities', serverConfirmed: false,
+              entities: found.slice(0, 16).map(entity => ({
+                uuid: entity.uuid, distance: entity.position.distanceTo(self)
+              }))
+            })
+            this.activeStepEvidence = evidence
+            return satisfied && stableMs >= requiredStableMs
+              && (requiredStableMs === 0 || stableSamples >= 3) ? evidence : undefined
+          }, signal)
+          return matches
+        }
         const entity = await this.poll(
           () => step.requiredUuid === undefined
             ? this.nearestEntity(step.nameIncludes, step.maxDistance)
@@ -707,9 +985,9 @@ export class TestRun {
               Object.values(this.requireBot().entities), this.requireBot().entity.position,
               step.nameIncludes, step.maxDistance, true, step.requiredUuid).entity,
           signal)
-        const query = step.nameIncludes.toLocaleLowerCase()
+        const query = normalizedSearchText(step.nameIncludes)
         return this.withDefinedValues({
-          entity: entityIdentityLabels(entity).find(label => label.toLocaleLowerCase().includes(query)),
+          entity: entityIdentityLabels(entity).find(label => normalizedSearchText(label).includes(query)),
           uuid: step.requiredUuid === undefined ? undefined : entity.uuid,
           distance: entity.position.distanceTo(bot.entity.position),
           position: { x: entity.position.x, y: entity.position.y, z: entity.position.z }
@@ -824,6 +1102,7 @@ export class TestRun {
             requiredExitSamples: gate.requiredExitSamples,
             planeEpsilon: gate.planeEpsilon,
             corridorHalfWidth: gate.corridorHalfWidth,
+            entityHalfWidth: gate.entityHalfWidth,
             maxStepDistance: gate.maxStepDistance,
             exitDwellMs: gate.exitDwellMs
           }
@@ -916,6 +1195,7 @@ export class TestRun {
         }
         const evidence = {
           verdict: 'INCONCLUSIVE',
+          truncatedObservationCount: 0,
           identity: undefined as ReturnType<typeof pinUniqueEntity>['identity'] | undefined,
           pairing: pairingConfig === undefined ? undefined : {
             targetUuid: pairingConfig.targetUuid,
@@ -935,6 +1215,7 @@ export class TestRun {
             requiredExitSamples: step.requiredExitSamples,
             planeEpsilon: step.planeEpsilon,
             corridorHalfWidth: step.corridorHalfWidth,
+            entityHalfWidth: step.entityHalfWidth,
             maxStepDistance: step.maxStepDistance,
             exitDwellMs: step.exitDwellMs,
             sampleMs: step.sampleMs
@@ -1083,6 +1364,10 @@ export class TestRun {
             await wait(step.sampleMs, signal)
           }
         } finally {
+          if (observations.length > MAX_CROSSING_OBSERVATIONS) {
+            evidence.truncatedObservationCount = observations.length - MAX_CROSSING_OBSERVATIONS
+            observations.splice(0, evidence.truncatedObservationCount)
+          }
           removeEntityGoneListener?.()
           removeEntitySpawnListener?.()
           removeEntityUpdateListener?.()
@@ -1104,9 +1389,9 @@ export class TestRun {
 
   private nearestEntity(name: string, maxDistance: number): Entity | undefined {
     const bot = this.requireBot()
-    const query = name.toLocaleLowerCase()
+    const query = normalizedSearchText(name)
     return bot.nearestEntity(entity => {
-      return entityIdentityLabels(entity).some(label => label.toLocaleLowerCase().includes(query))
+      return entityIdentityLabels(entity).some(label => normalizedSearchText(label).includes(query))
         && entity.position.distanceTo(bot.entity.position) <= maxDistance
     }) ?? undefined
   }
@@ -1175,8 +1460,31 @@ export class TestRun {
     this.record('travel_complete', `${travel} completed`, { start, end: this.position(), target: { x, y, z } })
   }
 
+  private observedInventoryItems() {
+    const bot = this.requireBot()
+    const inventory = bot.inventory
+    const window = bot.currentWindow
+    if (window && (typeof window.type !== 'string'
+      || !/^(minecraft:generic_9x[1-6]|minecraft:generic_3x3|minecraft:chest|minecraft:container|minecraft:shulker_box|minecraft:hopper)$/.test(window.type)
+      || inventory.slots.slice(1, 5).some(item => item != null))) {
+      // Menu input/output hoặc crafting cache cũ không chứng minh được ownership.
+      // Không biến phần bị loại khỏi projection thành assertion "đã mất".
+      throw new Error('INCONCLUSIVE_INVENTORY_SCOPE: close processing menu and settle inventory before asserting')
+    }
+    // Khi container mở, player slots của base inventory là bản sao cũ.
+    // Chỉ storage menu đã biết; crafting cache không rỗng bị chặn phía trên.
+    const slots = window
+      ? [...inventory.slots.slice(5, 9), ...inventory.slots.slice(45),
+        ...window.slots.slice(window.inventoryStart, window.inventoryEnd)]
+      : inventory.slots.slice(1)
+    const items = slots.filter((item): item is NonNullable<typeof item> => item != null)
+    const cursor = (window ?? inventory).selectedItem
+    if (cursor) items.push(cursor)
+    return items
+  }
+
   private inventoryCounts(): Record<string, number> {
-    return this.requireBot().inventory.items().reduce<Record<string, number>>((counts, item) => {
+    return this.observedInventoryItems().reduce<Record<string, number>>((counts, item) => {
       counts[item.name] = (counts[item.name] ?? 0) + item.count
       return counts
     }, {})
@@ -1196,6 +1504,7 @@ export class TestRun {
     check: () => T | undefined, signal: AbortSignal, intervalMs = 100
   ): Promise<T> {
     while (true) {
+      signal.throwIfAborted()
       const value = check()
       if (value !== undefined) return value
       await wait(intervalMs, signal)
@@ -1323,6 +1632,9 @@ export class TestRun {
       ...(this.dependencies.multiAccountResult
         ? { qaPlan: buildMultiAccountQaPlan(this.dependencies.multiAccountResult.result, this.dependencies.multiAccountResult.kind) }
         : {}),
+      // Producer thật thắng dependency inject sẵn: nó phản ánh những gì đã chạy
+      // trong chính run này.
+      ...(this.attachedQaPlan ? { qaPlan: this.attachedQaPlan } : {}),
       ...(this.dependencies.persistenceResult
         ? { persistence: buildPersistenceQaReport(this.dependencies.persistenceResult.result, this.dependencies.persistenceResult.project, this.dependencies.persistenceResult.fixture) }
         : {}),
@@ -1347,14 +1659,17 @@ export class TestRun {
       target: {
         host: this.minecraft.host,
         port: this.minecraft.port,
+        auth: this.minecraft.auth,
         configuredVersion: this.minecraft.version
       },
-      observed: {
+      observed: this.withDefinedValues({
         negotiatedVersion: bot?.version,
         protocolVersion: bot?.protocolVersion,
         serverWorld: bot ? observedServerWorld(bot) : undefined,
-        dimension: bot ? observedDimension(bot) : undefined
-      }
+        dimension: bot ? observedDimension(bot) : undefined,
+        accountUuid: this.safeDiagnosticString(
+          (bot as (Bot & { _client?: { uuid?: unknown } }) | undefined)?._client?.uuid)
+      })
     }
   }
 

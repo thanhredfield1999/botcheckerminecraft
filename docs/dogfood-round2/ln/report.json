@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "project": "LivingNPC",
+  "botcheckerVersion": "0.2.0",
+  "sourceRepo": "E:\\AI.WORK\\living-npc-plugin",
+  "sourceVersion": "0.6.0-rc.2",
+  "gitHead": "4c35280ef8fa5cbb503c69566563e6f520971ea4",
+  "gitHeadIsExactTree": false,
+  "sourceBindings": [
+    {
+      "path": "E:\\AI.WORK\\living-npc-plugin\\src\\main\\java\\vn\\heomc\\livingnpc\\GateRoute.java",
+      "sha256": "62d97701cb9526bc48171b6fd2759b19028126e7614146acbfaf36f47fdc4d04"
+    },
+    {
+      "path": "E:\\AI.WORK\\living-npc-plugin\\src\\test\\java\\vn\\heomc\\livingnpc\\GateRouteTest.java",
+      "sha256": "99f4ced0162f5b2a22d3be97763a3cdda4f1821910725edbe4400236c49a5d60"
+    }
+  ],
+  "reviewOwner": "parent verified current source and offline contract; not target project runtime signoff",
+  "subagentReview": "incomplete; no final project report received",
+  "evidenceLayer": "offline-injected-contract",
+  "contractTest": "test/dogfood-consumer-contracts.test.ts",
+  "contractCommand": "node --import tsx --test --test-name-pattern 'consumer LivingNPC:' test/dogfood-consumer-contracts.test.ts",
+  "contractObserved": "PASS in five-test focused run; see final full gate receipt",
+  "runtimeExecuted": false,
+  "runtimeVerified": false,
+  "productionTouched": false,
+  "consumerPinWritten": false,
+  "decision": "DRAFT_ONLY_NOT_READY_FOR_SERVER_EXECUTION",
+  "serverVersion": null,
+  "runtimeDependencies": "not provisioned in this round",
+  "scenarios": [
+    {
+      "path": "docs/dogfood-round2/ln/livingnpc-full-ordered-route.json",
+      "sha256": "c76a40d9591911a09272690a5509ecb3f19479c6317b33fff821c465f90c3649",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    },
+    {
+      "path": "docs/dogfood-round2/ln/livingnpc-gate-crossing-bodywidth.json",
+      "sha256": "e4090591887858f8602f0176dafc9e55518830e8429dc8c53011eefaad425d6f",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    }
+  ],
+  "remainingGaps": [
+    "Tọa độ/UUID/world hiện placeholder; thay bằng approved isolated map/route thật trước runtime.",
+    "entityHalfWidth do người viết khai báo, không tự đo hitbox; sampled straight segments không chứng minh quỹ đạo giữa samples.",
+    "Phải full P0→Pn, A→B→C + exit dwell; Gate OPEN/Citizens COMPLETED không đủ."
+  ]
+}

@@ -1,0 +1,4 @@
+[BotChecker a1429358-abf5-42a2-952c-287a298489e8] +4ms spawn: Connected to localhost:25565
+[BotChecker a1429358-abf5-42a2-952c-287a298489e8] +5ms step_start: count: assert_nearby_entity
+[BotChecker a1429358-abf5-42a2-952c-287a298489e8] +221ms step_passed: count
+{"artifact":"dist/src/*.js","verdict":"PASS","version":"0.2.0","count":1,"stableSamples":3,"stableMs":214,"persistedBundle":true,"runtimeLayer":"offline injected protocol; no socket/Paper","serverConfirmed":false}

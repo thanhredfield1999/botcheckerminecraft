@@ -13,6 +13,17 @@ export interface CrossingOptions {
   requiredExitSamples: number
   planeEpsilon: number
   corridorHalfWidth: number
+  /**
+   * DF-08 (dogfooding 2026-09-07): bề ngang NỬA thân entity. Mặc định 0 giữ
+   * nguyên hành vi cũ (point check trên tâm entity).
+   *
+   * Vì sao cần: LivingNPC bắt được `PASS dù NPC cạ tường ở z=8.0018
+   * (lateral 0.4982 < 0.6)`. Corridor check chỉ so tâm nên một NPC rộng 0.6
+   * (nửa 0.3) có tâm ở 0.4982 — mép thân ở 0.798 — vẫn được tính là qua gate
+   * hợp lệ, dù thực tế nó đang cạ vào tường. Đặt giá trị này để corridor tính
+   * theo mép thân thay vì tâm.
+   */
+  entityHalfWidth?: number
   maxStepDistance: number
   exitDwellMs: number
 }
@@ -22,6 +33,12 @@ export interface CrossingObservation {
   monotonicMs: number
   signedProgress: number
   lateralOffset: number
+  /**
+   * Khoảng cách còn lại từ mép thân entity tới tường hành lang. Âm nghĩa là thân
+   * đã vượt aperture. Số này khiến biên nhìn thấy được khi đọc lại evidence,
+   * thay vì chỉ một boolean pass/fail — chính thứ lẽ ra phải làm DF-08 lộ sớm.
+   */
+  lateralClearance: number
   withinVertical: boolean
   withinCorridor: boolean
   stepDistance: number
@@ -73,6 +90,14 @@ export class CrossingTracker {
       || options.maxStepDistance <= 0 || options.exitDwellMs < 0) {
       throw new Error('Crossing thresholds không hợp lệ')
     }
+    // DF-08: thân rộng hơn hành lang thì mọi run đều fail — đó là lỗi cấu hình,
+    // phải báo ngay chứ không để chạy xong rồi mới thấy fail khó hiểu.
+    const entityHalfWidth = options.entityHalfWidth ?? 0
+    if (!Number.isFinite(entityHalfWidth) || entityHalfWidth < 0
+      || entityHalfWidth >= options.corridorHalfWidth) {
+      throw new Error(
+        'entityHalfWidth phải nằm trong [0, corridorHalfWidth) — thân entity không lọt qua aperture')
+    }
     const halfLength = length / 2
     if (halfLength < Math.max(options.entryClearance, options.exitClearance, options.planeEpsilon)) {
       throw new Error('Approach và exit không đủ xa mặt phẳng để thỏa clearance crossing')
@@ -100,7 +125,10 @@ export class CrossingTracker {
     const signedProgress = this.signedProgress(cloned)
     const lateralOffset = this.lateralOffset(cloned)
     const withinVertical = Math.abs(cloned.y - this.options.exit.y) < this.options.verticalTolerance
-    const withinCorridor = Math.abs(lateralOffset) <= this.options.corridorHalfWidth
+    // DF-08: so mép thân, không so tâm. halfWidth = 0 → hệt hành vi cũ.
+    const lateralClearance = this.options.corridorHalfWidth
+      - (Math.abs(lateralOffset) + (this.options.entityHalfWidth ?? 0))
+    const withinCorridor = lateralClearance >= 0
     const stepDistance = this.previous ? distance(this.previous.position, cloned) : 0
 
     if (this.previous && stepDistance > this.options.maxStepDistance) {
@@ -135,7 +163,7 @@ export class CrossingTracker {
     const previousWithinVertical = this.previous !== undefined
       && Math.abs(this.previous.position.y - this.options.exit.y) < this.options.verticalTolerance
     const previousWithinCorridor = this.previous !== undefined
-      && Math.abs(this.lateralOffset(this.previous.position)) <= this.options.corridorHalfWidth
+      && this.withinCorridorAt(this.previous.position)
     if (!this.discontinuityDetected && this.entryObserved && this.previous
       && previousWithinVertical && previousWithinCorridor && withinVertical && withinCorridor
       && this.previous.signedProgress <= 0
@@ -143,7 +171,9 @@ export class CrossingTracker {
       && stepDistance <= this.options.maxStepDistance) {
       const alpha = -this.previous.signedProgress / (signedProgress - this.previous.signedProgress)
       const crossingPoint = interpolate(this.previous.position, cloned, alpha)
-      if (Math.abs(this.lateralOffset(crossingPoint)) <= this.options.corridorHalfWidth
+      // Điểm cắt mặt phẳng gate là chỗ quan trọng nhất: nếu chỉ kiểm tâm ở đây
+      // thì thân entity vẫn có thể đang xuyên tường đúng lúc băng qua.
+      if (this.withinCorridorAt(crossingPoint)
         && Math.abs(crossingPoint.y - this.options.exit.y) < this.options.verticalTolerance) {
         this.crossingObserved = true
         this.crossingPoint = crossingPoint
@@ -173,6 +203,7 @@ export class CrossingTracker {
       monotonicMs,
       signedProgress,
       lateralOffset,
+      lateralClearance,
       withinVertical,
       withinCorridor,
       stepDistance,
@@ -194,6 +225,12 @@ export class CrossingTracker {
   private lateralOffset(position: Position3): number {
     return (position.x - this.planeX) * this.tangentX
       + (position.z - this.planeZ) * this.tangentZ
+  }
+
+  /** DF-08: corridor check tính theo mép thân entity, không phải tâm. */
+  private withinCorridorAt(position: Position3): boolean {
+    return Math.abs(this.lateralOffset(position)) + (this.options.entityHalfWidth ?? 0)
+      <= this.options.corridorHalfWidth
   }
 }
 

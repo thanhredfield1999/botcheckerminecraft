@@ -1,0 +1,95 @@
+{
+  "name": "vd-reward-mailbox-no-space-non-mutation",
+  "description": "Tui do day: /vd rewards claim phai tra No-Space, KHONG ap dung mot phan va KHONG giam hang doi (PendingItemRewardServiceTest.insufficientSpaceDoesNotApplyOrReduceQueue).",
+  "maxDurationMs": 300000,
+  "qa": {
+    "project": "VillageDefense",
+    "fixture": "FIXTURE_ARENA_EXTERNAL_FULL_INVENTORY_PLACEHOLDER",
+    "accountRole": "dedicated-test-account",
+    "authorization": [
+      "authorized-test-server-placeholder",
+      "operator-approval-required-before-run"
+    ],
+    "phase": "persistence"
+  },
+  "steps": [
+    {
+      "id": "goto-lobby",
+      "action": "go_to",
+      "x": 0,
+      "y": 64,
+      "z": 0,
+      "range": 3,
+      "travel": "walk",
+      "note": "TOA_DO_PLACEHOLDER - fixture phai khoa toa do lobby that truoc khi chay"
+    },
+    {
+      "id": "fill-marker-check",
+      "action": "assert_inventory",
+      "itemIncludes": "FILLER_ITEM_PLACEHOLDER",
+      "minimum": 36,
+      "note": "fixture da lam day tui do; BotChecker khong tu lam day duoc"
+    },
+    {
+      "id": "status-before",
+      "action": "chat",
+      "message": "/vd rewards status"
+    },
+    {
+      "id": "capture-stacks-before",
+      "action": "capture",
+      "name": "stacksBefore",
+      "pattern": "(\\d+)\\s*chồng vật phẩm đang chờ",
+      "group": 1,
+      "source": "chat",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "claim-when-full",
+      "action": "chat",
+      "message": "/vd rewards claim"
+    },
+    {
+      "id": "expect-no-space",
+      "action": "wait_for_text",
+      "allOf": [
+        "không đủ chỗ",
+        "Kho thưởng được giữ nguyên"
+      ],
+      "source": "chat",
+      "timeoutMs": 15000,
+      "note": "language.yml:64 No-Space"
+    },
+    {
+      "id": "no-partial-apply",
+      "action": "assert_inventory",
+      "itemIncludes": "REWARD_ITEM_PLACEHOLDER",
+      "exactly": 0,
+      "note": "INSUFFICIENT_SPACE khong duoc ap dung mot phan"
+    },
+    {
+      "id": "status-after",
+      "action": "chat",
+      "message": "/vd rewards status"
+    },
+    {
+      "id": "assert-queue-unchanged",
+      "action": "assert_capture",
+      "name": "stacksBefore",
+      "pattern": "(\\d+)\\s*chồng vật phẩm đang chờ",
+      "group": 1,
+      "source": "chat",
+      "equals": true,
+      "timeoutMs": 10000,
+      "note": "hang doi phai GIU NGUYEN sau lan claim that bai"
+    },
+    {
+      "id": "no-recovery-required",
+      "action": "wait_for_text",
+      "notText": "tránh nhân đôi",
+      "durationMs": 5000,
+      "source": "chat",
+      "note": "claim that bai vi het cho KHONG duoc dua mailbox vao trang thai CLAIMING"
+    }
+  ]
+}

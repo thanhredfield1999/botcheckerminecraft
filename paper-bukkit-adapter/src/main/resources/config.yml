@@ -1,0 +1,59 @@
+# BotChecker Paper adapter — NON-SECRET configuration.
+#
+# This file must never contain a private key, a password or key bytes. The adapter only
+# ever receives an opaque signing lease from the companion plugin, which holds custody.
+#
+# Every field below is required. If any is missing, blank or out of bounds, the adapter
+# logs a fixed code, binds no socket and stays inactive. That is intended: a partially
+# trusted policy must never produce a signed claim.
+#
+# NOT configurable on purpose:
+#   - bind address: always 127.0.0.1, never a wildcard or caller-supplied host.
+#   - claimedBootId: minted fresh from SecureRandom on every enable and kept in memory,
+#     so a claim from one boot cannot be replayed as evidence about another boot.
+
+# Name of the operator-owned custody plugin that registers the key service.
+companion-plugin-name: BotCheckerKeyStoreCompanion
+
+transport:
+  # Fixed, non-ephemeral loopback port the verifier connects to.
+  port: 0
+  # Per-connection socket timeout; also bounds how long an idle client can hold the
+  # single-flight slot.
+  socket-timeout-ms: 5000
+  # Bound on one primary-thread online-player snapshot.
+  snapshot-timeout-ms: 2000
+  # Bounded replay ledger for duplicate byte-identical requests.
+  max-ledger-entries: 64
+
+verifier:
+  # Must match the Node verifier exactly; a mismatch fails the challenge closed.
+  audience: ''
+  instance-id: ''
+
+key:
+  # SHA-256 (lowercase hex) of the Ed25519 SPKI DER the Node trust store pins.
+  # This is a public identifier, not key material.
+  id: ''
+
+binding:
+  id: ''
+  # SHA-256 (lowercase hex) of the exact artifact target binding.
+  target-binding-sha256: ''
+
+provider:
+  id: ''
+  version: ''
+  instance-id: ''
+
+trust-store:
+  id: ''
+  version: ''
+  # SHA-256 (lowercase hex) of the trust-store snapshot.
+  sha256: ''
+
+server:
+  # Stable operator-chosen identifier for this server instance. Unlike the boot identity
+  # this is intentionally durable across restarts; it identifies WHICH server, not WHICH
+  # boot. It does not prove OS process identity by itself.
+  instance-id: ''

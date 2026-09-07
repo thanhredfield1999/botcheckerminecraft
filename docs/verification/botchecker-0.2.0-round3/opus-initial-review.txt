@@ -1,0 +1,78 @@
+{
+  "verdict": "FAIL",
+  "findings": [
+    {
+      "id": "R3-01",
+      "severity": "high",
+      "path": "src/runner.ts",
+      "line": 936,
+      "claim": "Ngưỡng ổn định của exact/maximum (>=200ms VÀ >=3 mẫu, poll mặc định 100ms) không được schema phản ánh: scenario.ts (assert_nearby_entity, dòng 192-213) chỉ kế thừa timeoutMs >= 1ms và superRefine chỉ kiểm declaredWait cho wait/wait_for_text. Bước có timeoutMs < ~200-300ms là BẤT KHẢ THI theo cấu trúc, nhưng khi hết giờ lại rơi vào nhánh rawMessage `Timeout: <id>` (dòng 494-501) — không nằm trong danh sách reclassify (capture/assert_capture, observe_crossing, assert_state) — nên bị ghi status 'failed', verdict 'FAIL', issues severity 'high'. Đây là khẳng định lỗi sản phẩm sinh ra từ chính ràng buộc của harness, không phải từ quan sát.",
+      "counterexample": "{ id:'x', action:'assert_nearby_entity', nameIncludes:'item', exactly:1, timeoutMs:150 } với đúng 1 entity khớp tồn tại suốt run: poll chạy ở ~0ms và ~100ms → stableSamples=2, stableMs≈100 → điều kiện dòng 969-970 không bao giờ đúng → Timeout: x → verdict FAIL dù đối tượng đo hoàn toàn đúng. Cùng cấu hình với timeoutMs=250 là flaky (setTimeout có thể trả về ở 199ms, cần mẫu thứ 4 ở ~300ms)."
+    },
+    {
+      "id": "R3-02",
+      "severity": "high",
+      "path": "test/dogfood-round2-behavior.test.ts",
+      "line": 349,
+      "claim": "Test duy nhất khẳng định nhánh đếm tôn trọng requiredUuid là vô hiệu (vacuous) do R3-01: timeoutMs=150 nhỏ hơn sàn ổn định 200ms, nên mọi `exactly: 1` đều FAIL bất kể requiredUuid có được áp dụng hay không. Trong toàn bộ snapshot được cung cấp, không có test nào chứng minh bộ lọc uuid ở dòng 944-945 của runner.ts.",
+      "counterexample": "Đổi bot.entities.other.uuid thành '11111111-1111-4111-8111-111111111111' (tức là kể cả khi bỏ hoàn toàn điều kiện requiredUuid thì count vẫn = 1): assert.equal(run.status,'failed') VẪN đúng, vì 150ms < 200ms. Ngược lại, xoá dòng lọc uuid trong runner.ts cũng không làm test này đỏ."
+    },
+    {
+      "id": "R3-03",
+      "severity": "high",
+      "path": "scripts/verify-paper-forward-compat.mjs",
+      "line": 128,
+      "claim": "Tiền đề của chính script (header dòng 5-6: Paper 26.x chạy Java 25) mâu thuẫn với cách kiểm: javac không đọc được class file trên classpath có major version cao hơn mức --release. Khi paper-api stable mới nhất được biên dịch ở bytecode 25 (major 69) mà ta ép '--release 21', javac báo lỗi ở khâu đọc classpath chứ không phải ở source adapter, nhưng nhánh xử lý là fail() (dòng 132-139) — tức quy kết cho adapter, thay vì SKIPPED/NOT VERIFIED như chính sách script tự nêu cho các thiếu sót phía harness.",
+      "counterexample": "paper-api-<latest>.jar với class major 69 + `javac --release 21 -cp paper-api.jar ...` → 'error: bad class file ...: class file has wrong version 69.0, should be 65.0' → compile.status !== 0 → in ra '<N> file adapter KHÔNG biên dịch được với paper-api <latest>'. Cùng lỗi xảy ra nếu javac trên máy chạy là JDK 21 (không đọc nổi major 69) — cả hai đều là vấn đề toolchain, không phải API drift."
+    },
+    {
+      "id": "R3-04",
+      "severity": "medium",
+      "path": "scripts/verify-paper-forward-compat.mjs",
+      "line": 124,
+      "claim": "Classpath chỉ gồm paper-api + adventure-key + adventure-api, không phải bao đóng dependency của paper-api. javac cần class file của các supertype khi gọi phương thức; adventure-api yêu cầu net.kyori:examination-api. Script tự tuyên bố ở dòng 79-80 rằng thiếu dep là 'vấn đề của cách kiểm → SKIPPED', nhưng chính sách đó chỉ áp cho lỗi tải file, còn bao đóng thiếu lại rơi vào fail() và bị báo như lỗi adapter.",
+      "counterexample": "Adapter gọi bất kỳ API Paper trả về/nhận net.kyori.adventure.text.Component (ví dụ Player#sendMessage(Component)) → 'error: cannot access net.kyori.examination.Examinable; class file for net.kyori.examination.Examinable not found' → status !== 0 → FAILED. Khả năng chạm tới phụ thuộc source adapter (KHÔNG được cung cấp trong snapshot) → tính tiếp cận là UNKNOWN, nhưng việc script chủ động tải Adventure cho thấy có sử dụng."
+    },
+    {
+      "id": "R3-05",
+      "severity": "medium",
+      "path": "src/snapshot.ts",
+      "line": 189,
+      "claim": "Bất đối xứng thứ tự chuẩn hoá giữa selector entity và selector item. entity-observer.ts (dòng 47, 49, 108, 110) làm NFC rồi mới lowercase — đúng thứ tự. Còn itemSearchText/inventoryItemSearchText lowercase TRƯỚC (không NFC), sau đó runner mới bọc normalizedSearchText (NFC→lower). Kết quả haystack là lower(NFC(lower(x))) trong khi needle là lower(NFC(y)); hai biểu thức này không bằng nhau với các ký tự chỉ có dạng precomposed ở chữ thường. Hệ quả: 'GUI item not found' / 'Inventory item not found' → FAIL cho sản phẩm thực ra có item.",
+      "counterexample": "displayName của item = 'J\\u030Cade' (J + combining caron). Haystack: toLowerCase → 'j\\u030Cade' → NFC → '\\u01F0ade'. Needle nameIncludes='J\\u030Cade': NFC → 'J\\u030Cade' (không có precomposed hoa) → toLowerCase → 'j\\u030Cade'. '\\u01F0ade'.includes('j\\u030Cade') === false. Cùng chuỗi đó đi qua đường entity (pinUniqueEntity) lại khớp — hai selector cho hai kết quả khác nhau. Ảnh hưởng: assert_gui (615-621), click_gui (674-677), equip (738), drop_item (747-755), assert_inventory (904)."
+    },
+    {
+      "id": "R3-06",
+      "severity": "medium",
+      "path": "src/runner.ts",
+      "line": 779,
+      "claim": "Guard nhận dạng slot `bot.inventory.slots[slot] !== item` cho đường drop nhiều click chưa được chứng minh với thư viện thật. Test real-library (dogfood-round2-behavior.test.ts:86-118) chỉ chạy count=1 và whole-stack — cả hai đều đúng 1 click, nên guard chỉ được đánh giá một lần, trước click đầu tiên. Fixture duy nhất sống qua vòng lặp thứ hai (DogfoodBot.clickWindow, dòng 34-39) tự mutate item.count tại chỗ, tức là bảo toàn identity theo cấu trúc fixture chứ không theo hành vi thư viện.",
+      "counterexample": "{ action:'drop_item', itemIncludes:'Target', count:3 } với stack 8: nếu prismarine-windows/mineflayer thay thế đối tượng Item ở slot sau click (updateSlot với instance mới) thay vì mutate, vòng lặp thứ 2 ném 'INCONCLUSIVE_DROP: selected slot changed during drop' dù drop hoạt động đúng — 1 item đã rơi, evidence dừng ở completedClicks=1. Nội bộ thư viện không có trong snapshot → hành vi thực tế UNKNOWN, cần parent xác minh; điều chắc chắn là không có test nào phủ nhánh này."
+    },
+    {
+      "id": "R3-07",
+      "severity": "low",
+      "path": "src/runner.ts",
+      "line": 793,
+      "claim": "`throw signal.reason` được dùng cho nhánh phát hiện hoàn tất muộn (currentStep đổi hoặc finishedAt đã đặt) mà không đảm bảo signal đã abort. AbortSignal.reason là undefined khi chưa abort, nên câu lệnh này ném `undefined`; khối catch (dòng 489) chuyển thành String(undefined) = 'undefined', không có tiền tố INCONCLUSIVE_ nên verdictForStep trả FAIL thay vì INCONCLUSIVE, và thông điệp evidence vô nghĩa.",
+      "counterexample": "clickWindow resolve sau khi run đã kết thúc bình thường (finishedAt !== undefined, lifecycle chưa abort): dòng 793 ném undefined → steps.push với message 'undefined', verdict FAIL. Tính tiếp cận hẹp (mọi đường huỷ/timeout đã biết đều abort với Error) nên đánh giá là UNKNOWN về khả năng xảy ra thực tế, nhưng cùng mẫu code lặp lại ở dòng 775 và 795 nên là hằng số ném đúng chỉ nhờ tiền điều kiện ngầm."
+    },
+    {
+      "id": "R3-08",
+      "severity": "low",
+      "path": "src/runner.ts",
+      "line": 440,
+      "claim": "Phân loại timeout được sửa ở mức verdict nhưng không ở mức status/summary: một run chỉ có thiếu quan sát vẫn có status='failed' (dòng 440, do step.status='failed') và summary.failed>=1 (dòng 1582), trong khi verdict='INCONCLUSIVE'. Consumer đọc status hoặc summary thay vì verdict sẽ báo lỗi sản phẩm cho một gap quan sát thuần tuý.",
+      "counterexample": "Scenario một bước { action:'capture', name:'code', pattern:'Code: (.+)', timeoutMs:30 } không có message nào: steps[0].verdict='INCONCLUSIVE' (test dòng 262-265 xác nhận) nhưng report().status='failed', summary.failed=1, summary.passed=0. Chủ ý hợp đồng không xác minh được vì src/types.ts và test/dogfood-consumer-contracts.test.ts không nằm trong snapshot → mức độ nghiêm trọng có thể thấp hơn nếu hợp đồng đã ghi rõ."
+    }
+  ],
+  "limitations": [
+    "Không có tool và không chạy bất kỳ test/script nào; toàn bộ kết luận là đọc tĩnh trên đúng các snapshot được cung cấp. Không có tuyên bố nào ở trên dựa trên việc thực thi.",
+    "test/fixtures/capture-redos.ts và test/fixtures/selector-locale.ts KHÔNG được cung cấp. Do đó hai khẳng định trung tâm — (a) vm timeout thực sự ngắt được RegExp backtracking native, (b) selector độc lập locale mặc định của host — là UNVERIFIED trong phạm vi review này. Ngân sách 100ms/128 lần đánh giá ở runner.ts:815-844 là đúng về mặt cấu trúc (scannedThrough tiến, không đếm trùng, ném INCONCLUSIVE_CAPTURE_PATTERN), nhưng khả năng cưỡng chế của vm timeout không kiểm chứng được từ code này.",
+    "Nội bộ mineflayer/prismarine-windows/prismarine-item không có trong snapshot. UNKNOWN: (a) identity của Item sau click mode 4 (xem R3-06); (b) mức độ 'cũ' của armor (inventory.slots[5..8]) và off-hand (slots[45]) khi container đang mở — observedInventoryItems (dòng 1469-1472) vẫn đọc chúng từ base inventory dù chú thích ngay trên tuyên bố base là bản sao cũ, nên khẳng định vắng mặt (maximum/exactly) trên hai vùng slot này chưa được chứng minh là an toàn.",
+    "paper-bukkit-adapter/**/*.java, build.gradle và workflow verification-gate.yml không được cung cấp: không kiểm chứng được adapter dùng API Adventure nào (ảnh hưởng R3-04), mức bytecode thực tế của paper-api mới nhất (R3-03), hay việc CI có đặt REQUIRE_FORWARD_COMPAT/CI để biến SKIPPED thành exit 1 hay không.",
+    "src/types.ts, src/crossing.ts, src/route-oracle.ts, src/evidence-bundle.ts, target-binding và các test hợp đồng report không nằm trong snapshot: hợp đồng RunStatus/Verdict (R3-08), tính nguyên tử của evidence bundle, và ngữ nghĩa CrossingTracker không được đánh giá.",
+    "Theo yêu cầu, đã bỏ qua: client slots/UUID/capture assert không chứng minh PDC, thẩm quyền server hay anti-dupe; minimum-only có thể PASS ngay mẫu đầu; assert_inventory là point-in-time, non-authoritative; Paper E2E và production nằm ngoài phạm vi.",
+    "Không đánh giá: hiệu năng, phong cách, kiến trúc signed-provider/evidence-binding (chỉ đọc lướt để hiểu ngữ cảnh, không có snapshot phụ thuộc để kết luận)."
+  ]
+}

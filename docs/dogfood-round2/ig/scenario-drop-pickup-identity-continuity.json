@@ -1,0 +1,103 @@
+{
+  "name": "itemguard-drop-pickup-identity-continuity-round2",
+  "description": "OFFLINE draft. Chứng minh mã item do plugin in ra không đổi qua drop→pickup. Chỉ chứng minh được TEXT, không chứng minh được PDC item_uuid.",
+  "maxDurationMs": 300000,
+  "qa": {
+    "project": "ItemGuard",
+    "fixture": "PLACEHOLDER-ig-dupe-fixture",
+    "accountRole": "qa-operator",
+    "authorization": [
+      "PLACEHOLDER-authorized-test-server-ticket"
+    ],
+    "phase": "persistence"
+  },
+  "steps": [
+    {
+      "id": "check-before",
+      "action": "chat",
+      "message": "/igcheck"
+    },
+    {
+      "id": "capture-code-before",
+      "action": "capture",
+      "name": "itemCode",
+      "pattern": "Ma so:[^A-Za-z0-9#]*(#?[A-Z0-9-]{4,})",
+      "group": 1,
+      "source": "chat"
+    },
+    {
+      "id": "capture-material-before",
+      "action": "capture",
+      "name": "itemMaterial",
+      "pattern": "Loai:[^A-Za-z0-9]*([A-Za-z_ ]{3,})",
+      "group": 1,
+      "source": "chat",
+      "note": "messages.yml:12 item-info-material."
+    },
+    {
+      "id": "drop-tracked",
+      "action": "drop_item",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "count": 1
+    },
+    {
+      "id": "inventory-emptied",
+      "action": "assert_inventory",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "exactly": 0
+    },
+    {
+      "id": "ground-has-one",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "item",
+      "maxDistance": 6,
+      "exactly": 1
+    },
+    {
+      "id": "wait-pickup-window",
+      "action": "wait",
+      "durationMs": 3000,
+      "note": "PLACEHOLDER: pickup do bot đi vào item; BC 0.2.0 không có action pickup_item."
+    },
+    {
+      "id": "walk-onto-item",
+      "action": "go_to",
+      "x": 0,
+      "y": 64,
+      "z": 0,
+      "range": 1,
+      "travel": "walk",
+      "note": "PLACEHOLDER toạ độ chỗ item rơi."
+    },
+    {
+      "id": "inventory-restored",
+      "action": "assert_inventory",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "exactly": 1
+    },
+    {
+      "id": "check-after",
+      "action": "chat",
+      "message": "/igcheck"
+    },
+    {
+      "id": "assert-code-unchanged",
+      "action": "assert_capture",
+      "name": "itemCode",
+      "pattern": "Ma so:[^A-Za-z0-9#]*(#?[A-Z0-9-]{4,})",
+      "group": 1,
+      "source": "chat",
+      "equals": true,
+      "note": "PASS ở đây KHÔNG chứng minh item_uuid không đổi: CheckCommand không bao giờ in item_uuid."
+    },
+    {
+      "id": "assert-material-unchanged",
+      "action": "assert_capture",
+      "name": "itemMaterial",
+      "pattern": "Loai:[^A-Za-z0-9]*([A-Za-z_ ]{3,})",
+      "group": 1,
+      "source": "chat",
+      "equals": true
+    }
+  ]
+}

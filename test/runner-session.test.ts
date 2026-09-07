@@ -58,7 +58,11 @@ class FakeBot extends EventEmitter {
     leftMouse: async (slot: number) => { this.clickedSlots.push(slot) },
     rightMouse: async (slot: number) => { this.clickedSlots.push(slot) }
   }
-  inventory = { items: () => this.inventoryItems }
+  inventory = {
+    items: () => this.inventoryItems,
+    get slots() { return [...Array(9).fill(null), ...this.items()] },
+    selectedItem: null
+  }
   async fish(): Promise<void> { this.fishEffect?.() }
   findBlock(): any { return this.gateBlock }
   async equip(): Promise<void> {}

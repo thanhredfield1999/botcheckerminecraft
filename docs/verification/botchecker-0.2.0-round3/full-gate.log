@@ -1,0 +1,9 @@
+
+> botcheckerminecraft@0.2.0 verify:coverage-floor
+> node scripts/verify-test-coverage-floor.mjs
+
+Platform: win32 — Windows (netstat/session-lock observers + javac interop chạy được)
+tests=880 pass=874 fail=0 skipped=6
+Sàn: executed >= 872, skipped <= 6
+
+SKIP GATE PASSED

@@ -1,0 +1,58 @@
+{
+  "projects": 5,
+  "total": 10,
+  "rows": [
+    {
+      "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-claim-idempotency.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-no-space.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/ln/livingnpc-full-ordered-route.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/ln/livingnpc-gate-crossing-bodywidth.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/ig/scenario-drop-pickup-identity-continuity.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/ig/scenario-ground-merge-identity.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/rt/rt-admin-entrypoint-health-readonly.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/rt/rt-supply-order-payment-window-readonly.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/bf/bf-forge-guide-normal-click.json",
+      "valid": true,
+      "issues": []
+    },
+    {
+      "path": "docs/dogfood-round2/bf/bf-material-input-normal-click.json",
+      "valid": true,
+      "issues": []
+    }
+  ],
+  "negativeRejected": true,
+  "runtimeExecuted": false
+}

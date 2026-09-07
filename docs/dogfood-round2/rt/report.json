@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "project": "RestaurantTycoon",
+  "botcheckerVersion": "0.2.0",
+  "sourceRepo": "E:\\AI.WORK\\restauranttycoon",
+  "sourceVersion": "0.1.0-SNAPSHOT",
+  "gitHead": "de59959ab1349e4ab4697b7eee138ee07352fab7",
+  "gitHeadIsExactTree": false,
+  "sourceBindings": [
+    {
+      "path": "E:\\AI.WORK\\restauranttycoon\\src\\main\\java\\vn\\restauranttycoon\\supply\\SupplyOrderMenuController.java",
+      "sha256": "b883d3145d8b96f493cd38fffc7e9175ed189f35b14d89acf985200a57858964"
+    },
+    {
+      "path": "E:\\AI.WORK\\restauranttycoon\\src\\test\\java\\vn\\restauranttycoon\\supply\\SupplyOrderMenuLifecycleTest.java",
+      "sha256": "dbba2065206b02eba5c62e6c71418a1c6ed17d511d1a1e45bec3739552bf4340"
+    }
+  ],
+  "reviewOwner": "parent verified current source and offline contract; not target project runtime signoff",
+  "subagentReview": "incomplete; no final project report received",
+  "evidenceLayer": "offline-injected-contract",
+  "contractTest": "test/dogfood-consumer-contracts.test.ts",
+  "contractCommand": "node --import tsx --test --test-name-pattern 'consumer RestaurantTycoon:' test/dogfood-consumer-contracts.test.ts",
+  "contractObserved": "PASS in five-test focused run; see final full gate receipt",
+  "runtimeExecuted": false,
+  "runtimeVerified": false,
+  "productionTouched": false,
+  "consumerPinWritten": false,
+  "decision": "DRAFT_ONLY_NOT_READY_FOR_SERVER_EXECUTION",
+  "serverVersion": null,
+  "runtimeDependencies": "not provisioned in this round",
+  "scenarios": [
+    {
+      "path": "docs/dogfood-round2/rt/rt-admin-entrypoint-health-readonly.json",
+      "sha256": "8c870be1e7aaea123e36fe092aa09dd67edd2b690cae6f870768a30893946312",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    },
+    {
+      "path": "docs/dogfood-round2/rt/rt-supply-order-payment-window-readonly.json",
+      "sha256": "eed809c7e23b4e6c1f2bbac3ca0fceb0e48a801fcb90467cc2bffe0fea06e97f",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    }
+  ],
+  "remainingGaps": [
+    "Health response gửi liên tiếp State/Database; capture sau wait_for_text có thể bỏ lỡ Database.",
+    "afterStep=wait_for_gui đòi generation tăng lần nữa; draft phải bỏ baseline này nếu chỉ kiểm GUI hiện tại.",
+    "Menu label dùng GuiText small-caps/localization; plain label template cần đối chiếu component thật.",
+    "Draft chỉ tới màn xác nhận, KHÔNG payment/delivery/DB persistence evidence; cần owner/setup/PostgreSQL isolated."
+  ]
+}

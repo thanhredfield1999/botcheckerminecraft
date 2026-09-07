@@ -1,0 +1,13 @@
+{
+  "name": "CE notText window exceeds step timeout",
+  "maxDurationMs": 600000,
+  "steps": [
+    {
+      "id": "s1",
+      "action": "wait_for_text",
+      "notText": "ERROR",
+      "durationMs": 120000,
+      "source": "chat"
+    }
+  ]
+}

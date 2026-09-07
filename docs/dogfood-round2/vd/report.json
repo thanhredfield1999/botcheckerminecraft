@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "project": "VillageDefense",
+  "botcheckerVersion": "0.2.0",
+  "sourceRepo": "E:\\AI.WORK\\villagedefense",
+  "sourceVersion": "5.0.2",
+  "gitHead": "35b9872cea552e697fdf33c00887933844c3e776",
+  "gitHeadIsExactTree": false,
+  "sourceBindings": [
+    {
+      "path": "E:\\AI.WORK\\villagedefense\\src\\main\\java\\plugily\\projects\\villagedefense\\commands\\arguments\\RewardsArgument.java",
+      "sha256": "8f7b63d432532af14cf82e106be535619b56a773d5ecc4d6891c2ae603d08036"
+    },
+    {
+      "path": "E:\\AI.WORK\\villagedefense\\src\\test\\java\\plugily\\projects\\villagedefense\\rewards\\PendingItemRewardServiceTest.java",
+      "sha256": "0140c3cccb64f0db3e43dfb171866344989dd49e948dd2f1569a873a58709921"
+    }
+  ],
+  "reviewOwner": "parent verified current source and offline contract; not target project runtime signoff",
+  "subagentReview": "incomplete; no final project report received",
+  "evidenceLayer": "offline-injected-contract",
+  "contractTest": "test/dogfood-consumer-contracts.test.ts",
+  "contractCommand": "node --import tsx --test --test-name-pattern 'consumer VillageDefense:' test/dogfood-consumer-contracts.test.ts",
+  "contractObserved": "PASS in five-test focused run; see final full gate receipt",
+  "runtimeExecuted": false,
+  "runtimeVerified": false,
+  "productionTouched": false,
+  "consumerPinWritten": false,
+  "decision": "DRAFT_ONLY_NOT_READY_FOR_SERVER_EXECUTION",
+  "serverVersion": null,
+  "runtimeDependencies": "not provisioned in this round",
+  "scenarios": [
+    {
+      "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-claim-idempotency.json",
+      "sha256": "5ff922766b75b822d72c94bb45984d0454eeb0ba3a8e58bd1992f51e10eecf09",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    },
+    {
+      "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-no-space.json",
+      "sha256": "6d9247efc8faffb93ca0a2cee20ef1494bb214d14e681eb9dff164bdb7551d85",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    }
+  ],
+  "remainingGaps": [
+    "Mailbox durable/idempotency không chứng minh bằng text hoặc inventory snapshot; cần isolated seeded mailbox/restart provider.",
+    "minimum:36 đếm item units, KHÔNG chứng minh 36 slot đầy; fixture phải xác minh full storage độc lập.",
+    "Nhánh negative text chỉ quan sát sau khi step bắt đầu, không bao trùm lỗi phát ra trước đó."
+  ]
+}

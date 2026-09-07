@@ -1,0 +1,6 @@
+name: BotCheckerPaperAdapter
+version: '${version}'
+main: vn.heomc.botchecker.paperadapter.PaperBukkitOnlinePlayerPlugin
+# Minimum supported API, not an exact server-version pin (Paper supports minor versions).
+api-version: '1.21.11'
+description: Internal authenticated Bukkit online-player adapter boundary.

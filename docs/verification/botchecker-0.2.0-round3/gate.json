@@ -1,0 +1,1569 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-09-07T19:39:24.386243+01:00",
+  "gitHead": "7501337490153b7b5533ca1d17e0c8f91d1eec2b",
+  "gitHeadIsExactTree": false,
+  "fullGatePassed": true,
+  "gateProcess": "proc_cd0c0891311f",
+  "gateExitCode": 0,
+  "gateCommand": "npm run typecheck && npm run verify:coverage-floor && npm run build && git diff --check",
+  "node": "v24.14.0",
+  "javac": "25.0.1",
+  "packageVersion": "0.2.0",
+  "javaVersion": "0.2.0-SNAPSHOT",
+  "tests": {
+    "tests": 880,
+    "pass": 874,
+    "fail": 0,
+    "skipped": 6
+  },
+  "sourceBindings": [
+    {
+      "path": ".github/workflows/verification-gate.yml",
+      "sha256": "c062f04b46cfdf6541cf7f3f6cd4083e3afe3582d53f70a8a848722d6b4ef13b"
+    },
+    {
+      "path": "java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java",
+      "sha256": "7d6fa689963ed74f270f427438a95a2d3a375ceeb93aa45ea7a47b9bb5f42d5a"
+    },
+    {
+      "path": "java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java",
+      "sha256": "7e5c1e9f976d0426764b0dfae8a1d0afa66eda80aee5f1a6814afac17668027f"
+    },
+    {
+      "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java",
+      "sha256": "7e289b4603639446698d2c444d9ba40705ce934782a4a14ae7d0381df0e1b95d"
+    },
+    {
+      "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java",
+      "sha256": "ceb970cf1f4c5873366b57280e1cc04b80dd739b1e46e1987b3241c0b3d4a828"
+    },
+    {
+      "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.java",
+      "sha256": "e051d9fedd8a55bcce28b0d35fd553db3a25cde37075397c070e8444ad4183fd"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "889b212f7e8f6ad572d68c05693974a13967f76b7fa8d3b527e4dfbcd4d799b5"
+    },
+    {
+      "path": "package.json",
+      "sha256": "b13240d926f599d25513dc8a4a3b79c81cc9cb89eba3505571295b2d2a3ef4ea"
+    },
+    {
+      "path": "paper-bukkit-adapter/build.gradle.kts",
+      "sha256": "e68e7ee936b08495b03224a93cbe86628237fd39b121380705b109395b25895d"
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/build.gradle.kts",
+      "sha256": "4595f3154fdf0b03a4da7b4d7c0558d50fa386c4d9002b7f26b254318c2e7dc5"
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/src/main/java/vn/heomc/botchecker/keystorecompanion/PaperBukkitOnlinePlayerKeyStoreCompanionPlugin.java",
+      "sha256": "b9079f29f5eeb26273ec883a304e2af72333fea671fe24528b407bb22533e96e"
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/src/main/java/vn/heomc/botchecker/keystorecompanion/PaperBukkitOnlinePlayerPkcs12KeyStoreAccess.java",
+      "sha256": "63bb23d6d2c14ed41f80ef1b745d68a506855d6fe4307369fca7e536df849f4a"
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/src/main/resources/config.yml",
+      "sha256": "c6c4d7ee482b0a165dc8e7a8caacd4159ab81c570a61bcc0fce0443917a4edb6"
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/src/main/resources/plugin.yml",
+      "sha256": "75c4abd2b8e45f672f62dc083216a24c7407ac7ab33a751a6a43688a7780b503"
+    },
+    {
+      "path": "paper-bukkit-adapter/settings.gradle.kts",
+      "sha256": "bb73f181050c61d76233c9cad37b6ebdb3e62ff61290f30adba56acfb0186581"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/CanonicalPaperBukkitOnlinePlayerPayload.java",
+      "sha256": "fd3556a7cade1a5b00c70ad593e845af77cd739053e987dbd79c79682944679b"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterConfig.java",
+      "sha256": "6633dca61d5d6c89a965adc2b8e23013253e4797f853acf6be1e565b1c531a9b"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterLifecycle.java",
+      "sha256": "81387687ba7901b939acdc71aadbbeefc145afc0bd496bb8606f6a940be5f023"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterRuntimeFactory.java",
+      "sha256": "51702b9beeefc80e00b19a054db197f85d3ae608042298745d78d6f83c556af5"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerBukkitSnapshotAdapter.java",
+      "sha256": "4933d7930310856e35ee28bf4e7cbff355a6942312e0c9cbc99985c52c2af7f4"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreAccess.java",
+      "sha256": "503f3f903b98bf544e033058bdb40a80e54266d22c37f2adc6d701f48e63e5af"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeComposition.java",
+      "sha256": "2a5aa18b1a7f3ada343e74e1e6adb8b84167a808a8f0b37de69e29dfc310c907"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinator.java",
+      "sha256": "0cad8f2b5a43969ba4361f683b8e0842a8f10e9b6d48bbfd5c324e90b5964d14"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridge.java",
+      "sha256": "7a808cac7c97d84645590b38350b26d258e79a594ce8a46081ada3614a08b856"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceRegistration.java",
+      "sha256": "73f16cd22014df354ae606d33dc094f66c5875266dd6c7cbaa831ea15b2107a0"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceResolver.java",
+      "sha256": "08894e36676eabd42f1a42439a64b23fc3a975e078334214510a89ebad29408f"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerLoopbackListener.java",
+      "sha256": "3c471186be3b6a3aff1b6a84f1a6e80aea456813564f98abf707d6aceeef188e"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerMainThreadSnapshotBridge.java",
+      "sha256": "aca0287456ddf2dd40c9d7ce9d5179fda0e7510b5b5aeece85d2cca00c801cb1"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerOpaqueEd25519Signer.java",
+      "sha256": "d618abc34c727522cc04c14933df0a6e825c5e9bc676dd523329dfb433bbfee6"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerPlugin.java",
+      "sha256": "222520c30a57c2e9842aa715b98da9116d9bdc818b7717824d100ed4eab39021"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerRequestProcessor.java",
+      "sha256": "b5f4fbf5026fa2333023c3b6dff5797ac1e874fa501c560aa5a42b25218dc10a"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerTransportCodec.java",
+      "sha256": "b9073c73a70c378e66a0198eb4db2abdfa815b42c9c40f18e151994d87f9fea9"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/resources/config.yml",
+      "sha256": "7aca33011ec057c90dedac8c137064bdf9a2bf209c7990623423892058a5372a"
+    },
+    {
+      "path": "paper-bukkit-adapter/src/main/resources/plugin.yml",
+      "sha256": "9232279b2c36928fea2cc64f276f4362b47c29924237d8c5a8e6afe274a70247"
+    },
+    {
+      "path": "scripts/build-java.mjs",
+      "sha256": "e45a21c183647e90da16c5e234e3c2735553bfbbc8f5afab4e8622c1171329ee"
+    },
+    {
+      "path": "scripts/build-paper-adapter.mjs",
+      "sha256": "b7a97446e74a3f97e7b0be14680d120624f44d8b567697b410976383dfadd588"
+    },
+    {
+      "path": "scripts/validate-farmer-pathfinding-capability.mjs",
+      "sha256": "ae0ce671c24a24c750b3b134d0a4b8bdf0a4fce84fa1f2011b4e5232f7f1c5f7"
+    },
+    {
+      "path": "scripts/verify-google-cloud-kms-hsm.mjs",
+      "sha256": "fb7f08423a9f73742e8f3d6f581d9e6e741667b2a7077265201b5b94d6020d78"
+    },
+    {
+      "path": "scripts/verify-paper-forward-compat.mjs",
+      "sha256": "3657414e2e9fb1042fe9c4a83d03854223e15e9243484caab8c4ce3d48c3d43f"
+    },
+    {
+      "path": "scripts/verify-test-coverage-floor.mjs",
+      "sha256": "19273b121bd67039aafa58b9a3f3bba5577c724bbf71f4cd4ac592d22655f7a2"
+    },
+    {
+      "path": "scripts/watch-livingnpc-live.mjs",
+      "sha256": "f87c0809c2d97fb05554dc1e129c34fe8bce962169e2c70f177e154e5e2bc204"
+    },
+    {
+      "path": "src/authorized-plan-runner.ts",
+      "sha256": "f65413516f9f593e53256275805258f36ad7bfb25027b2a861b8860c66b97967"
+    },
+    {
+      "path": "src/bot-session.ts",
+      "sha256": "7059d25522d53c460311385bf54e0a8c717cec18ecaf208f6e31d0fd3afbbaa0"
+    },
+    {
+      "path": "src/capability-manifest.ts",
+      "sha256": "a05aa40b5b4d640e65c5b637b52df6b87c137efa656c927ce64fd319118f93e8"
+    },
+    {
+      "path": "src/cavium-v2-attestation-statement-parser.ts",
+      "sha256": "15addc86c8be588319017e163103465d9f084a7e2f9defd4c1204d5d356c4321"
+    },
+    {
+      "path": "src/compatibility-matrix.ts",
+      "sha256": "3f5e73421362d0079844953b61cc44570456effe02eb07802f31c5d2d3ee8c85"
+    },
+    {
+      "path": "src/compatibility-report.ts",
+      "sha256": "02838215c6774dcc1f5c6277dec487be14e1ad0c056e8e5030906c184b6db1f1"
+    },
+    {
+      "path": "src/compatibility-runner.ts",
+      "sha256": "25dbaaf5f2048ebf96cc3aeb76bc268a65531a631d05d729a2f5e19c50ba6318"
+    },
+    {
+      "path": "src/config.ts",
+      "sha256": "4f58fc8e7195000ff3b391c375fd050f9325b0c462443d344238f46964bf4e12"
+    },
+    {
+      "path": "src/crash-recovery-contract.ts",
+      "sha256": "dc5e7afaacc61cef09e204e4297ae5e47e169e276342462a47164244183d67bf"
+    },
+    {
+      "path": "src/crash-recovery-report.ts",
+      "sha256": "3acfaf65ae2bbc3a30fc46ec440b1317cdee67339c4292caa3edc77e45944083"
+    },
+    {
+      "path": "src/crash-recovery-runner.ts",
+      "sha256": "13b254cd6cc6c81a255ba5483b8ee1e59654e5e1902ffbfad5ed89c307114467"
+    },
+    {
+      "path": "src/crossing.ts",
+      "sha256": "0c985a0018a9dbd1dbd942d955eb81b182d08a5d599222516c3e8ea60f41f50c"
+    },
+    {
+      "path": "src/entity-observer.ts",
+      "sha256": "df8e3be80c823b7a90380e6ff7bf93b7d3601304ee4a4f96f4f050a6aefc3d74"
+    },
+    {
+      "path": "src/evidence-bundle.ts",
+      "sha256": "f6e92b427ca29c59ea2b08a2b41feaebb819b10754228e524f3991231a7a81be"
+    },
+    {
+      "path": "src/evidence-writer.ts",
+      "sha256": "68c2bf92b2a502af769a44360303be0e1a00e11e4e26bf688a8072e0e305af5d"
+    },
+    {
+      "path": "src/failure-envelope.ts",
+      "sha256": "22bc195d176200e2749f9d9d4219296e9bd90214748cd497651dda8509df4357"
+    },
+    {
+      "path": "src/gameplay-contract.ts",
+      "sha256": "87a92a51cf501027ebe2fcf3992746e730d314892c319ae0b1505b4ac4bed156"
+    },
+    {
+      "path": "src/gameplay-runner.ts",
+      "sha256": "1e5276e893841b4c796dfa46685e226f9a31fb436b358fee4671f4f30fd43a07"
+    },
+    {
+      "path": "src/google-cloud-kms-hsm-attestation-binding-verifier.ts",
+      "sha256": "99c79d7aa7642291472e11282e2e528c4a5298293ae1fbdb84d25d6628540e57"
+    },
+    {
+      "path": "src/google-cloud-kms-hsm-attestation-verifier.ts",
+      "sha256": "0e5f0a0a7211e43285f5c5d0b809c51cbeec6c7e72c8df00651baafb577e52e7"
+    },
+    {
+      "path": "src/google-cloud-kms-hsm-trust-root-policy-attestation.ts",
+      "sha256": "f26c920339dbb92350b0e1a2a2cbde812e27e53e543058916c2c5fc3383734c7"
+    },
+    {
+      "path": "src/google-cloud-kms-hsm-trust-root-policy.ts",
+      "sha256": "35a57ca95bdde1befd21fd93e604e89a68559ce0ba2b65d3bb59e44569aecdd2"
+    },
+    {
+      "path": "src/google-cloud-kms-live-preflight.ts",
+      "sha256": "b7e7adc1a81be961113993c68348c727042fc96d1699a01bd1efde227721c405"
+    },
+    {
+      "path": "src/google-cloud-kms-resource-name.ts",
+      "sha256": "1a424ac3e2978355ff6109f6be52469eb920dd56fd147d27251997b3dd5e05df"
+    },
+    {
+      "path": "src/google-cloud-kms-signing-backend.ts",
+      "sha256": "676eea9c48765d91f5120b977ffef5f14148abb69c162b148b2c7087ff283b1d"
+    },
+    {
+      "path": "src/gui-contract.ts",
+      "sha256": "6d28132e22691a19b21b3b8a3559695fec479ba9672d11a4800e00c9190c9a07"
+    },
+    {
+      "path": "src/gui-report.ts",
+      "sha256": "0148efd2573ba616d171c9edbab099bcb33c3b1da69615477dc9ffc811225e96"
+    },
+    {
+      "path": "src/gui-runner.ts",
+      "sha256": "19b5065ad37e36790674ca34577c6c3e23a189369c9a3b54546aa70a2fe1fb40"
+    },
+    {
+      "path": "src/index.ts",
+      "sha256": "47d0ebf18cc98b6ea762d3a081b59d83a2fbb035faae8601d0307e2d9a20d8b0"
+    },
+    {
+      "path": "src/journey-reports.ts",
+      "sha256": "3855e7a29a27499d9019cc3561b4b4c7887e9ad45d9062f5c0aac481f59de0b4"
+    },
+    {
+      "path": "src/jvm-artifact-observation.ts",
+      "sha256": "b642b6616d12e320b26b66fccf72756a8f00456ae45e244d367c86db0dfe891a"
+    },
+    {
+      "path": "src/lifecycle.ts",
+      "sha256": "13a12259e47ef61a348159b2bf47c9cc838f1d0a418b91b62d7663e78ecb6675"
+    },
+    {
+      "path": "src/livingnpc-pixel-map.ts",
+      "sha256": "e648c1260d5032909be702d1118d99544899192205a91fbeb5179fe70d182d97"
+    },
+    {
+      "path": "src/livingnpc-report.ts",
+      "sha256": "8da55415cf6dfff5952d871cf95b32a693fd814c8eebcbd6106c955c5172a7d5"
+    },
+    {
+      "path": "src/livingnpc-telemetry.ts",
+      "sha256": "73c2f04ee4bd63fd84e31df402bf27c16c2112d47fbb8b7fca3a509fdc9c6426"
+    },
+    {
+      "path": "src/multi-account-plan.ts",
+      "sha256": "bacdf15a2b0efafb50d8b999a538da599ae319192741c7b17ce7241436c2b89b"
+    },
+    {
+      "path": "src/multi-account-report.ts",
+      "sha256": "b5752156bb4ea95ab369315a5cd4584f742e742b03f2d6ecf91f6b65cbb201ff"
+    },
+    {
+      "path": "src/multi-account-runner.ts",
+      "sha256": "e4fda48269933ed934301d1bc74c555b4c4f55533297666a09de2514a8a962ba"
+    },
+    {
+      "path": "src/multi-client-contract.ts",
+      "sha256": "a0c44e9bd5daf42c72df58ceb910545e39a42544733d693dcf3dfaa89ca8ca97"
+    },
+    {
+      "path": "src/multi-client-runner.ts",
+      "sha256": "fd804a25b33b35864f835531f16f2c34df6f4e030f5a8fd118510ca1444ea8fb"
+    },
+    {
+      "path": "src/negative-contract.ts",
+      "sha256": "d7c6df59da251910f6b23725fdd01c88da1987b4fc6343c8e4a9e6cf5c644d9a"
+    },
+    {
+      "path": "src/negative-plan.ts",
+      "sha256": "e5ed781c09a14ea1ce7e07d074029e5cd47c748c308e3ce6c75a4917d0121e2e"
+    },
+    {
+      "path": "src/paper-bukkit-online-player-claim.ts",
+      "sha256": "7a235edbe3f082bf24a607a084a75c310e8468751fb42fa7a88e444e83bd5bb3"
+    },
+    {
+      "path": "src/paper-bukkit-online-player-loopback-client.ts",
+      "sha256": "51b301bc4e0f2469fc506ba757e43ff41f531a8966fd4fb11b4c72e3504ea419"
+    },
+    {
+      "path": "src/paper-bukkit-online-player-runtime.ts",
+      "sha256": "7b7cbef3daa594abe1de2087a6e481fff05f4717a8bc8fbe5d0cbcf4944eca3a"
+    },
+    {
+      "path": "src/paper-bukkit-online-player-transport-codec.ts",
+      "sha256": "790a841a762bf116a9dc140dea1efe3a4a2f11f252d46af91e51957f3cb22a72"
+    },
+    {
+      "path": "src/paper-jvm-observation-byte-provider.ts",
+      "sha256": "fdfc9e137b46f0bf1cc2da5e8a3d492b756b01c82d1006c5f740cb1b324255fe"
+    },
+    {
+      "path": "src/paper-jvm-observation-result-codec.ts",
+      "sha256": "41cfa8e9ff7efe8b7439489402c7ed8f5c0f2943739630b4c3aaf444fff9e80d"
+    },
+    {
+      "path": "src/paper-process-filesystem-observer.ts",
+      "sha256": "66dc3628bd5212b440efeb7d4c5d1a29c3ff5b18fdd5bbe90b049bb5467bf541"
+    },
+    {
+      "path": "src/paper-process-online-player-observer.ts",
+      "sha256": "9648932c451f094e0bd962aa62f6384940e43ab0d8364aa7a983e6fcac6873de"
+    },
+    {
+      "path": "src/paper-process-provider.ts",
+      "sha256": "32c028deb82bb8c8fba36f94fd35b584909b4a8116bf915742b25ee82ac84c49"
+    },
+    {
+      "path": "src/paper-process-session-lock-observer.ts",
+      "sha256": "f55cb5426ab8c78e1a99879397bc3ed7f6644a7025e09850570577e4429029cc"
+    },
+    {
+      "path": "src/paper-process-tcp-listener-observer.ts",
+      "sha256": "cdcd2e8dbf47958f875fe56358198727932dbb6aefab480875899734e9434b73"
+    },
+    {
+      "path": "src/permission-contract.ts",
+      "sha256": "f4836d8d56d33686454d3b439f52937d7e431031269d33e753836dff111ef4be"
+    },
+    {
+      "path": "src/permission-matrix.ts",
+      "sha256": "3b8deda0988af013545cdee080b3c44f2a72963b04e4445e7145139bc6b39bf3"
+    },
+    {
+      "path": "src/permission-plan.ts",
+      "sha256": "fa3a2ad1b459512203b971108994fde2247cc985ae74c5eb3290cee6969e2f83"
+    },
+    {
+      "path": "src/persistence-contract.ts",
+      "sha256": "9de813dc268d8481c105db27ce22313b1ebe9f6e940539c1dd7b5cf13a0c29c0"
+    },
+    {
+      "path": "src/persistence-coordinator.ts",
+      "sha256": "116d69bd09968c1e6b86f4fa29edc11e03ec007c729488c96b562f9d6fbd5f35"
+    },
+    {
+      "path": "src/persistence-report.ts",
+      "sha256": "d71591e6102ca33056fad2a719475d1baf50ff9037ffe6899717edfdda549e1d"
+    },
+    {
+      "path": "src/persistence-runner.ts",
+      "sha256": "4663d7b35adc9e83fe3b188cd773b83d050ad0329e20386dc8a88845943f1e51"
+    },
+    {
+      "path": "src/process-shutdown.ts",
+      "sha256": "e53e01e8d3cb138aab714aff3471c4843db96984aba8dd760e40d2dc8e9192f2"
+    },
+    {
+      "path": "src/protocol-diagnostic.ts",
+      "sha256": "93f2ad6ab001033ee8f49e30082c2b8ba3e056c473ad9dd4b6fc930e8f56acee"
+    },
+    {
+      "path": "src/provider-registry.ts",
+      "sha256": "c8beb7ac9b3c154ee5008b8684758f670451b989baa15fc7cdfb472f47c61991"
+    },
+    {
+      "path": "src/qa-execution.ts",
+      "sha256": "3bdc9423fef90b0882aabfd2ab6789e780f3cb6aa550fb8494182beb4edc057a"
+    },
+    {
+      "path": "src/qa-plan-report.ts",
+      "sha256": "76bc98eaa36b7e1e165f5bf59d139f2a422df13ed7e2c947ac0bd6ad580ee222"
+    },
+    {
+      "path": "src/queue.ts",
+      "sha256": "004859509134c03e5a6e95d8b85e7ad8f79186eff03a20d32853bc3b1d95000c"
+    },
+    {
+      "path": "src/route-oracle.ts",
+      "sha256": "f3f573cd4e60ff5dd2aea256e0132d3fe02c5bc8dbacb6d42af33f6b29d17bfb"
+    },
+    {
+      "path": "src/route-pixel-map.ts",
+      "sha256": "f1b47efc9ce4349b54402e769c4e8f0538a8393fcb49623283ce15dbfc41dfea"
+    },
+    {
+      "path": "src/runner.ts",
+      "sha256": "1bbc9326234e3ddc7f7c16fe42d90cef5659959a4b70f8e7f67f97b774517289"
+    },
+    {
+      "path": "src/scenario.ts",
+      "sha256": "4197ee3b99951ad93f70e7330f52ab630f3f59de573b94073d30b9c19f5b4838"
+    },
+    {
+      "path": "src/server.ts",
+      "sha256": "ab36ea4aacf51ea2a1a5d74f7a92c6f98cd29fa23006bc91e9d8184f0fe295e6"
+    },
+    {
+      "path": "src/signed-provider-challenge-store.ts",
+      "sha256": "f7fa0182c8ae50ff43a86806342c85aeb98bfe2c7088c5ee0bb9f894049b708c"
+    },
+    {
+      "path": "src/signed-provider-claim-schema.ts",
+      "sha256": "103b8ef24ef7ee53f2b7412bfb451f4469fe6064a537581fb9972e1259b0469e"
+    },
+    {
+      "path": "src/signed-provider-claim.ts",
+      "sha256": "7d9d02b7d6303416b93b3f014fa9d20a004163f4f93c604f649aa70a97a725e3"
+    },
+    {
+      "path": "src/signed-provider-evidence-bundle.ts",
+      "sha256": "a4faa79b1a6e6a551bcda4e22c503154791fd459dbc0a7ec29e6b48f75be1315"
+    },
+    {
+      "path": "src/signed-provider-observer-signing-pipeline.ts",
+      "sha256": "aca218b64757253cda85e85c8e76f593ceca28f5b312bf7cc16607ee878ab02c"
+    },
+    {
+      "path": "src/signed-provider-signing-adapter.ts",
+      "sha256": "e2ea79df957cce9a7c5771b75abf9c549e8d17a10a8a52578be3c543151e462e"
+    },
+    {
+      "path": "src/snapshot.ts",
+      "sha256": "9c8085443f731c5be4845d362c2c227e17b3f3b4c5e4a9f82300bc35b5e642a7"
+    },
+    {
+      "path": "src/target-binding.ts",
+      "sha256": "5995f568609fa2e7be8a7b85fca15a79a0e072f8ba8c32ef3b1498b1f0675e71"
+    },
+    {
+      "path": "src/transaction-contract.ts",
+      "sha256": "3cdd2600f7cb72aba9f1b08543a1f0608d59bfdb7d68967130ac6c4f74423fe1"
+    },
+    {
+      "path": "src/transaction-idempotency.ts",
+      "sha256": "64f36304ebefa4bf1fd81d7a46ea02be3059cc409d2b0567d205fa7c6c6294bd"
+    },
+    {
+      "path": "src/transaction-report.ts",
+      "sha256": "3ca953bdfe81c3e98458a336299765cf767cffcfb67568fe3f438e804405401f"
+    },
+    {
+      "path": "src/transaction-runner.ts",
+      "sha256": "955675ce9fcff8d26f26717d55130f88b2056d94f2a5d91a7486e00ef6aa7d72"
+    },
+    {
+      "path": "src/types.ts",
+      "sha256": "c1402ca97b3a218265a86d93128e14e7d672a42f253b88745eb41db778e924e4"
+    },
+    {
+      "path": "test/assert-gui-findings.test.ts",
+      "sha256": "581a148935f94446f319f39f2c9921b27084198a0e6fda1ca36bf65c0be3b7e4"
+    },
+    {
+      "path": "test/assert-state-polling.test.ts",
+      "sha256": "9137e7eb3d7de7ac69f3dad2dea8769ba1cd39b24a2ed2d7074808a275d36ba6"
+    },
+    {
+      "path": "test/authorized-plan-runner.test.ts",
+      "sha256": "d0cb9f780df2a8f9766412a1396e044b11085876477e553cfe0b6b45f82675e4"
+    },
+    {
+      "path": "test/bot-session.test.ts",
+      "sha256": "529130205e934f84756976deedf68000b02e8529275db5ce357838c82d687beb"
+    },
+    {
+      "path": "test/capability-manifest.test.ts",
+      "sha256": "6fee7f83ab199853ea5c78fbe8092faf61efa64cae81e7e1c281958b999d3f52"
+    },
+    {
+      "path": "test/capability-provenance.test.ts",
+      "sha256": "d9fe485dd018886a0feb3ca485d1b7943271aece84e7be7f5fe1adc75a5d9450"
+    },
+    {
+      "path": "test/cavium-v2-attestation-statement-parser.test.ts",
+      "sha256": "177574f1d5474f2b49a5128a17f645641e687d7165cc6f71ff3fdef5648e9f5a"
+    },
+    {
+      "path": "test/compatibility-matrix.test.ts",
+      "sha256": "3d45e67255d6379287716903ebe2083d1a48c4b8372193a5d7302df1d3c30478"
+    },
+    {
+      "path": "test/compatibility-report.test.ts",
+      "sha256": "883f4a22114942117d56763de8e27bc20111bfe1dd517bf37ec397cc9503ceec"
+    },
+    {
+      "path": "test/compatibility-runner.test.ts",
+      "sha256": "0b0a7fbd84be4ba689f410779cb7a04ade637cce38625f2c2ff9ed37525eab05"
+    },
+    {
+      "path": "test/crash-recovery-contract.test.ts",
+      "sha256": "a871475dabf0c96206df2d714aa729ddb824749f6af94ea4f8f98dadfe8b51c6"
+    },
+    {
+      "path": "test/crash-recovery-report.test.ts",
+      "sha256": "93f36a7e2055d3a6048e3019c75ad35703a5627721c4b0a78b10e63ab21363df"
+    },
+    {
+      "path": "test/crash-recovery-runner.test.ts",
+      "sha256": "7f27fbd22f2c8b0ac4db9665a0018856c255fe13afcc7c79114596ce5df67095"
+    },
+    {
+      "path": "test/crossing-entity-width.test.ts",
+      "sha256": "aa854d72b6991a3bbafcde71117f227228e1f2ce6cb064b41560a5539510c0cb"
+    },
+    {
+      "path": "test/crossing-report.test.ts",
+      "sha256": "b7593919373b4105bfc330d56452650e2f4c1d6b92763b4b90dc7b425fd26bba"
+    },
+    {
+      "path": "test/crossing.test.ts",
+      "sha256": "3f98ff74dd0e84d8ce73221442eff18ada89e5c464ed74b61138c33511215f3b"
+    },
+    {
+      "path": "test/direct-entrypoint-shutdown.integration.test.ts",
+      "sha256": "fcf110777ece2af8ba97c9cb83b9a035d7a8fc35b1e3c9dc408ecb69a5e1c37b"
+    },
+    {
+      "path": "test/dogfood-assertion-gaps.test.ts",
+      "sha256": "a8b41d006dcefc7873ab4290697c5a77596ff78f8e060ece128b2e3d37e5a9d8"
+    },
+    {
+      "path": "test/dogfood-assertion-runtime.test.ts",
+      "sha256": "8b9624acafa88cda30e8399d840b405b98cc142fd809fc10dc5800408ac872cb"
+    },
+    {
+      "path": "test/dogfood-capture-state.test.ts",
+      "sha256": "89d2df0b1f76e087fb6c7b34bb4ead6262be480ef5d8874a956da8aca8d9f0be"
+    },
+    {
+      "path": "test/dogfood-consumer-contracts.test.ts",
+      "sha256": "44460de099658d22285885c1b38404fff27cb61b188b5dfac0e774d5ec94b35f"
+    },
+    {
+      "path": "test/dogfood-drop-item.test.ts",
+      "sha256": "4849d0818b3378b239125daf59d23216edda8b03f89f2041bc25342f77713d0f"
+    },
+    {
+      "path": "test/dogfood-round2-behavior.test.ts",
+      "sha256": "817d2db0b434057839aefa9fe4d745a445bd3dc2d612ffc90f58aa25ef1ee58f"
+    },
+    {
+      "path": "test/dogfood-round2-schema.test.ts",
+      "sha256": "7b19ca5a67c6f602492e592c596814f1bb24367a7bfe0f30b57b50c31f1600bf"
+    },
+    {
+      "path": "test/dogfood-timeout-pairing.test.ts",
+      "sha256": "a48a80c43c4a6c75e5aff8b7895efd410c743b003f36a947118a8373e81a3dfa"
+    },
+    {
+      "path": "test/entity-observer.test.ts",
+      "sha256": "8e2a8460ab51084d6a23e5fe0589c6de4bdb0e7f027e64ec4dfd5a6e945b70a8"
+    },
+    {
+      "path": "test/evidence-bundle-atomicity.test.ts",
+      "sha256": "6c0315fdb4ea5f1f7748289b7553c47db97067631ea83b9b36baa71adf15e01a"
+    },
+    {
+      "path": "test/evidence-bundle.test.ts",
+      "sha256": "8d12a29060770afa0666c0f2b538b8519bd5079fd0c9b909a0f0f5eb46a9e9e8"
+    },
+    {
+      "path": "test/evidence-writer.test.ts",
+      "sha256": "6722b0e70cbc00b9e7ee2416f6eb52e4e9b9e96b6dea88c958adb4c14b322058"
+    },
+    {
+      "path": "test/failure-envelope.test.ts",
+      "sha256": "fa6bf5974cb5d6b2d5cc8223a1e066bb829398037063faf66043601c701e07a2"
+    },
+    {
+      "path": "test/farmer-pathfinding-capability.test.ts",
+      "sha256": "4b5d7c7bc2358c1dbf19d6cadc8347fddfe0a3d067effdab46807dd10e199c91"
+    },
+    {
+      "path": "test/fixtures/capture-redos.ts",
+      "sha256": "f6760a3e5b0c9b47faadebcb28c7527161808575a6b3940e586e1116c1f7dd73"
+    },
+    {
+      "path": "test/fixtures/google-cloud-kms-attestation-d4b-negative-fixture.ts",
+      "sha256": "cb8d3fa5ea9bc8f4d420d82da532b1a74ba381de7132649e92e1926ed0eb13f5"
+    },
+    {
+      "path": "test/fixtures/google-cloud-kms-attestation-d4cb-fixture.ts",
+      "sha256": "2825feff1ecf1f52ebe7e3f9facd6ed86108f23c7b977383c10f054bafbadbc8"
+    },
+    {
+      "path": "test/fixtures/google-cloud-kms-attestation-fixture.ts",
+      "sha256": "a5d28ee5a25d382984c24955db14ceff27a7e63a6625a212345512e05e735c58"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/Bukkit.java",
+      "sha256": "d93eb5fc153c685ec8a06310877a6ba43a5adfabbaab3dd0cc6f3892bf263bc0"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/entity/Player.java",
+      "sha256": "c95f8e33ba83060b7dacd783f27763faa814502fe07401374ba1e2ea1a98b38b"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/EventHandler.java",
+      "sha256": "a900ed87ef95dfeb1ffed36f87c5b1bec2a439e9e4efe23d44269832d4490f03"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/EventPriority.java",
+      "sha256": "d630a38da49055790b211faedd45c057f3870af8de99edcff2467e5df70818f8"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/HandlerList.java",
+      "sha256": "fc6d42d676fa93a00e794f9826549780415e92b57dc6334bb2b3051d28c11528"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/Listener.java",
+      "sha256": "3bbfb358def794be36dcca90edfae9cd4d220a4ce8a41ca91713f1e4a4658060"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/server/ServiceRegisterEvent.java",
+      "sha256": "0244ba307e94e59569e5c92052daac5021aff246ee16d71ffe2500c705220f76"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/event/server/ServiceUnregisterEvent.java",
+      "sha256": "393b93f41233e34bd570263b494bbd0db9febd6a272be1948495723f97394587"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/plugin/Plugin.java",
+      "sha256": "cc744a11821a7b1234034c6bf7826a02575dab27353301eb9676a5a9338fe9c5"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/plugin/PluginManager.java",
+      "sha256": "3152d0d6c2e83cc2afa9700a6badc108a1cab25cda278de00f17f4a6a936b9b2"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/plugin/RegisteredServiceProvider.java",
+      "sha256": "4521f4cb58b1a5fff73b9637dc89fd1631e10d2844be17b5608e9907531201cd"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/plugin/ServicePriority.java",
+      "sha256": "b7f91822c11de45a7e44fa6d436aa49f59eee394e148917d48ae8a99db8b9f1e"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/plugin/ServicesManager.java",
+      "sha256": "11da7e60e5b7e868e576087202f600d3ed39aaf7c91b0438656c04aa96fa23dc"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/scheduler/BukkitScheduler.java",
+      "sha256": "f72332ae95778e15354e996a91f690bc9b8bc64617d8bb94579ba27f116b431e"
+    },
+    {
+      "path": "test/fixtures/java/paperapi/org/bukkit/scheduler/BukkitTask.java",
+      "sha256": "9d874dbd9ba8284bb47efefce909ff976510beb4dd98c6e6c5a8dc3b360f905c"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerAdapterLifecycleBindFailureFixture.java",
+      "sha256": "50041264d9603a850aae9f8f26a93871810f1289e3b51c3e2ce7c0d9d5d002c3"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerAdapterLifecycleFixture.java",
+      "sha256": "86a08f720e5207c5aba8aeda650f24c961aacaabbbc83c21c7815b610b83b372"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerAdapterRuntimeFactoryFixture.java",
+      "sha256": "44353e745c941cec3128617abb154fb9264c42a50d37a0f39313ff22116c126b"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerAdapterRuntimeFactoryGuardFixture.java",
+      "sha256": "b7c97f28ef926edabb59aa30580536b5695de90e888fcf1006e037ac168f38fb"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerAdapterRuntimeFactoryOptionsFixture.java",
+      "sha256": "76ff4caf0bf9d1265c29c9d6fd3e48ac2459191609279515a3229ef16be9e5b0"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerBukkitSnapshotAdapterCloseBeforeTickFixture.java",
+      "sha256": "af94e9af8ddb44af58cce5857455fdb485ecb4abbd7d13da772897358e4f900b"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerBukkitSnapshotAdapterFixture.java",
+      "sha256": "81b225d95915773c4e0bb041d9dc38c2da5081ab9deb33441d006e68e8a84dcd"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerBukkitSnapshotAdapterGuardFixture.java",
+      "sha256": "df801ee22e87c23f4fd3c86333f814c7a087dde13ab6bbe2819c3525b598f868"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerBukkitSnapshotAdapterScheduleFailureFixture.java",
+      "sha256": "e0d0de9db4e095ed10f15f0020e25289fb22a7589a97c814bba6c6a5c3ecc64c"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerCanonicalFixture.java",
+      "sha256": "efc2372532b963e3477abb698d27b5104616f4639410d524e1980ab1d9b3d736"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeCompositionCloseFailureFixture.java",
+      "sha256": "5c39cba4f69e49775e4f880f439101972d6175f11e59c6b299e1af8e39a52e33"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeCompositionFailureFixture.java",
+      "sha256": "1e93466b95bff2ff8564851563213881c1fed5732ff8f77cb6fb766de86d4864"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeCompositionFixture.java",
+      "sha256": "b5802d1b39ce2bdc4064499edc777c759d47e50f10048683bc010e157068c7d7"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeCompositionOptionsFixture.java",
+      "sha256": "14d5d94d578e96b21c30c2b1c5348509adc8673dc0e1668cba6f09fd160ab331"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCloseDuringSignFixture.java",
+      "sha256": "e081b0793fa91ddf71426d73b46ad224f61bb4003ea941ccc00258f7b7cf77a5"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceConcurrentCloseFixture.java",
+      "sha256": "e2ec63e13877b10f017050acc86887e49406477d0e3501c6076d029f1eff5ec7"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorChurnFixture.java",
+      "sha256": "33428fb30f0e5047e803f873e5fe4d1a25ceb1fe90351fa60eb5f333429da4c6"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorConcurrencyFixture.java",
+      "sha256": "d0814920a64768d319824b0c3c9638d7a81e5e6e591fcc48d9c66eb91202c2a7"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorFixture.java",
+      "sha256": "04fce1ffbd174b7ed91faff3904a7035f3433e19c134e62ea68edfcd91b7fae8"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorGuardFixture.java",
+      "sha256": "3c87c399125c9c4a288ff2474cd8749a17ac3bfa4292a28728c3f805bfc5e23e"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorInterruptFixture.java",
+      "sha256": "95df4311971fa1f5cc955bbebe76701143f2e83b42bc6c085b46395d4e20dc4b"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinatorRemovalRaceFixture.java",
+      "sha256": "ebddcef6c96f65c6ae44856e31c0e9c3bb095358ddca3b60575f1d5351b5ed83"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeCloseRetryFixture.java",
+      "sha256": "ed3b71c3a31cffc21fc416eb76dd4e68f160e529f6c802845f0fbfd3081a2be1"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeConcurrentCloseFixture.java",
+      "sha256": "230560ded7b9ad11a63bbad4d6e74b6ed55ef85c2127f2880509f9067039b701"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeFailureFixture.java",
+      "sha256": "78986b6f7636c854f0fb4f4031d08fc07e4d4818591e05ee128339b856be7b00"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeFatalInitializationFixture.java",
+      "sha256": "19d251213d908777a9034a0d2122575f111124d593b0d5f2f68ccdfb17bf854f"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeFixture.java",
+      "sha256": "a2e23f0056ffe2747711538956375dd2059e65b39c341b345f9a1a47f52b0289"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridgeOptionsFixture.java",
+      "sha256": "66dc9e21b7c2cdf80035c4f2d2f95be6408891c09472c1829078a4f0e7fda3a7"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceExceptionSanitizationFixture.java",
+      "sha256": "4eb23120867c2216c7624ddb55c8916afb1cfdbc5e9073a122d7307554691643"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceReentrantCloseFixture.java",
+      "sha256": "8a4bb9fcd7530cead97badb0b21e0c5b1e18fc44926aacddbfdcc71bf65762f9"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceRegisterFailureFixture.java",
+      "sha256": "c6ebfca258b4c732a7944c1823babb10b18efa1b5f509ecd9d4aaa2418b6cbb4"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServicesFixture.java",
+      "sha256": "404afa3ff4e1afaa49c48334799eb102dc0d9bd801555026e256e93d42df6a90"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceSynchronousInjectionFixture.java",
+      "sha256": "a2665e557f5f0cb49bf2c224cf04f3f9bb6ac5b63e27d5b50b74dfb89efdb298"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerExternalKeyStoreServiceUnregisterRetryFixture.java",
+      "sha256": "33285254f72bf5aae6245fc7b9d5f8d969a729f3b3869d9262e1187181bfd8ac"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerLoopbackListenerBusyFixture.java",
+      "sha256": "290af9ddf0eddf4ed698e04b0bed9806771d6dd0cb822174096e19f19798d028"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerLoopbackListenerCloseFixture.java",
+      "sha256": "f4e5a546b3a00c6a038a7a93e25bbd938243716fdff5aff1471993454811b6ef"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerLoopbackListenerFixture.java",
+      "sha256": "bd077ef0ef37a3cb7af399cc949b846539207c2d5ac275684b46eeb008e2c378"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerLoopbackListenerQuiescenceFixture.java",
+      "sha256": "71db83b6bcc382dbda394d89fd588197ebe803ee77412a90ec3b152a38f6d686"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeCloseAfterCaptureFixture.java",
+      "sha256": "d44484ae467ca931226f23b84e70980fbead946040f4800a122e7e4e5f8fd650"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeCloseDuringCaptureFixture.java",
+      "sha256": "d7a3d09f2fabb0b39e39df17bff5e51bf0096c372759c961a36cb968b429a472"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeCloseFixture.java",
+      "sha256": "8ea5545746b929fb08af0a5c6f74617f2ab15ab6f965734efa295ddc7ae542c0"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeFixture.java",
+      "sha256": "5fd31774f5abee1cc7e170a7311edd64be641c35211ff8d792cbccc1a07a73c4"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeGuardFixture.java",
+      "sha256": "6b9094bca087f6e4e5f78804cdc7ffb92627066f01601653886cccb0f2c24c5f"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeSynchronousFixture.java",
+      "sha256": "216df9ebe8b70634e31fad8d27349a2db1602aee61f0b3d4ab523db168b158ed"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerMainThreadSnapshotBridgeTimeoutFixture.java",
+      "sha256": "96dbddc8b70dcb04aa98d2b1cb1fce72180a8f3a013d85ab787738d8f8343473"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerOpaqueEd25519SignerFixture.java",
+      "sha256": "030759a8d18cd078e19d62c2d76d30112fce6abe627af279ac95a7f2e740ef9a"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerOpaqueEd25519SignerGuardFixture.java",
+      "sha256": "3eef4dac3ff25e0a4c6a360c7a8d2d13a741c20fe0a97f31afd5ae3d6ef85bba"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerOpaqueEd25519SignerInitializationFailureFixture.java",
+      "sha256": "130e809c150dd09ca0302db2083cb9901a8584b24660f9fb91e78abf97bee759"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerOpaqueEd25519SignerKeyIdValidationFixture.java",
+      "sha256": "82970559d718b71f092061ca5085f3d95c576b3288fe1a7c7047fe730b21fe3a"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerOpaqueEd25519SignerLifecycleFixture.java",
+      "sha256": "91f95b82a4e98a477d6f2a90b575173475b46682319526bf50f1481640ac0b43"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerPkcs12KeyStoreAccessFileGuardFixture.java",
+      "sha256": "5fbf01b8c1bd004c6c004775e2f94de13f4aa3d973cffc2c96329a078adaf1bd"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerPkcs12KeyStoreAccessFixture.java",
+      "sha256": "d23c392019755cde49efe5933b53cd3a1a76c61dfa82e708a885cf39b7def679"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerPkcs12KeyStoreAccessOptionsFixture.java",
+      "sha256": "8f56d82d28ddadb8510f40fa952105b000f8059075472f569c05d688e4ed6bbe"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerProcessorCloseFixture.java",
+      "sha256": "1de50f73d1513b38e6e20389701415e41401af8ebe244a7750846ca8d91ad565"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerProcessorConcurrentCloseFixture.java",
+      "sha256": "50bf4c41917593054da8805ff9a7d2ca2706151869039c11314ccf55afff5777"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerProcessorConflictFixture.java",
+      "sha256": "6f5e4ae728134def6a453a5ea8a81f20a75de19f3287a20ee8953849f6950a3e"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerProcessorFixture.java",
+      "sha256": "c5e04b7ace37d0115aee404fa3d97ab88137906ef0faf03993ba21248fba8a4d"
+    },
+    {
+      "path": "test/fixtures/java/PaperBukkitOnlinePlayerTransportInteropFixture.java",
+      "sha256": "f8fb4e3678c7f617025b8d4440cc218a4ec58acd53f6eafc076a32b5d24a1296"
+    },
+    {
+      "path": "test/fixtures/java/SignedProviderClaimInteropFixture.java",
+      "sha256": "b97bed2e1d6fc33e432cf12f9e422311b8f49832580d67917183c11589a7fd96"
+    },
+    {
+      "path": "test/fixtures/livingnpc-telemetry-snapshot.json",
+      "sha256": "fedf107b831f6b101f34f48307245cd253e3663b95d2c7f703c9ad601bc3565a"
+    },
+    {
+      "path": "test/fixtures/selector-locale.ts",
+      "sha256": "28f42cf9326d5ae3d3199c070f060596aec22bb6a4570568dff59fd7f3b97319"
+    },
+    {
+      "path": "test/gameplay-contract.test.ts",
+      "sha256": "f3668fd74014212cd2e07d3960e7d231078c926b437227d429623326194d4b38"
+    },
+    {
+      "path": "test/google-cloud-kms-hsm-attestation-binding-verifier.test.ts",
+      "sha256": "ea6ebe4577e66d3034b2fa313e18f06d70823712d328d85688aa7cb1de01b8a6"
+    },
+    {
+      "path": "test/google-cloud-kms-hsm-attestation-verifier.test.ts",
+      "sha256": "3e0bec5992261455e458936e9b6e39dfccd836acb38507af11e20a9adb6a3972"
+    },
+    {
+      "path": "test/google-cloud-kms-hsm-trust-root-policy-attestation.test.ts",
+      "sha256": "84cbffc9cc2c2284b360e9798b09b3193241a0b3a517267056d1eb5f92c0ca65"
+    },
+    {
+      "path": "test/google-cloud-kms-hsm-trust-root-policy.test.ts",
+      "sha256": "96ac84109b8b1487084f3cf4aeeb105112340357bd3e2994351b778aaadab99a"
+    },
+    {
+      "path": "test/google-cloud-kms-live-preflight.test.ts",
+      "sha256": "ea51bd0b793ab9731138798c25e013de84ef9f8dd8929452d35cad4aa7129681"
+    },
+    {
+      "path": "test/google-cloud-kms-resource-name.test.ts",
+      "sha256": "29de37c48de3c6d89a2d618bc9d72c10a76020163c663cc97ddea01ab4104906"
+    },
+    {
+      "path": "test/google-cloud-kms-signing-backend.test.ts",
+      "sha256": "99945078bd6a75d8298e4e09b12e0feb06c36f6cb9aedf3a85e7fe46c99311f6"
+    },
+    {
+      "path": "test/gui-contract.test.ts",
+      "sha256": "41ced7344c6562003b9e0198591313be342e7e5093597da63b0737b1f90979f9"
+    },
+    {
+      "path": "test/gui-evidence-bounds.test.ts",
+      "sha256": "5cd6bfc8bc4c9a739b580d90c3d79254a5a4f8119ae29c2e0c7e4551ab48b9f3"
+    },
+    {
+      "path": "test/gui-postcondition.test.ts",
+      "sha256": "9cb5fdd3c35539a7ba54eadf192054eace460fdcb8e9f92ad221e6a175929807"
+    },
+    {
+      "path": "test/gui-report.test.ts",
+      "sha256": "ecec75ee640a29a85a05220b4a230d5f2b025d7e07f30324f7c335483e5a86e4"
+    },
+    {
+      "path": "test/gui-top-inventory.test.ts",
+      "sha256": "3c4cc058214a2e3e9307c0b7b3c2d4561161e732bd7e63cc84f0d62a5ce1ca66"
+    },
+    {
+      "path": "test/gui-transition-generation.test.ts",
+      "sha256": "4dc5d67963b4931f4aa73962c0804901d551a5207f801e4d7eea4ea550d0aeba"
+    },
+    {
+      "path": "test/journey-reports.test.ts",
+      "sha256": "e68fe1a145654b251a8df2606e4a950e8c6cffcb6c28b9f06c58104adeedea53"
+    },
+    {
+      "path": "test/journey-runners.test.ts",
+      "sha256": "baf4f9500c48a8aec53139991cbb859b4ca55d73eaac916b52ff6c59eb925930"
+    },
+    {
+      "path": "test/jvm-artifact-observation-binding.test.ts",
+      "sha256": "1b9985c2ea9d5f14159ef96bffcbaad7301c46a1637dd16bd03cd324f446ba8e"
+    },
+    {
+      "path": "test/jvm-artifact-observation-java-interop.test.ts",
+      "sha256": "7356a00914ba511fd49a0064fbf7b05e892cafc5cbe778795f6e488656140b20"
+    },
+    {
+      "path": "test/jvm-artifact-observer-codesource.test.ts",
+      "sha256": "0e1c67541a2a4fa9563dd9bbe69f97b7115621d7b098d5e04ee8f3634b26cbfe"
+    },
+    {
+      "path": "test/jvm-artifact-observer-concurrency.test.ts",
+      "sha256": "cef245e75d5e736d6288e1f716f620bb71ab46d2227ab2ca903b7a2c61960969"
+    },
+    {
+      "path": "test/jvm-artifact-observer-entry-count.test.ts",
+      "sha256": "d50c9c76199a07e6590a15129f86f5ebb366ae3719efa91612a1295ccfb244fd"
+    },
+    {
+      "path": "test/jvm-artifact-observer-loader-semantics.test.ts",
+      "sha256": "75c45c9055c0ce1c7560100dad934cf48121409df5b5a6d8da3fa8d80422d7d1"
+    },
+    {
+      "path": "test/jvm-artifact-observer-mrjar.test.ts",
+      "sha256": "31447d64c6d4c5d4428cca80cbe9458726e5360d917382b4f687956630f2927c"
+    },
+    {
+      "path": "test/jvm-artifact-observer-race.test.ts",
+      "sha256": "ed160c0599c2a84dde405bd06a902cb3c833852514b9ac3ec1cba582aa72fe94"
+    },
+    {
+      "path": "test/jvm-artifact-observer-rejection.test.ts",
+      "sha256": "b04e5b68d67eec8c8e3d532c65cbe0315558b55de0b21e3f421d14939244e3de"
+    },
+    {
+      "path": "test/jvm-artifact-observer-snapshot-entry.test.ts",
+      "sha256": "83a21944642f04ad1a2ff5534f7b4707ec7e0f5e21d8f0a96a6504f4d38cc3ef"
+    },
+    {
+      "path": "test/jvm-artifact-observer-symlink.test.ts",
+      "sha256": "df54d7ce7870b1f241e54de8b8ae642d8e40c5bf368e66c51b14012f15cd3a63"
+    },
+    {
+      "path": "test/jvm-artifact-observer-zip-scan.test.ts",
+      "sha256": "61f0cc8768261a8c689f93dbcbfdaa2292424e8fd8b10e9724dd1d3a7b9f5319"
+    },
+    {
+      "path": "test/jvm-artifact-observer.test.ts",
+      "sha256": "9d2323fee1241da4d8c4462ca0bbf5012bb4f31cd3c249da23515c44b2e05ea5"
+    },
+    {
+      "path": "test/jvm-observation-bound-claim-builder-java-interop.test.ts",
+      "sha256": "04726dbeebc8de2a273ed887c06d492ec16cbf26375a0182c712dcd50118d294"
+    },
+    {
+      "path": "test/jvm-observation-bound-claim-builder-security.test.ts",
+      "sha256": "7fe23dec57b157c6ae9b3a31e9f14526574d9b1cda0c7410cdaae5cc87390d46"
+    },
+    {
+      "path": "test/keystore-companion-package.test.ts",
+      "sha256": "15e499cf2abfe01562fd783f13bc2b974934630c6fbe0676c645a79a721b4217"
+    },
+    {
+      "path": "test/lifecycle.test.ts",
+      "sha256": "9383bafbf74f0086b90e517f1c25f7ac1f3e3b27be7917294d77e572a1375bc0"
+    },
+    {
+      "path": "test/livingnpc-pixel-map.test.ts",
+      "sha256": "999fb6926b64e8e34b4a074ed24d04b41b5fc0d262c04f1ccdbafdb5848ce7d9"
+    },
+    {
+      "path": "test/livingnpc-report.test.ts",
+      "sha256": "ed1ede00cbabed792e4870e06cdf8ec962875c371f5eee94bca160d6fd7e70ef"
+    },
+    {
+      "path": "test/livingnpc-telemetry.test.ts",
+      "sha256": "80eb1e63562581dd8419cb221a1ff5cf184c55d863f25aaca4a4862c2a0c40d2"
+    },
+    {
+      "path": "test/minecraft-handshake.test.ts",
+      "sha256": "6a6c9ad2b07ac33f4cda11d054b67befa990cd864a02ddbefd575ee3cba90d28"
+    },
+    {
+      "path": "test/multi-account-plan.test.ts",
+      "sha256": "4ec38f3e066010af619eca89fc76477c9156a1945cf20cec73cac3b6cccf96d1"
+    },
+    {
+      "path": "test/multi-account-report.test.ts",
+      "sha256": "ebb4f7e612a5cb8d3def1c0d30c0452ba672c0636d2a3da4075028a1c9351033"
+    },
+    {
+      "path": "test/multi-account-runner.test.ts",
+      "sha256": "c9cef835e3b882e68e51d4f783bbd32e96b81cbec8a09b92d20ddc62b7885e69"
+    },
+    {
+      "path": "test/multi-client-contract.test.ts",
+      "sha256": "4d70b69108275d49a4bcef7db8d6f8c89a0f15fcb19f371b8b2efe3c9cb0c06f"
+    },
+    {
+      "path": "test/negative-contract.test.ts",
+      "sha256": "113e75871a73f89b1c8d2116c2d69a787aa108996abb23fbbdde4e2be9b3ec17"
+    },
+    {
+      "path": "test/negative-plan.test.ts",
+      "sha256": "cc850d02ef8cb215fb5f253844272df674feea3701cac6c02f619b9e8daecd29"
+    },
+    {
+      "path": "test/paper-adapter-lifecycle-wiring.test.ts",
+      "sha256": "cf6c23546ab51198d9b864ebe72bee5bc9052c75d5ae09b114250058a1cde71c"
+    },
+    {
+      "path": "test/paper-bukkit-adapter-package.test.ts",
+      "sha256": "1b42c6d2882b13ba5f81ed4c210f1ef97f4a7b1aab21c09d7fe90ae5a9be4bbd"
+    },
+    {
+      "path": "test/paper-bukkit-attempt-threshold.test.ts",
+      "sha256": "307e0d6d9fc6ee377a9de4ccad1d2b09911d61c340559a895430fd3aa0311ffc"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-claim.test.ts",
+      "sha256": "fa27e786b8043da2fcfd70d19f7c417f7aca1037107cbf5b1eddb0b1577b7b9d"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-bukkit-snapshot-adapter.test.ts",
+      "sha256": "68692c053b49b8502cbfd841b1fd465eaa6db5b06a10f3f930bea2e892c775ae"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-canonical-parity.test.ts",
+      "sha256": "2cb127fd53e27c284e1634e115e14a80db117a061baa7361ce798e3a1762fec3"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-lifecycle-composition.test.ts",
+      "sha256": "76af73f084f016fdc592c7ee4863b12011b2ea4cf92d7ee387c5606e3650cb9b"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-loopback-listener.test.ts",
+      "sha256": "f8f2f239551ea77cf9d897dd0f1a18ad283fb99d80f951d0fa6c6367f3b8258f"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-main-thread-snapshot.test.ts",
+      "sha256": "aba0e90f9ae1309ec45098e15fdd1c7162e64f72877b02d50d321ec0ff63e2cd"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-opaque-signer.test.ts",
+      "sha256": "570d4de0e05c6d32b5d83448d9a0c3a5f6ec514ec8374a3c80e6ec5bc7b674c0"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-processor.test.ts",
+      "sha256": "2290ef47a097824b21cef1e6436863750198ccf1946596aa7abedfab43f75ef3"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-runtime-composition.test.ts",
+      "sha256": "7b76b1ebcfd2f783b034d05d1acd040d281c1e2da9f497d41c6e9878f7772ffd"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-runtime-factory.test.ts",
+      "sha256": "602271209d5a650479e08cf1c87d33ce8253f88eb0e3f22097848b5ff2400f89"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-service-coordinator.test.ts",
+      "sha256": "42f4188fe776a99afbb7b6edb7a5502b13fb11682874beec3819c83e155225cc"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-service-event-bridge.test.ts",
+      "sha256": "2e37a99fff590bedf167ef6a427a1fe235f50e612083b6e4a1a14c32418095b1"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-services-bootstrap.test.ts",
+      "sha256": "78cba72602061f829c7f4c81e1bda9c3447e7b93b9a4acc37e2630784180ed21"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-java-transport-interop.test.ts",
+      "sha256": "b54b42c13bb1ee442a0cfc67b99a25908f092091f9006180d209c2da798c62ea"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-loopback-client.test.ts",
+      "sha256": "3430cb6a05b36ca6e67ece7fdee0754ef98357155cb62416a72d6ef9a7233bfc"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-pkcs12-keystore-access.test.ts",
+      "sha256": "17442b98f6e2ce8d25d1ab1c256d6267e8cdec3863e6d3940d8cf01741e78aa5"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-runtime.test.ts",
+      "sha256": "d50eacd35ea236be89faef26678388d66cf2e2a21072a515fa45343e337a9dec"
+    },
+    {
+      "path": "test/paper-bukkit-online-player-transport-codec.test.ts",
+      "sha256": "404d725d77d2426853ecd3de39af05ddfa92875cad43f424358dc9454fe8f4c5"
+    },
+    {
+      "path": "test/paper-forward-gate-behavior.test.ts",
+      "sha256": "e0a7072a7b6da1a212294da8d8beb4e91002f9db5f6af4c470aa8034912c0be0"
+    },
+    {
+      "path": "test/paper-forward-scope.test.ts",
+      "sha256": "304606c4a770c859f2082537552319368f2b33041b03570d36c6fdb9ab7c2d52"
+    },
+    {
+      "path": "test/paper-jvm-observation-byte-provider.test.ts",
+      "sha256": "6828cb57002e1b99baaa4c7535ced82f1b811a2ca5056bdee2a2d704239a3f4c"
+    },
+    {
+      "path": "test/paper-jvm-observation-claim-bridge.test.ts",
+      "sha256": "9c496f8581ccadc3efd79d4906ee90073915b5806cecf19458df2e0b8d62000d"
+    },
+    {
+      "path": "test/paper-jvm-observation-port.test.ts",
+      "sha256": "4e56858ad7da30f14fb6ec5666b926e6646f67943181c5fe0cdd404186c1f283"
+    },
+    {
+      "path": "test/paper-jvm-observation-result-codec.test.ts",
+      "sha256": "7512ccd0d99b829d6df592bff0e763b0547dfb6e58a6823137c406dea086f3b1"
+    },
+    {
+      "path": "test/paper-process-configuration-filesystem-observer.test.ts",
+      "sha256": "869b894b115cfa4d295a25ba6cec2cf69c8673b485f8cb6736185df71d574293"
+    },
+    {
+      "path": "test/paper-process-filesystem-observer.test.ts",
+      "sha256": "f10b714e1614d9657e55b069c131e2304166ce19688d315bc3a07ab793cb96ac"
+    },
+    {
+      "path": "test/paper-process-online-player-architecture.test.ts",
+      "sha256": "fd6087b2f86013088b2f8e965da3c73b6da4f81bca16a1bd80539f426d68e122"
+    },
+    {
+      "path": "test/paper-process-online-player-observer.test.ts",
+      "sha256": "fe137bc136773ed5407a19437e8eb5f73d5aa3ac9206496e63fcd9535a2e1d90"
+    },
+    {
+      "path": "test/paper-process-provider.test.ts",
+      "sha256": "e4f27b833eed317b04196e69eb3645757e759ed1e94aabd971b690adcd9aebd8"
+    },
+    {
+      "path": "test/paper-process-session-lock-architecture.test.ts",
+      "sha256": "c99cf885a45c8869431844543bb365952358680dd462daad754795016e724ef5"
+    },
+    {
+      "path": "test/paper-process-session-lock-command-failures.test.ts",
+      "sha256": "2ecbcc1a8746f5014f453957cc05ebdf92321f8f1b8a1b4aaa0bee58bb5850f8"
+    },
+    {
+      "path": "test/paper-process-session-lock-cross-read-race.test.ts",
+      "sha256": "309819345e5b7d053476c04c71588828aac895aea6b4e8b65c25734edd123507"
+    },
+    {
+      "path": "test/paper-process-session-lock-fail-closed.test.ts",
+      "sha256": "ae011074c1dda3993b7473abfbad5104205283e5653031c566db76668dda87d7"
+    },
+    {
+      "path": "test/paper-process-session-lock-java-held.test.ts",
+      "sha256": "db8476c264223fdb658376691cbf6279aa717332c3f01b1e68e8ef77d5ca2843"
+    },
+    {
+      "path": "test/paper-process-session-lock-observer.test.ts",
+      "sha256": "24e8b4b845f675ca3e422b0e8529d7530a0cc5b1c378dd0424336017b95c0beb"
+    },
+    {
+      "path": "test/paper-process-session-lock-path-guards.test.ts",
+      "sha256": "cda19f1f9659307cb03e30bd0cb3dc515638d8989cb6856d452986450b60fb2a"
+    },
+    {
+      "path": "test/paper-process-session-lock-preflight.test.ts",
+      "sha256": "6cf722c2d91fbf5ef7ef15283c548ce1d5ea5c83c543c5dc60ac431cd095a9c5"
+    },
+    {
+      "path": "test/paper-process-session-lock-unicode-path.test.ts",
+      "sha256": "1cb5195adf484f2f8d66a2d2bffa897414d0cf705c66d022f095e9c0065e81c4"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-architecture.test.ts",
+      "sha256": "0364ea64afece22e57f8dfa5c1c550862a8f406bb3228dd7dd5fc09138a3c695"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-fail-closed.test.ts",
+      "sha256": "2448b2b9e6844368274203a11e05f8398704d6e9026893613b143dd9d00a2841"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-observer.test.ts",
+      "sha256": "88d3f79d5164581a71a88ddbb4e5e3c3ac94f723cfb3b0143283e2beb4133d82"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-partial-parse.test.ts",
+      "sha256": "b600adb986d00bbd17a4ffda41253c8d7e7e5dd9cc465bafeebe5d640d51bb2c"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-preflight.test.ts",
+      "sha256": "f5245edae74cc710347d45320c5ed8a5fccf9a7e2ce0de11cb0f91ba565ab5b7"
+    },
+    {
+      "path": "test/paper-process-tcp-listener-time-wait.test.ts",
+      "sha256": "57caaf23905782492e9df3719e3f4e8a1c20237456770c6a1afb8699c1654d93"
+    },
+    {
+      "path": "test/paper-version-support.test.ts",
+      "sha256": "b1baa8408037505f756d41170d31949436103657087715d520a377f17a170e6d"
+    },
+    {
+      "path": "test/permission-contract.test.ts",
+      "sha256": "5bf2b015692ffa2fbd5e427abbe08d15bd0560167237f5ef7963cdb2ba1ffe9b"
+    },
+    {
+      "path": "test/permission-matrix.test.ts",
+      "sha256": "9a77e25764a7fb3a315f5e8b2e1fa2e8c3d0b190a83bee8288a7f27ea1d38c40"
+    },
+    {
+      "path": "test/permission-plan.test.ts",
+      "sha256": "e079b23828c6777a990de650d8efbc3324008d344076a0623b1bcc7c543ee346"
+    },
+    {
+      "path": "test/persistence-contract.test.ts",
+      "sha256": "11b341d79560a1a1b06e25eec56c7eefe17f2d2acab5ba29b8408beaf0553699"
+    },
+    {
+      "path": "test/persistence-coordinator.test.ts",
+      "sha256": "75890cf435ef3b865b21537846570e53e710a54beb0164555ca5e1608939da7e"
+    },
+    {
+      "path": "test/persistence-report.test.ts",
+      "sha256": "da398b6f1480562fafb2b82aa34c9da8aaba6f4440d22bafb082a3f4e5d92a72"
+    },
+    {
+      "path": "test/persistence-runner.test.ts",
+      "sha256": "9b94e9dd64ec08854723f7b888e4175eef7cf163d514889619cc06d03db36aa3"
+    },
+    {
+      "path": "test/process-shutdown.test.ts",
+      "sha256": "c8ab9d32e5dcdc1abaa50cfc1182d5a8ace653cceb3cbb572a4f53db118c6605"
+    },
+    {
+      "path": "test/protocol-diagnostic.test.ts",
+      "sha256": "6361cf5512829453019da99fa5cc1f7e469e1abcd116948afc63d1ee054c09fd"
+    },
+    {
+      "path": "test/provider-registry.test.ts",
+      "sha256": "71b2562642fe9ec73c5cba42dfc4e2c852576729314731badacedd77eb94ec46"
+    },
+    {
+      "path": "test/qa-execution.test.ts",
+      "sha256": "e1fdb0e971460b2eec7f49124fc737bbb1353f61d9ee836de7d616a29836d584"
+    },
+    {
+      "path": "test/qa-manifest.test.ts",
+      "sha256": "ea93f115aa31b56037feb0951abf9e5e12c4832971e8b3b7949c167e178ce41a"
+    },
+    {
+      "path": "test/qa-plan-producer.test.ts",
+      "sha256": "a052378037eb12cce04f41fec6296e6ec50487ff1998bcf6ed913f8368c99e7b"
+    },
+    {
+      "path": "test/qa-plan-report.test.ts",
+      "sha256": "89f6fa2cc17a9c50ffe06b8dfaf4a7af522525b760e9522cdc53420f39096277"
+    },
+    {
+      "path": "test/queue.test.ts",
+      "sha256": "bea7f39ad82508f3e0ae102c14c0fcef040dfb68fb3a4ebeacef0493570cb9e0"
+    },
+    {
+      "path": "test/report-contract.test.ts",
+      "sha256": "9f099e2832714ba19141fcf2bb4d174710687cf18149dfde4f9267f768e738ab"
+    },
+    {
+      "path": "test/report-persistence.test.ts",
+      "sha256": "756518f3320842a3bad4a6b320c9c2066c7b026e526a7917422cb0be6d7982ab"
+    },
+    {
+      "path": "test/route-oracle.test.ts",
+      "sha256": "c4e168b986df59ad852c47ba794fdf0c255d32eb1213569401a4a4f8d9ea33b7"
+    },
+    {
+      "path": "test/route-pixel-map.test.ts",
+      "sha256": "01caea44ebe36b5ca2bc335f50e95e145fa2ef5ff952a2d5dcbc04a1e0c3c3ef"
+    },
+    {
+      "path": "test/runner-session.test.ts",
+      "sha256": "4d6a40c727ea5f219645054963134aaf089c3a01ace28d02038cca05fe0e5466"
+    },
+    {
+      "path": "test/scenario.test.ts",
+      "sha256": "eea57e877b5e4c786672bb42dc43e6751c072b9995d07215a15f8075a72221db"
+    },
+    {
+      "path": "test/server-boundary.test.ts",
+      "sha256": "93c61efb3f5f059b98ebfa8f3c861601b25e6a612a6fc094594564016cb327c9"
+    },
+    {
+      "path": "test/server.test.ts",
+      "sha256": "eaa9eff8d46cb5048479e46bb921b4093b3afc88da7c67d635edf06c8660bb52"
+    },
+    {
+      "path": "test/signed-provider-canonical-signature.test.ts",
+      "sha256": "95fea1faf807191ccd78c7e2a05a0ef85ecde63a1662470c7b9fbd802586a22a"
+    },
+    {
+      "path": "test/signed-provider-challenge-store.test.ts",
+      "sha256": "408292063b0b9608e19402f62c771da06c28bd3e8156cf9c0f2409867dd75da6"
+    },
+    {
+      "path": "test/signed-provider-claim-challenge.test.ts",
+      "sha256": "b716ddd1e6ee66127efd11eaae38ee4909064d57a4051a91b20e7a664bf66359"
+    },
+    {
+      "path": "test/signed-provider-claim-java-interop.test.ts",
+      "sha256": "af38cde5b262a84c41771b095a5fb18cf3f570cc9e592e0a5eef854f53c65f77"
+    },
+    {
+      "path": "test/signed-provider-claim-lifecycle.test.ts",
+      "sha256": "5675f8e4554d533a0d067fa6a4fd54b9a81399271b559c10ccaedee6da6e19d6"
+    },
+    {
+      "path": "test/signed-provider-claim-observation-bound.test.ts",
+      "sha256": "2aa470ee45a7190251d3d49fc0b4d8f9272b00e93752ce4e770fd7062b7954bc"
+    },
+    {
+      "path": "test/signed-provider-claim-security.test.ts",
+      "sha256": "cfbd8fc2aec97d57f7ca77519b52876eaddf050b259c165154a062856cb3adfb"
+    },
+    {
+      "path": "test/signed-provider-claim-shared-store.test.ts",
+      "sha256": "b21731861a79ab0ff10af0cb2adfffac968d8fb009cfacb4fb11513373b816d7"
+    },
+    {
+      "path": "test/signed-provider-claim-trust.test.ts",
+      "sha256": "363e00a258913fb0ba1ac565d071f538394912d29ef45f629185a8d0d1bf933e"
+    },
+    {
+      "path": "test/signed-provider-claim-verify.test.ts",
+      "sha256": "5618a29b8f443f92bd3f9d4147319c654fac6f068f5d6b526d8aae6473b1e4dd"
+    },
+    {
+      "path": "test/signed-provider-evidence-bundle.test.ts",
+      "sha256": "2366a1145374886f786283aa2d6b630550636a7307a76fa0ea0f8c869cc39a69"
+    },
+    {
+      "path": "test/signed-provider-observer-signing-pipeline.test.ts",
+      "sha256": "3c71c3b34ea47fec3e7b8a8d742578dedb7f0f5addbe31ab6d2a72c0f3a7b261"
+    },
+    {
+      "path": "test/signed-provider-signing-adapter.test.ts",
+      "sha256": "9fef28da76662272c60e80ad0706c303f049a6e92b0ced66df12116c182854ac"
+    },
+    {
+      "path": "test/signed-provider-sqlite-compat.test.ts",
+      "sha256": "381d008943ac48bd1030715f05a630628515b1cb58a96f88b98cb2d6df57937f"
+    },
+    {
+      "path": "test/snapshot-adventure-components.test.ts",
+      "sha256": "33077358b533183baed421d6f20365d3e81e06173de5450e8bd166d7c5af5ff5"
+    },
+    {
+      "path": "test/target-binding-counterexamples.test.ts",
+      "sha256": "26996fd0acfc5e2a6b4f06d3e60f6fb3faa1583338f9d8d3c5812dce7e856c61"
+    },
+    {
+      "path": "test/target-binding-hardening.test.ts",
+      "sha256": "da13a025cf82c0e5c7c0720c1b56b603b974b9b4c2b4b30f27077db0674f4642"
+    },
+    {
+      "path": "test/target-binding.test.ts",
+      "sha256": "07ff05cf6a8eb0e3e1cd9310de582d74c349e98f1b70eb97f88328b5b0da0d95"
+    },
+    {
+      "path": "test/transaction-contract.test.ts",
+      "sha256": "e4e3465e6fbc773d2ffd8168ac62ec3592fd8ed86757eb264450a642990b0f46"
+    },
+    {
+      "path": "test/transaction-idempotency.test.ts",
+      "sha256": "f9dcc713e53f9e7681437d748ad2bf4a03d591db2ad5faf6e2b1b996d3694b85"
+    },
+    {
+      "path": "test/transaction-report.test.ts",
+      "sha256": "35c60089e595e1acebdacdbd6aeb9fe5cd8a2e3309382eaa28b183ab8d3c4e31"
+    },
+    {
+      "path": "test/transaction-runner.test.ts",
+      "sha256": "97a9fe5a8bbbb130cacb48f48862b698ca2e4d8293cb5bcf1068aa1534cd60cd"
+    },
+    {
+      "path": "test/version-contract.test.ts",
+      "sha256": "da6b3f5ff1e7b8336cfde45a939466774bfc6ccf502bb1691d76de04f1563e1e"
+    },
+    {
+      "path": "test/wait-for-text-composite.test.ts",
+      "sha256": "9b247500dc4837bd6de16a8284dd6454b76386f86d633c731be60bb8c01c7387"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "c21f3c56ed5ead6485f6266f625aca51fb895f4c6124cef3776ce7dbe0abdfdd"
+    }
+  ],
+  "builtSmoke": {
+    "artifact": "dist/src/*.js",
+    "verdict": "PASS",
+    "version": "0.2.0",
+    "count": 1,
+    "stableSamples": 3,
+    "stableMs": 214,
+    "persistedBundle": true,
+    "runtimeLayer": "offline injected protocol; no socket/Paper",
+    "serverConfirmed": false
+  },
+  "jars": [
+    {
+      "path": "paper-bukkit-adapter/build/libs/botchecker-paper-bukkit-adapter-0.2.0-SNAPSHOT.jar",
+      "sha256": "28a8a617d4c8b7387f24ea4b941927da3b65b5caa0033a0392195f3ac4032778",
+      "classMajorVersions": [
+        65
+      ],
+      "pluginMetadataVerified": true
+    },
+    {
+      "path": "paper-bukkit-adapter/keystore-companion/build/libs/keystore-companion-0.2.0-SNAPSHOT.jar",
+      "sha256": "90d926ad53d693b9ad5621ee17b3be7f4029adc12fc6fe811842c8e12dd4ee6f",
+      "classMajorVersions": [
+        65
+      ],
+      "pluginMetadataVerified": true
+    }
+  ],
+  "gradleRebuild": {
+    "exitCode": 0,
+    "tasksExecuted": 6,
+    "javaTestTasks": "NO-SOURCE; Node suite drives the Java fixture coverage",
+    "warning": "Gradle deprecation warning for future Gradle 10"
+  },
+  "forwardCompile": {
+    "version": "26.2.build.121-stable",
+    "release": 21,
+    "sources": 19,
+    "required": true,
+    "exitCode": 0
+  },
+  "runtimeVerified": false,
+  "releaseApproved": false,
+  "productionTouched": false,
+  "consumerPinsWritten": false,
+  "reviewDisposition": "review-dispositions.json"
+}

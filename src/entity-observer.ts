@@ -44,9 +44,9 @@ export function pinUniqueEntity<T extends ObservedEntity>(
   requireUuid: boolean,
   expectedUuid?: string
 ): PinnedEntity<T> {
-  const query = nameIncludes.toLocaleLowerCase()
+  const query = nameIncludes.normalize('NFC').toLowerCase().normalize('NFC')
   const nameMatches = [...entities].filter(entity => {
-    return entityIdentityLabels(entity).some(label => label.toLocaleLowerCase().includes(query))
+    return entityIdentityLabels(entity).some(label => label.normalize('NFC').toLowerCase().normalize('NFC').includes(query))
       && distance(entity.position, observerPosition) <= maxDistance
   })
   const matches = expectedUuid === undefined
@@ -65,7 +65,7 @@ export function pinUniqueEntity<T extends ObservedEntity>(
   if (requireUuid && !entity.uuid) {
     throw new Error(`INCONCLUSIVE_IDENTITY: entity ${entity.id} has no UUID`)
   }
-  const label = entityIdentityLabels(entity).find(value => value.toLocaleLowerCase().includes(query))
+  const label = entityIdentityLabels(entity).find(value => value.normalize('NFC').toLowerCase().normalize('NFC').includes(query))
   return {
     entity,
     identity: {
@@ -105,9 +105,9 @@ export function validateUniquePinnedEntity<T extends ObservedEntity>(
   originalEntity: T,
   expectedUuid?: string
 ): T {
-  const query = nameIncludes.toLocaleLowerCase()
+  const query = nameIncludes.normalize('NFC').toLowerCase().normalize('NFC')
   const nameMatches = [...entities].filter(entity => {
-    return entityIdentityLabels(entity).some(label => label.toLocaleLowerCase().includes(query))
+    return entityIdentityLabels(entity).some(label => label.normalize('NFC').toLowerCase().normalize('NFC').includes(query))
       && distance(entity.position, observerPosition) <= maxDistance
   })
   const matches = expectedUuid === undefined

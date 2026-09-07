@@ -1,0 +1,68 @@
+{
+  "name": "livingnpc-full-ordered-route",
+  "description": "FIXTURE PLACEHOLDER COORDS/UUID - khong phai toa do the gioi that. Farmer P0->P4 di lam, kiem THU TU checkpoint + gate crossing tinh theo mep than (entityHalfWidth). Hinh hoc duoc be cong co y de fence chan duoc duong thang P0-P4 (rang buoc fenceBlocksDirectPath).",
+  "maxDurationMs": 900000,
+  "qa": {
+    "project": "living-npc-plugin",
+    "fixture": "bc-round2-ln-offline-fixture",
+    "accountRole": "dedicated-test-observer",
+    "authorization": [
+      "Chi chay tren controlled fixture da duoc uy quyen",
+      "Khong chay tren F:/minecraftserver/livingnpc production"
+    ]
+  },
+  "steps": [
+    {
+      "id": "goto-observation-post",
+      "action": "go_to",
+      "note": "FIXTURE PLACEHOLDER: diem quan sat lech truc, khong chiem o staging cua cong (CURRENT_STATE.md rang buoc o sau approach/exit phai dung duoc).",
+      "x": 10.5,
+      "y": 64,
+      "z": 13.5,
+      "range": 1,
+      "travel": "walk",
+      "timeoutMs": 60000
+    },
+    {
+      "id": "route-p0-to-p4",
+      "action": "observe_route",
+      "note": "FIXTURE PLACEHOLDER UUID. Thu tu bat buoc P0 -> P1(approach) -> P2(gate body cell) -> P3(exit) -> P4(plot). Gate crossing gan vao checkpoint p2-gate-body voi entityHalfWidth=0.3.",
+      "nameIncludes": "Farmer",
+      "targetUuid": "00000000-0000-4000-8000-000000000001",
+      "maxDistance": 64,
+      "timeoutMs": 600000,
+      "sampleMs": 100,
+      "checkpoints": [
+        { "id": "p0-home-door", "position": { "x": 2.5, "y": 64, "z": 2.5 }, "radius": 1.2 },
+        { "id": "p1-gate-approach", "position": { "x": 8.5, "y": 64, "z": 8.5 }, "radius": 1 },
+        { "id": "p2-gate-body", "position": { "x": 10.5, "y": 64, "z": 8.5 }, "radius": 1 },
+        { "id": "p3-gate-exit", "position": { "x": 12.5, "y": 64, "z": 8.5 }, "radius": 1 },
+        { "id": "p4-farm-plot", "position": { "x": 18.5, "y": 64, "z": 16.5 }, "radius": 1.5 }
+      ],
+      "fences": [
+        { "block": { "x": 10, "y": 64, "z": 6 }, "expectedName": "oak_fence" },
+        { "block": { "x": 10, "y": 64, "z": 7 }, "expectedName": "oak_fence" },
+        { "block": { "x": 10, "y": 64, "z": 9 }, "expectedName": "oak_fence" },
+        { "block": { "x": 10, "y": 64, "z": 10 }, "expectedName": "oak_fence" }
+      ],
+      "requireFenceEvidence": true,
+      "gates": [
+        {
+          "checkpointId": "p2-gate-body",
+          "block": { "x": 10, "y": 64, "z": 8 },
+          "approach": { "x": 8.5, "y": 64, "z": 8.5 },
+          "exit": { "x": 12.5, "y": 64, "z": 8.5 },
+          "entryClearance": 0.3,
+          "exitClearance": 0.3,
+          "verticalTolerance": 1,
+          "requiredExitSamples": 2,
+          "planeEpsilon": 0.1,
+          "corridorHalfWidth": 0.75,
+          "entityHalfWidth": 0.3,
+          "maxStepDistance": 1.75,
+          "exitDwellMs": 300
+        }
+      ]
+    }
+  ]
+}

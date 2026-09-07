@@ -222,9 +222,13 @@ test('Java observation core được build và bind vào capability provenance',
     manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observer'),
     { name: 'jvm-artifact-observer', mode: 'library-only' }
   )
+  // Import graph thật: index → server → runner → jvm-artifact-observation
+  // (`runner.ts` import giá trị `assessJvmArtifactObservationAgainstBinding` và gọi nó
+  // trong `buildSignedProviderEvidenceArtifact`). Bảng mode tay trước đây khai
+  // `library-only` là sai — đúng loại lệch mà audit BC-006 chỉ ra.
   assert.deepEqual(
     manifest.capabilities.find(capability => capability.name === 'jvm-artifact-observation-assessment'),
-    { name: 'jvm-artifact-observation-assessment', mode: 'library-only' }
+    { name: 'jvm-artifact-observation-assessment', mode: 'runtime-wired' }
   )
   assert.deepEqual(
     manifest.capabilities.find(capability => capability.name === 'jvm-observation-bound-claim-builder'),
@@ -478,6 +482,65 @@ test('Paper JVM canonical-byte provider chỉ compose codec vào observer contra
     }
   }
   assert.deepEqual(importers, [])
+})
+
+test('Paper Bukkit online-player claim là Node verifier library-only không transport hoặc preflight wiring', async () => {
+  const source = await readFile('src/paper-bukkit-online-player-claim.ts', 'utf8')
+  const manifest = collectRuntimeCapabilityManifest({ rootDir: process.cwd() })
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-bukkit-online-player-claim'),
+    { name: 'paper-bukkit-online-player-claim', mode: 'library-only' }
+  )
+  assert.doesNotMatch(source, /node:http|node:net|node:fs|node:child_process|process\.env|createPrivateKey|KeyStore|JKS|PKCS/)
+  assert.doesNotMatch(source, /paper-process-provider|preflight|PaperJvmObservation|from ['"](?:org\.bukkit|io\.papermc)|require\(['"](?:org\.bukkit|io\.papermc)/)
+  assert.match(source, /canonicalPaperBukkitOnlinePlayerPayloadV1/)
+  assert.match(source, /verifyAndConsume/)
+
+  const files = (await readdir('src', { recursive: true }))
+    .filter(file => file.endsWith('.ts') && file !== 'paper-bukkit-online-player-claim.ts')
+    .map(file => `src/${file}`)
+  const importers: string[] = []
+  for (const file of files) {
+    const candidate = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-bukkit-online-player-claim|(?:import|require)\(\s*['"][^'"]*paper-bukkit-online-player-claim)/.test(candidate)) {
+      importers.push(file)
+    }
+  }
+  // 2026-09-07 (BC-002): composition runtime nay là importer thứ hai. Trước đây chỉ có
+  // transport-codec, nghĩa là verifier không bao giờ được gọi ngoài test — đó chính là
+  // gap "no Node runtime path issues a challenge" mà audit chỉ ra.
+  assert.deepEqual(importers.sort(), [
+    'src/paper-bukkit-online-player-runtime.ts',
+    'src/paper-bukkit-online-player-transport-codec.ts'
+  ])
+
+  const codecSource = await readFile('src/paper-bukkit-online-player-transport-codec.ts', 'utf8')
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-bukkit-online-player-transport-codec'),
+    { name: 'paper-bukkit-online-player-transport-codec', mode: 'library-only' }
+  )
+  assert.doesNotMatch(codecSource, /node:net|node:http|node:fs|process\.env|createPrivateKey|KeyStore|preflight|\.listen\s*\(|\.connect\s*\(/)
+  assert.match(codecSource, /parsePaperBukkitOnlinePlayerChallengeV1/)
+  assert.match(codecSource, /canonicalRequestBody/)
+  assert.match(codecSource, /canonicalPaperBukkitOnlinePlayerPayloadV1/)
+
+  const codecImporters: string[] = []
+  for (const file of files.filter(file => file !== 'src/paper-bukkit-online-player-transport-codec.ts')) {
+    const candidate = await readFile(file, 'utf8')
+    if (/(?:from\s+['"][^'"]*paper-bukkit-online-player-transport-codec|(?:import|require)\(\s*['"][^'"]*paper-bukkit-online-player-transport-codec)/.test(candidate)) {
+      codecImporters.push(file)
+    }
+  }
+  assert.deepEqual(codecImporters, ['src/paper-bukkit-online-player-loopback-client.ts'])
+
+  const clientSource = await readFile('src/paper-bukkit-online-player-loopback-client.ts', 'utf8')
+  assert.deepEqual(
+    manifest.capabilities.find(capability => capability.name === 'paper-bukkit-online-player-loopback-client'),
+    { name: 'paper-bukkit-online-player-loopback-client', mode: 'library-only' }
+  )
+  assert.match(clientSource, /const LOOPBACK_HOST = '127\.0\.0\.1'/)
+  assert.match(clientSource, /host: LOOPBACK_HOST/)
+  assert.doesNotMatch(clientSource, /node:http|node:fs|process\.env|createPrivateKey|KeyStore|preflight|paper-process-provider/)
 })
 
 test('Java production observation-bound builder không có key hoặc signing API', async () => {

@@ -1,0 +1,51 @@
+{
+  "name": "livingnpc-gate-crossing-bodywidth",
+  "description": "FIXTURE PLACEHOLDER COORDS/UUID. Chung minh NPC di qua aperture cong 1 o theo MEP THAN (entityHalfWidth=0.3), khong phai theo tam. Co pairing day du world/dimension/gateBlock de chong nham cong.",
+  "maxDurationMs": 600000,
+  "qa": {
+    "project": "living-npc-plugin",
+    "fixture": "bc-round2-ln-offline-fixture",
+    "accountRole": "dedicated-test-observer",
+    "authorization": [
+      "Chi chay tren controlled fixture da duoc uy quyen"
+    ]
+  },
+  "steps": [
+    {
+      "id": "goto-gate-observation-post",
+      "action": "go_to",
+      "note": "FIXTURE PLACEHOLDER: dung lech truc de khong chiem o staging cua cong.",
+      "x": 10.5,
+      "y": 64,
+      "z": 13.5,
+      "range": 1,
+      "travel": "walk",
+      "timeoutMs": 60000
+    },
+    {
+      "id": "crossing-gate-bodywidth",
+      "action": "observe_crossing",
+      "note": "FIXTURE PLACEHOLDER UUID. approach/exit doi xung quanh tam gateBlock (10.5,64,8.5) tren truc X, cach tam 2 block moi ben; entityHalfWidth=0.3 < corridorHalfWidth=0.75.",
+      "nameIncludes": "Farmer",
+      "targetUuid": "00000000-0000-4000-8000-000000000001",
+      "serverWorld": "world",
+      "dimension": "minecraft:overworld",
+      "gateBlock": { "x": 10, "y": 64, "z": 8 },
+      "maxDistance": 32,
+      "approach": { "x": 8.5, "y": 64, "z": 8.5 },
+      "exit": { "x": 12.5, "y": 64, "z": 8.5 },
+      "entryClearance": 0.3,
+      "exitClearance": 0.3,
+      "verticalTolerance": 1,
+      "requiredExitSamples": 3,
+      "planeEpsilon": 0.1,
+      "corridorHalfWidth": 0.75,
+      "entityHalfWidth": 0.3,
+      "maxStepDistance": 1.75,
+      "exitDwellMs": 600,
+      "requireUuid": true,
+      "sampleMs": 100,
+      "timeoutMs": 300000
+    }
+  ]
+}

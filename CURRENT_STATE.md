@@ -1,15 +1,223 @@
 # BotChecker Current State
 
-Last reviewed: 2026-08-31
+Last reviewed: 2026-09-08
+
+## Current checkpoint — 0.2.0 offline candidate, NOT released
+
+- Canonical repository: `E:/AI.WORK/botcheckerminecraft-botchecker`, branch `main`.
+  Pre-commit baseline `7501337490153b7b5533ca1d17e0c8f91d1eec2b`; the gate ran on
+  its dirty candidate tree, identified by hashes rather than HEAD alone. User then
+  authorized a local commit. No push, consumer pin, deployment or server restart.
+- Exact-current ordered gate `npm run typecheck && npm run verify:coverage-floor &&
+  npm run build && git diff --check`: **880 total / 874 pass / 0 fail / 6 skip**.
+  Windows skip floor passes. TypeScript and 19 adapter/companion Java sources build.
+- Two JARs rebuilt with Gradle `--rerun-tasks build`: six tasks executed, Java 21
+  bytecode (major 65), version `0.2.0-SNAPSHOT`, minimum API `1.21.11` confirmed.
+  Gradle Java test tasks are NO-SOURCE; Node suite owns the separate Java fixtures.
+- Required forward compile passed for `paper-api:26.2.build.121-stable` using
+  JDK 25.0.1 and `--release 21`. This is compile evidence, not Paper runtime support proof.
+- Built JavaScript smoke passed with an injected protocol source: NFC/NFD selectors,
+  exact UUID/count, three samples spanning >=200 ms, and persisted evidence bundle.
+  It opens no Minecraft socket. Client observations remain non-authoritative.
+- Regressions fixed: Unicode NFC/case normalization, stable count and timeout semantics,
+  inventory ownership fail-closed, incremental/in-flight drop evidence and late guard,
+  interrupted action classification, bounded capture work, and strict forward probe.
+  All current source/test/build-input hashes (375 files) are bound in `gate.json`.
+- Opus review was bounded supplied-source review, not independent clean release signoff.
+  Final two low findings were reproduced RED and corrected GREEN by parent; see the
+  complete dispositions rather than treating the review's top-level PASS as zero findings.
+- Five consumer contract tests are offline-only; ten scenario drafts parse and their
+  source/draft hashes match. All five independent consumer reviewers failed infrastructure;
+  no plugin-owning project has supplied a successful runtime signoff.
+- Evidence and limitations: `docs/verification/botchecker-0.2.0-round3/README.md`.
+  The candidate ZIP is an internal review snapshot, not a standalone installer.
+- Remaining: approved isolated Paper lifecycle/claim journey, floor/latest runtime,
+  cross-project actual use and reports, drag/multiplayer/restart/anti-dupe evidence.
+  Direct `persistCancelled()` during an active run is outside the HTTP lifecycle
+  contract and can double-persist; use `cancel()` and await completion instead.
+  Do not deploy or pin this candidate solely because offline gates passed.
+
+Earlier checkpoints below are historical unless explicitly repeated above.
 
 ## Baseline
 
-- Package version: `0.1.0`.
+- Package version: `0.2.0` (internal candidate; not a release).
 - Runtime: Node.js `22.18.0+`, TypeScript ESM.
 - Product: Mineflayer-based Minecraft player-journey and GUI tester exposed through
   a private HTTP API.
 
 ## Implemented Behavior
+
+## 2026-08-31 — Quyết định authenticated Paper adapter Ed25519
+
+- `PROPOSED / IMPLEMENTATION_AUTHORIZED_BY_USER`: user selected an internal Paper
+  plugin adapter with an adapter-private Ed25519 key held in an external Java KeyStore;
+  Node pins only canonical public DER SPKI/key ID in its immutable trust-store snapshot.
+  The decision record is
+  `docs/P0_3_PAPER_ADAPTER_ED25519_DECISION_2026-08-31.md`.
+- This is a distinct versioned `paper-bukkit-online-player-v1` payload contract; it must
+  not extend existing `jvm-observation-bound-v2`, whose canonical schema only carries
+  JVM artifact observation. The future signature must bind challenge/nonce, key/trust,
+  provider/target binding, claimed server/boot IDs, bounded Bukkit online-player count
+  and explicit non-release posture.
+- `OBSERVED`: Paper Maven metadata resolves
+  `io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT`; snapshot
+  `1.21.11-R0.1-20260511.115010-91` SHA-256
+  `c577b181c11a8674310e56c92a91e31c010b7f04c9bd10b91c3be18374401070` compiled
+  a Java 21 probe calling `Bukkit.getOnlinePlayers().size()` successfully.
+- `VERIFIED offline/library-only`: `src/paper-bukkit-online-player-claim.ts` owns a
+  separate strict `paper-bukkit-online-player-v1` verifier. It pins canonical DER-SPKI
+  public keys/key IDs, issues bounded in-memory challenges, verifies the exact
+  Ed25519 payload, sanitizes malformed response errors, and consumes only a valid
+  nonce once. It is a capability-manifest `library-only` module with no transport or
+  preflight importer. Focused profile/capability tests, full Node suite (`686 total /
+  680 pass / 0 fail / 6 skip`), typecheck and Node build passed.
+- `VERIFIED packaging/canonical-library only`: `paper-bukkit-adapter/` is an isolated
+  Gradle `9.7.1` wrapper module, with `compileOnly`
+  `io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT`, Java 21 toolchain,
+  `plugin.yml`, and a plugin boundary whose transport remains disabled. Its clean
+  build passed and the JAR contains its metadata, main class and pure canonicalizer.
+  A Java 21 fixture emitted byte-identical payload bytes to the Node canonicalizer.
+  This does not load the JAR in Paper or prove lifecycle behavior.
+- `VERIFIED offline/integration-fixture only`: Node and Java now share exact bounded
+  binary challenge framing plus canonical-payload/raw-signature response framing. The
+  fixed-IPv4 Node client, Java exact-policy/idempotent processor and Java loopback
+  listener passed focused real-socket fixtures. The listener binds literal `127.0.0.1`,
+  suppresses active responses on close and rejects a second connection while busy.
+- `VERIFIED fake-scheduler fixture only`: the injected Java main-thread scalar snapshot
+  bridge passed `7/7` focused cases for primary-task-only count capture, primary-thread
+  wait rejection, timeout/cancel/late suppression, close wake-up, sanitized capture
+  failure and close/schedule/capture races. Two regressions went RED before correction:
+  a completed task handle was cancelled when `schedule()` returned late, and a completed
+  snapshot escaped after close before `schedule()` returned. A third RED showed close
+  during count capture still read the clock. The exact-current focused bridge/package
+  gate passed `8/8`, a repeat bridge gate passed `7/7`, Gradle clean build, Node
+  typecheck and diff-check passed. This does not prove Paper scheduler/runtime behavior.
+- `VERIFIED offline/integration-fixture only`: the Java opaque Ed25519 signer receives
+  only an operator-owned `ExternalKeyStoreAccess` callback plus pinned lowercase SHA-256
+  `keyId`; it never receives a private key, KeyStore path, alias or credential. It
+  canonical-checks the DER-SPKI pin, copies payload/signature bytes, independently
+  verifies every returned 64-byte signature, sanitizes callback failures and suppresses
+  a late result after close. Two security corrections were observed RED before GREEN:
+  access initialization details were exposed, and the first test fixture carried a
+  test-only PKCS#8 path through argv. Signer focused tests passed `6/6`; the exact M4
+  focused gate passed `60/60`; full Node gate passed `717 total / 711 pass / 0 fail /
+  6 skip`; Gradle clean test/build, Node typecheck/build and diff-check passed.
+  Independent `cc/claude-opus-4-7` review passed with no BLOCKER/HIGH/MEDIUM and three
+  LOW coverage/hardening findings, all closed by exact tests and deterministic
+  `HexFormat` key-ID encoding. This does not verify any concrete KeyStore implementation
+  or key custody/provisioning.
+- `VERIFIED fake-API wiring/compile only`: the concrete Bukkit snapshot adapter maps
+  exact Paper `BukkitScheduler.runTask(Plugin, Runnable)`, `Bukkit.isPrimaryThread()`
+  and `Bukkit.getOnlinePlayers().size()` into the verified generic bridge. The fake API
+  no longer throws on off-thread reads; it records thread identity, queues work until an
+  explicit primary-thread tick, models cancel-before-tick and scheduler owner rejection,
+  and confirms a second schedule failure is not poisoned by `BRIDGE_BUSY`. Focused
+  adapter tests passed `5/5`; adapter/bridge/signer/processor/package gate passed `22/22`;
+  Gradle clean test/build, Node typecheck/build and diff-check passed. Initial independent
+  `cc/claude-opus-4-7` review found five MEDIUM evidence/fake-fidelity concerns; after
+  corrections, exact re-review passed with no findings. The plugin main remains disabled.
+  This does not prove real Paper tick scheduling, cancellation or disable lifecycle.
+- `VERIFIED offline/integration-fixture only`: the library-only adapter lifecycle now
+  owns the loopback listener, processor, Bukkit snapshot adapter and opaque signer.
+  A real IPv4-loopback fixture completed Node challenge issuance, Java scalar snapshot,
+  Ed25519 signing and Node signature verification/one-time consume without carrying a
+  private key, key path or credential across the process boundary. Bind failure closes
+  processor/snapshot/signer fail-closed, while plugin main remains deliberately disabled.
+  Independent `cc/claude-opus-4-7` review passed with two LOW findings. The ledger
+  documentation drift was corrected to match canonical challenge identity plus whole-frame
+  hash gating. The listener residual-worker finding reproduced RED (`callbackExited=false`)
+  and was corrected by publishing worker ownership, closing sockets, interrupting and
+  bounded-joining accept/worker threads; exact re-review passed with no findings. Fresh
+  exact-tree gates passed: M4 focused `70/70`, full Node `727 total / 721 pass / 0 fail /
+  6 skip`, Gradle clean test/build, Node typecheck/build and diff-check.
+- `VERIFIED offline/fake-ServicesManager + Paper-API compile only`: user selected a
+  companion Paper/Bukkit plugin as the future operator-owned KeyStore provider. The
+  adapter now owns helper-issued leased `ExternalKeyStoreAccess` registration and exact
+  companion resolution through Bukkit `ServicesManager`; it never uses highest-wins
+  `load()`. Raw, duplicate and synchronously injected registrations fail closed, and
+  rollback removes only the exact lease issued by this helper rather than deleting an
+  unowned provider. Lease input/output bytes are copied, callback exceptions and null
+  results are sanitized, stale and late-sign results are suppressed after close, and a
+  transient unregister failure remains retryable while the lease stays closed. Focused
+  ServicesManager/package tests passed `8/8`; the fresh M4 gate passed `50/50`; full Node
+  verification passed `734 total / 728 pass / 0 fail / 6 skip`; Gradle clean test/build,
+  Node typecheck/build and diff-check passed. The JAR declares exact minimum
+  `api-version: 1.21.11`. Initial independent `cc/claude-opus-4-7` review found three
+  MEDIUM concerns. The unregister retry and missing security coverage were corrected;
+  the proposed deletion of a synchronously injected provider was rejected because
+  `ServicesManager` does not authenticate `Plugin` ownership. Exact correction re-review
+  passed with no BLOCKER/HIGH/MEDIUM; its two LOW hardening notes were then closed by a
+  null-result fail-closed regression and a less flaky bounded-close assertion.
+- `VERIFIED offline/fake-ServicesManager + real Java concurrency only`: the service
+  coordinator now coalesces availability changes onto an injected worker, owns at most
+  one runtime, tears it down when the exact helper-issued lease disappears, and never
+  activates the plugin main. RED regressions reproduced lost removal reconciliation,
+  close returning while a factory callback remained alive, synchronous factory churn,
+  fatal `Error` state poisoning, same-worker reentrant close, duplicate concurrent
+  unregister, interrupted waiter outcome divergence, and the synchronous
+  `ServiceUnregisterEvent` owner-thread deadlock observed in Paper 1.21.11
+  `SimpleServicesManager` bytecode. Corrections add a four-pass self-reconcile budget,
+  scheduler-failure containment, worker ownership, interrupt plus a 250 ms join budget,
+  explicit `CLOSE_TIMEOUT`/`CLOSE_REENTRANT` outcomes, fatal-error cleanup before
+  propagation, and one shared retryable unregister attempt. Runtime `close()` remains a
+  synchronous injected contract and must itself be bounded. Focused coordinator,
+  ServicesManager and package tests passed `15/15`; Gradle clean test/build passed.
+  Final independent `cc/claude-opus-4-7` correction review passed with no findings.
+  Fresh exact-tree verification then passed `741 total / 735 pass / 0 fail / 6 skip`,
+  Node typecheck/build, Gradle clean test/build and diff-check.
+  This does not verify Bukkit event order, plugin load order, Paper scheduler behavior or
+  runtime activation on a real Paper server.
+- `VERIFIED offline/fake-Bukkit-event + Paper-API compile only`: a library event bridge
+  registers its listener before initial reconciliation, filters exact service class plus
+  exact companion identity, and owns listener/coordinator teardown without wiring the
+  plugin main. RED regressions proved coordinator close timeout could be reported as a
+  false subsequent success, fatal inline initialization leaked the listener, and
+  `HandlerList.unregisterAll` failure made listener cleanup unretryable. Corrections split
+  event admission from cleanup completion, retain retry state across timeout/unregister
+  failure, serialize concurrent listener cleanup, sanitize RuntimeException details and
+  propagate fatal `Error` only after rollback. Focused event/coordinator/bootstrap/package
+  gate passed `20/20`; full exact-tree verification passed `746 total / 740 pass / 0 fail /
+  6 skip`, Node typecheck/build, Gradle clean test/build and diff-check. Independent
+  `cc/claude-opus-4-7` correction review passed with no BLOCKER/HIGH/MEDIUM. Real Paper
+  HandlerList/event dispatch/load order and plugin lifecycle remain `NOT VERIFIED`.
+- `VERIFIED offline/fake-Bukkit + real loopback/Ed25519 only`: the concrete adapter
+  runtime factory now accepts one fixed non-ephemeral loopback port, bounded socket and
+  snapshot timeouts, immutable request policy/clocks, and only an opaque
+  `ExternalKeyStoreAccess` lease. It composes the Bukkit scalar snapshot adapter, pinned
+  self-verifying signer, processor and listener lifecycle without receiving a KeyStore
+  path, alias, password or private key. RED regressions proved static option/null
+  dependencies escaped inconsistent diagnostics and a null lease leaked a
+  `NullPointerException`; both now fail with fixed sanitized codes before activation.
+  A real IPv4-loopback fixture completed Java in-memory Ed25519 signing and Node
+  verification/one-time consume, while bind-conflict retry proved the fixed port is
+  reusable after teardown. Factory/lifecycle/event/coordinator/bootstrap/package tests
+  passed `28/28`; fresh exact-tree verification passed `751 total / 745 pass / 0 fail /
+  6 skip`, Node typecheck/build, Gradle clean test/build and diff-check. Independent
+  `cc/claude-opus-4-7` review passed with no BLOCKER/HIGH/MEDIUM; two LOW speculative
+  cleanup-hardening notes have no executable path in the current final/idempotent
+  snapshot implementation and were not changed without a RED-capable contract.
+  Plugin activation, real Paper scheduling/load order and concrete custody remain
+  `NOT VERIFIED`.
+- `VERIFIED offline/fake-Bukkit-event + real Java concurrency only`: the runtime
+  composition owner now creates exactly one service coordinator, registers the Bukkit
+  service-event bridge before initial reconciliation, activates only an exact
+  helper-issued companion lease, and owns listener/coordinator/runtime teardown without
+  touching plugin main or configuration. RED regressions proved listener-unregister
+  failure could leave an active runtime alive, public null dependencies leaked internal
+  names, and an interrupted runtime-factory worker lost its interrupt status. Corrections
+  close the coordinator/runtime independently of retryable listener cleanup, reject null
+  dependencies before side effects, and restore the worker interrupt flag. Focused
+  runtime/composition/lifecycle/service/package gate passed `34/34`; independent fresh
+  `cc/claude-opus-4-7` correction review passed with no BLOCKER/HIGH/MEDIUM. Fresh
+  exact-tree verification passed `757 total / 751 pass / 0 fail / 6 skip`, Node
+  typecheck/build, Gradle clean test/build and diff-check. This remains library/offline
+  evidence only; Paper event order, load order, plugin enable/disable and concrete
+  KeyStore custody remain `NOT VERIFIED`.
+- No concrete KeyStore/key, plugin lifecycle/runtime wiring, preflight composition,
+  deployment, restart or Paper runtime evidence has been created. The plugin main class
+  still logs that transport is disabled. Authoritative
+  online-player, boot/process identity, lifecycle and release claims remain `NOT VERIFIED`.
 
 ## 2026-08-31 — Localhost server-list online-player observation
 

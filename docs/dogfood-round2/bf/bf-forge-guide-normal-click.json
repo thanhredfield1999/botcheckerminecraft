@@ -1,0 +1,113 @@
+{
+  "name": "BastionForge — normal-click Guide page discrimination (PLACEHOLDER FIXTURE — offline-authored, NEVER EXECUTED)",
+  "description": "Chi dung left-click thuong (button=left). Mo /bforge, bam nut Huong dan slot 4, chung minh trang help THUC SU render bang mui ten Quay lai slot 49, roi quay ve main. Khong shift/drag/number-key. Fixture chua chay tren Paper.",
+  "maxDurationMs": 180000,
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "open_forge",
+      "action": "chat",
+      "message": "/bforge"
+    },
+    {
+      "id": "forge_visible",
+      "action": "wait_for_gui",
+      "titleIncludes": "Lò Rèn Thành Trì",
+      "timeoutMs": 10000
+    },
+    {
+      "id": "forge_layout",
+      "action": "assert_gui",
+      "titleIncludes": "Lò Rèn Thành Trì",
+      "topSlotCount": 54,
+      "items": [
+        {
+          "slot": 4,
+          "section": "top",
+          "nameIncludes": "Hướng dẫn"
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "slot49_is_chance_before",
+      "action": "assert_gui",
+      "items": [
+        {
+          "slot": 49,
+          "section": "top",
+          "nameIncludes": "Tỷ lệ Lượt kế tiếp"
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "click_guide",
+      "action": "click_gui",
+      "slot": 4,
+      "section": "top",
+      "button": "left",
+      "inspectDelayMs": 750,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "help_page_render_settle",
+      "action": "wait",
+      "durationMs": 1500
+    },
+    {
+      "id": "help_page_proved",
+      "action": "assert_gui",
+      "titleIncludes": "Lò Rèn Thành Trì",
+      "topSlotCount": 54,
+      "items": [
+        {
+          "slot": 49,
+          "section": "top",
+          "nameIncludes": "Quay lại Lò Rèn"
+        },
+        {
+          "slot": 20,
+          "section": "top",
+          "nameIncludes": "①"
+        }
+      ],
+      "timeoutMs": 10000
+    },
+    {
+      "id": "click_back",
+      "action": "click_gui",
+      "slot": 49,
+      "section": "top",
+      "button": "left",
+      "inspectDelayMs": 750,
+      "timeoutMs": 10000
+    },
+    {
+      "id": "back_settle",
+      "action": "wait",
+      "durationMs": 1500
+    },
+    {
+      "id": "main_page_restored",
+      "action": "assert_gui",
+      "items": [
+        {
+          "slot": 4,
+          "section": "top",
+          "nameIncludes": "Hướng dẫn"
+        },
+        {
+          "slot": 49,
+          "section": "top",
+          "nameIncludes": "Tỷ lệ Lượt kế tiếp"
+        }
+      ],
+      "timeoutMs": 10000
+    }
+  ]
+}

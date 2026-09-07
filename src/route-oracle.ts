@@ -28,6 +28,8 @@ export interface CrossingOptions {
   requiredExitSamples: number
   planeEpsilon: number
   corridorHalfWidth: number
+  /** DF-08: nửa bề ngang thân entity; 0 = point check trên tâm (hành vi cũ). */
+  entityHalfWidth?: number
   maxStepDistance: number
   exitDwellMs: number
 }

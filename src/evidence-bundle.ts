@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { access, lstat, readFile } from 'node:fs/promises'
+import { access, lstat, readFile, unlink } from 'node:fs/promises'
 import path from 'node:path'
 import { types as utilTypes } from 'node:util'
 import { z } from 'zod'
@@ -239,33 +239,42 @@ export async function writeEvidenceBundle(
   for (const artifact of artifacts) await assertDestinationMissing(directory, artifact.fileName)
 
   const descriptors: EvidenceArtifactDescriptor[] = []
-  for (const artifact of artifacts) {
-    const persisted = await writeImmutableArtifact(directory, artifact.fileName, artifact.content)
-    descriptors.push({
-      role: artifact.role,
-      fileName: persisted.fileName,
-      bytes: persisted.bytes,
-      sha256: persisted.sha256
-    })
-  }
-  descriptors.sort((left, right) => compareText(left.fileName, right.fileName))
+  const written: string[] = []
+  try {
+    for (const artifact of artifacts) {
+      const persisted = await writeImmutableArtifact(directory, artifact.fileName, artifact.content)
+      written.push(persisted.fileName)
+      descriptors.push({
+        role: artifact.role,
+        fileName: persisted.fileName,
+        bytes: persisted.bytes,
+        sha256: persisted.sha256
+      })
+    }
+    descriptors.sort((left, right) => compareText(left.fileName, right.fileName))
 
-  const payload = bundlePayloadSchema.parse({
-    schemaVersion: 1,
-    runId,
-    scenarioSha256,
-    ...(capabilitySourceFingerprint
-      ? { capabilitySourceFingerprint }
-      : {}),
-    ...(targetBindingSha256 ? { targetBindingSha256 } : {}),
-    artifacts: descriptors
-  })
-  const manifest = evidenceBundleManifestSchema.parse({
-    ...payload,
-    bundleSha256: sha256(canonicalPayload(payload))
-  })
-  await writeImmutableArtifact(directory, sealFileName, sealBytes(manifest), { maxBytes: MAX_SEAL_BYTES })
-  return manifest
+    const payload = bundlePayloadSchema.parse({
+      schemaVersion: 1,
+      runId,
+      scenarioSha256,
+      ...(capabilitySourceFingerprint
+        ? { capabilitySourceFingerprint }
+        : {}),
+      ...(targetBindingSha256 ? { targetBindingSha256 } : {}),
+      artifacts: descriptors
+    })
+    const manifest = evidenceBundleManifestSchema.parse({
+      ...payload,
+      bundleSha256: sha256(canonicalPayload(payload))
+    })
+    await writeImmutableArtifact(directory, sealFileName, sealBytes(manifest), { maxBytes: MAX_SEAL_BYTES })
+    written.length = 0
+    return manifest
+  } finally {
+    for (const fileName of written) {
+      await unlink(path.join(directory, fileName)).catch(() => {})
+    }
+  }
 }
 
 async function verifyEvidenceBundleWithContent(

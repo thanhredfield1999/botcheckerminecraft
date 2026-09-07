@@ -1,0 +1,80 @@
+{
+  "name": "itemguard-ground-merge-identity-round2",
+  "description": "OFFLINE draft. Thả 2 stack cùng material nhưng khác identity (PDC code/item_uuid) rồi đếm ground entity để dò GroundItemMergePolicy fail-closed. Toạ độ/tên item là PLACEHOLDER, phải thay bằng fixture thật trước khi chạy.",
+  "maxDurationMs": 300000,
+  "qa": {
+    "project": "ItemGuard",
+    "fixture": "PLACEHOLDER-ig-dupe-fixture",
+    "accountRole": "qa-operator",
+    "authorization": [
+      "PLACEHOLDER-authorized-test-server-ticket"
+    ],
+    "phase": "persistence"
+  },
+  "steps": [
+    {
+      "id": "goto-drop-zone",
+      "action": "go_to",
+      "x": 0,
+      "y": 64,
+      "z": 0,
+      "range": 2,
+      "travel": "walk",
+      "note": "PLACEHOLDER toạ độ sàn phẳng trống, không có ground item lạ trong 48 block."
+    },
+    {
+      "id": "check-item-a",
+      "action": "chat",
+      "message": "/igcheck",
+      "note": "Command thật, plugin.yml:18-20. Bot phải cầm item A đã tracked."
+    },
+    {
+      "id": "capture-code-a",
+      "action": "capture",
+      "name": "codeA",
+      "pattern": "Ma so:[^A-Za-z0-9#]*(#?[A-Z0-9-]{4,})",
+      "group": 1,
+      "source": "chat",
+      "note": "messages.yml:11 item-info-code. Đây là TEXT plugin nói ra, KHÔNG phải PDC authoritative."
+    },
+    {
+      "id": "drop-item-a",
+      "action": "drop_item",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "count": 1,
+      "note": "PLACEHOLDER material, ví dụ diamond_sword. drop_item khớp substring name/displayName."
+    },
+    {
+      "id": "settle-a",
+      "action": "wait",
+      "durationMs": 1000
+    },
+    {
+      "id": "drop-item-b",
+      "action": "drop_item",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "count": 1,
+      "note": "Item B cùng material, khác code/item_uuid. BC không phân biệt được hai stack này ở bước chọn."
+    },
+    {
+      "id": "settle-b",
+      "action": "wait",
+      "durationMs": 2000
+    },
+    {
+      "id": "count-ground-items",
+      "action": "assert_nearby_entity",
+      "nameIncludes": "item",
+      "maxDistance": 6,
+      "exactly": 2,
+      "note": "GroundItemMergePolicy.decide CANCEL khi bất kỳ bên nào có identity => phải còn 2 entity. entityIdentityLabels chỉ có name/displayName/username/customName nên KHÔNG lọc được material hay code."
+    },
+    {
+      "id": "assert-inventory-drained",
+      "action": "assert_inventory",
+      "itemIncludes": "PLACEHOLDER_MATERIAL",
+      "exactly": 0,
+      "note": "exactly là assertion duy nhất fail được khi dupe sinh bản sao (scenario.ts:159-181)."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+
+> botcheckerminecraft@0.2.0 build
+> tsc -p tsconfig.json && npm run build:java && npm run build:paper-adapter && node -e "import('./dist/src/runner.js')"
+
+
+> botcheckerminecraft@0.2.0 build:java
+> node scripts/build-java.mjs
+
+
+> botcheckerminecraft@0.2.0 build:paper-adapter
+> node scripts/build-paper-adapter.mjs
+
+paper-bukkit-adapter: built 19 Java sources (adapter + keystore-companion subproject)

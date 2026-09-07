@@ -1,0 +1,152 @@
+{
+  "expectedProjects": 5,
+  "count": 5,
+  "draftValidation": {
+    "projects": 5,
+    "parsedDrafts": 10,
+    "executedOnPaper": false
+  },
+  "fullSuiteContractCoverage": "test/dogfood-consumer-contracts.test.ts included in 880-test final gate",
+  "projects": [
+    {
+      "project": "VillageDefense",
+      "report": "docs/dogfood-round2/vd/report.json",
+      "sourceBindings": [
+        {
+          "path": "E:\\AI.WORK\\villagedefense\\src\\main\\java\\plugily\\projects\\villagedefense\\commands\\arguments\\RewardsArgument.java",
+          "hashMatches": true
+        },
+        {
+          "path": "E:\\AI.WORK\\villagedefense\\src\\test\\java\\plugily\\projects\\villagedefense\\rewards\\PendingItemRewardServiceTest.java",
+          "hashMatches": true
+        }
+      ],
+      "drafts": [
+        {
+          "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-claim-idempotency.json",
+          "hashMatches": true
+        },
+        {
+          "path": "docs/dogfood-round2/vd/scenario-reward-mailbox-no-space.json",
+          "hashMatches": true
+        }
+      ],
+      "evidenceLayer": "offline-injected-contract",
+      "runtimeVerified": false,
+      "consumerPinWritten": false,
+      "independentConsumerReview": "FAILED_INFRASTRUCTURE_NO_FINAL_SIGNOFF"
+    },
+    {
+      "project": "LivingNPC",
+      "report": "docs/dogfood-round2/ln/report.json",
+      "sourceBindings": [
+        {
+          "path": "E:\\AI.WORK\\living-npc-plugin\\src\\main\\java\\vn\\heomc\\livingnpc\\GateRoute.java",
+          "hashMatches": true
+        },
+        {
+          "path": "E:\\AI.WORK\\living-npc-plugin\\src\\test\\java\\vn\\heomc\\livingnpc\\GateRouteTest.java",
+          "hashMatches": true
+        }
+      ],
+      "drafts": [
+        {
+          "path": "docs/dogfood-round2/ln/livingnpc-full-ordered-route.json",
+          "hashMatches": true
+        },
+        {
+          "path": "docs/dogfood-round2/ln/livingnpc-gate-crossing-bodywidth.json",
+          "hashMatches": true
+        }
+      ],
+      "evidenceLayer": "offline-injected-contract",
+      "runtimeVerified": false,
+      "consumerPinWritten": false,
+      "independentConsumerReview": "FAILED_INFRASTRUCTURE_NO_FINAL_SIGNOFF"
+    },
+    {
+      "project": "ItemGuard",
+      "report": "docs/dogfood-round2/ig/report.json",
+      "sourceBindings": [
+        {
+          "path": "E:\\AI.WORK\\ItemGuard\\src\\main\\java\\com\\itemguard\\commands\\CheckCommand.java",
+          "hashMatches": true
+        },
+        {
+          "path": "E:\\AI.WORK\\ItemGuard\\src\\test\\java\\com\\itemguard\\tracking\\GroundItemMergePolicyTest.java",
+          "hashMatches": true
+        }
+      ],
+      "drafts": [
+        {
+          "path": "docs/dogfood-round2/ig/scenario-drop-pickup-identity-continuity.json",
+          "hashMatches": true
+        },
+        {
+          "path": "docs/dogfood-round2/ig/scenario-ground-merge-identity.json",
+          "hashMatches": true
+        }
+      ],
+      "evidenceLayer": "offline-injected-contract",
+      "runtimeVerified": false,
+      "consumerPinWritten": false,
+      "independentConsumerReview": "FAILED_INFRASTRUCTURE_NO_FINAL_SIGNOFF"
+    },
+    {
+      "project": "RestaurantTycoon",
+      "report": "docs/dogfood-round2/rt/report.json",
+      "sourceBindings": [
+        {
+          "path": "E:\\AI.WORK\\restauranttycoon\\src\\main\\java\\vn\\restauranttycoon\\supply\\SupplyOrderMenuController.java",
+          "hashMatches": true
+        },
+        {
+          "path": "E:\\AI.WORK\\restauranttycoon\\src\\test\\java\\vn\\restauranttycoon\\supply\\SupplyOrderMenuLifecycleTest.java",
+          "hashMatches": true
+        }
+      ],
+      "drafts": [
+        {
+          "path": "docs/dogfood-round2/rt/rt-admin-entrypoint-health-readonly.json",
+          "hashMatches": true
+        },
+        {
+          "path": "docs/dogfood-round2/rt/rt-supply-order-payment-window-readonly.json",
+          "hashMatches": true
+        }
+      ],
+      "evidenceLayer": "offline-injected-contract",
+      "runtimeVerified": false,
+      "consumerPinWritten": false,
+      "independentConsumerReview": "FAILED_INFRASTRUCTURE_NO_FINAL_SIGNOFF"
+    },
+    {
+      "project": "BastionForge",
+      "report": "docs/dogfood-round2/bf/report.json",
+      "sourceBindings": [
+        {
+          "path": "E:\\AI.WORK\\ForceItem\\src\\main\\java\\vn\\heomc\\bastionforge\\bukkit\\ForgeListener.java",
+          "hashMatches": true
+        },
+        {
+          "path": "E:\\AI.WORK\\ForceItem\\src\\test\\java\\vn\\heomc\\bastionforge\\bukkit\\ForgeInputReturnDecisionTest.java",
+          "hashMatches": true
+        }
+      ],
+      "drafts": [
+        {
+          "path": "docs/dogfood-round2/bf/bf-forge-guide-normal-click.json",
+          "hashMatches": true
+        },
+        {
+          "path": "docs/dogfood-round2/bf/bf-material-input-normal-click.json",
+          "hashMatches": true
+        }
+      ],
+      "evidenceLayer": "offline-injected-contract",
+      "runtimeVerified": false,
+      "consumerPinWritten": false,
+      "independentConsumerReview": "FAILED_INFRASTRUCTURE_NO_FINAL_SIGNOFF"
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+```json
+{
+  "verdict": "PASS",
+  "findings": [
+    {
+      "id": "R3-02-UUID-COMPARE-DIVERGENCE",
+      "severity": "low",
+      "path": "src/runner.ts",
+      "line": 950,
+      "claim": "Nhánh đếm dùng `candidate.uuid?.toLocaleLowerCase() === step.requiredUuid.toLocaleLowerCase()` (so sánh không phân biệt hoa/thường VÀ phụ thuộc locale mặc định), trong khi nhánh không-đếm của CÙNG step gọi pinUniqueEntity, nơi so sánh là `entity.uuid === expectedUuid` (src/entity-observer.ts:54 và :115, phân biệt hoa/thường). Hai đường mã của một action cho ra hai ngữ nghĩa nhận dạng khác nhau; ngoài ra đây là chỗ duy nhất còn dùng API locale-sensitive, không được test/fixtures/selector-locale.ts phủ (fixture chỉ stub toLocaleLowerCase cho pinUniqueEntity và assert_inventory).",
+      "counterexample": "Server phát UUID dạng hoa '1111...-1111-4111-8111-111111111111'.toUpperCase() cho entity 'villager': `{action:'assert_nearby_entity', nameIncludes:'villager', requiredUuid:<dạng thường>, exactly:1}` PASS (count=1), còn `{action:'assert_nearby_entity', nameIncludes:'villager', requiredUuid:<dạng thường>}` cùng thời điểm ném INCONCLUSIVE_IDENTITY tại entity-observer.ts:57. Sửa: dùng cùng một phép so sánh (toLowerCase() hoặc `===`) ở cả hai nhánh."
+    },
+    {
+      "id": "R3-07-THROW-UNDEFINED-REASON",
+      "severity": "low",
+      "path": "src/runner.ts",
+      "line": 798,
+      "claim": "Guard chống late-completion `throw signal.reason` giả định signal đã abort. Nếu điều kiện `this.finishedAt` đúng mà stepController CHƯA abort thì `signal.reason` là undefined; executeScenario chuyển thành String(undefined) = 'undefined' (line 489), message không có tiền tố 'INCONCLUSIVE_' nên verdictForStep (line 155-159) trả FAIL — một khẳng định proof dựa trên giá trị lỗi rỗng. Cùng vấn đề ở line 800 nếu về sau ai đó nới điều kiện.",
+      "counterexample": "`persistCancelled()` (line 461-464) là API public và tự set finishedAt mà KHÔNG gọi cancel()/lifecycle.cancel(); nếu được gọi trong lúc bot.clickWindow còn pending thì line 798 chạy với signal.aborted === false → step drop không optional kết thúc với message 'undefined' và verdict FAIL. Sửa rẻ: `throw signal.reason ?? new Error('INCONCLUSIVE_DROP: run finished during click')`. Lưu ý: khả năng tới được phụ thuộc call site trong src/server.ts — không nằm trong snippet được cấp, xem limitations."
+    }
+  ],
+  "limitations": [
+    "Chỉ đọc snippet được cấp; không chạy build/test/JVM nào. Mọi kết luận là đọc mã tĩnh.",
+    "R3-01: xác nhận schema (scenario.ts:213-216) chặn timeoutMs <= 300 cho exactly/maximum, và runner.ts:941/974-975 yêu cầu 200 ms dwell + >= 3 mẫu. KHÔNG xác minh được sàn 300 ms là đủ vì thân hàm `poll` (khoảng cách giữa hai lần sample) không được cấp; test dogfood-round2-behavior.test.ts:384 thay hẳn poll bằng stub gọi check() một lần, còn dogfood-round2-schema.test.ts:46 chỉ kiểm biên schema — nên không test nào chạy thật một count step với timeoutMs 301-500.",
+    "Không biết `poll` nuốt hay lan truyền exception ném từ callback; điều này quyết định pinUniqueEntity ném INCONCLUSIVE_TRACKING/IDENTITY ngay hay chờ tới timeout ở nhánh không-đếm (runner.ts:979-985).",
+    "R3-02: theo hợp đồng được nêu (unsatisfied => FAIL) mã khớp. Không re-litigate việc count === 0 tại timeout được gán FAIL trong khi evidence tự khai `scope:'client-tracked-entities', serverConfirmed:false` và tình huống vật lý tương đương ở nhánh pin lại được gọi là INCONCLUSIVE_TRACKING (entity-observer.ts:59) — chênh lệch này là quyết định hợp đồng, không phải regression.",
+    "R3-07: kiểm được rằng observeDrop luôn tạo object evidence MỚI (runner.ts:770-774) nên completion muộn không thể mutate evidence đã push vào this.steps; test dogfood-round2-behavior.test.ts:168 khớp. Không xác minh được scenario schema có ép id step là duy nhất hay không (snippet scenario.ts không cấp phần baseStep/array): nếu trùng id, `this.currentStep !== step.id` tại line 798 không phát hiện được step khác cùng id và một observeDrop muộn sẽ ghi đè this.activeStepEvidence của step đang chạy.",
+    "R3-05: xác nhận NFC→toLowerCase→NFC đối xứng ở cả hai vế tại runner.ts:161-163/743/752-753/759-760/939/952/986-988, snapshot.ts:188-191 và entity-observer.ts:47/49/68/108/110. Chỉ kiểm cặp 'J\\u030Cade' / '\\u01F0ade'; không quét toàn bộ bảng case-folding Unicode.",
+    "R3-06: đối chiếu test dogfood-round2-behavior.test.ts:86-120 với node_modules/prismarine-windows/lib/Window.js:187-197 — mouseButton 1 = cả stack, 0 = một cái, mode 4, kèm kiểm slot identity (runner.ts:784) là đúng ngữ nghĩa thư viện thật. Không kiểm được packet thực tế trên server.",
+    "R3-03 rút lại theo bằng chứng thực nghiệm của parent; R3-04 chấp nhận phạm vi compile-only, không đề nghị thiết kế lại resolver dependency (verify-paper-forward-compat.mjs:132-139 đã nói rõ NOT verified và liệt kê nguyên nhân).",
+    "Không re-litigate budget 128 event / 100 ms của capture (runner.ts:826-844) hay giới hạn concurrency test; theo yêu cầu bounded.",
+    "Đây KHÔNG phải phê duyệt release; chỉ là review sửa lỗi có giới hạn trên các snippet đã cấp."
+  ]
+}
+```

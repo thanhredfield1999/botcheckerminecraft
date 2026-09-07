@@ -238,114 +238,124 @@ export function buildCapabilityManifest(facts: CapabilityManifestFacts): Capabil
     : { schemaVersion: 1, ...common }
 }
 
-const CAPABILITY_MODULES: Readonly<Record<string, { module: string; mode: 'runtime-wired' | 'library-only' }>> = {
-  'authorized-provider-registry': { module: 'provider-registry', mode: 'runtime-wired' },
-  'compatibility-matrix': { module: 'compatibility-matrix', mode: 'library-only' },
-  'crash-recovery': { module: 'crash-recovery-contract', mode: 'library-only' },
-  'evidence-bundle': { module: 'evidence-bundle', mode: 'runtime-wired' },
-  'failure-envelope': { module: 'failure-envelope', mode: 'runtime-wired' },
-  gameplay: { module: 'gameplay-contract', mode: 'library-only' },
-  'google-cloud-kms-hsm-ed25519-signer': {
-    module: 'google-cloud-kms-signing-backend',
-    mode: 'library-only'
-  },
+const CAPABILITY_MODULES: Readonly<Record<string, { module: string }>> = {
+  'authorized-provider-registry': { module: 'provider-registry' },
+  'compatibility-matrix': { module: 'compatibility-matrix' },
+  'crash-recovery': { module: 'crash-recovery-contract' },
+  'evidence-bundle': { module: 'evidence-bundle' },
+  'failure-envelope': { module: 'failure-envelope' },
+  gameplay: { module: 'gameplay-contract' },
+  'google-cloud-kms-hsm-ed25519-signer': { module: 'google-cloud-kms-signing-backend' },
   'google-cloud-kms-hsm-attestation-envelope-verifier': {
-    module: 'google-cloud-kms-hsm-attestation-verifier',
-    mode: 'library-only'
+    module: 'google-cloud-kms-hsm-attestation-verifier'
   },
   'google-cloud-kms-hsm-cavium-v2-statement-parser': {
-    module: 'cavium-v2-attestation-statement-parser',
-    mode: 'library-only'
+    module: 'cavium-v2-attestation-statement-parser'
   },
   'google-cloud-kms-hsm-attestation-binding-verifier': {
-    module: 'google-cloud-kms-hsm-attestation-binding-verifier',
-    mode: 'library-only'
+    module: 'google-cloud-kms-hsm-attestation-binding-verifier'
   },
   'google-cloud-kms-hsm-attestation-snapshot-bridge': {
-    module: 'google-cloud-kms-signing-backend',
-    mode: 'library-only'
+    module: 'google-cloud-kms-signing-backend'
   },
-  'google-cloud-kms-hsm-trust-root-policy': {
-    module: 'google-cloud-kms-hsm-trust-root-policy',
-    mode: 'library-only'
-  },
+  'google-cloud-kms-hsm-trust-root-policy': { module: 'google-cloud-kms-hsm-trust-root-policy' },
   'google-cloud-kms-hsm-policy-attestation-bridge': {
-    module: 'google-cloud-kms-hsm-trust-root-policy-attestation',
-    mode: 'library-only'
+    module: 'google-cloud-kms-hsm-trust-root-policy-attestation'
   },
-  'google-cloud-kms-hsm-live-preflight': {
-    module: 'google-cloud-kms-live-preflight',
-    mode: 'library-only'
-  },
-  'gui-journey': { module: 'runner', mode: 'runtime-wired' },
-  'immutable-artifacts': { module: 'evidence-writer', mode: 'runtime-wired' },
-  'jvm-artifact-observation-assessment': { module: 'jvm-artifact-observation', mode: 'library-only' },
-  'livingnpc-telemetry': { module: 'livingnpc-telemetry', mode: 'library-only' },
-  'multi-account': { module: 'multi-account-runner', mode: 'library-only' },
-  'multi-client': { module: 'multi-client-runner', mode: 'library-only' },
-  persistence: { module: 'persistence-contract', mode: 'library-only' },
+  'google-cloud-kms-hsm-live-preflight': { module: 'google-cloud-kms-live-preflight' },
+  'gui-journey': { module: 'runner' },
+  'immutable-artifacts': { module: 'evidence-writer' },
+  'jvm-artifact-observation-assessment': { module: 'jvm-artifact-observation' },
+  'livingnpc-telemetry': { module: 'livingnpc-telemetry' },
+  'multi-account': { module: 'multi-account-runner' },
+  'multi-client': { module: 'multi-client-runner' },
+  persistence: { module: 'persistence-contract' },
   'paper-process-configuration-artifact-file-observation': {
-    module: 'paper-process-filesystem-observer',
-    mode: 'library-only'
+    module: 'paper-process-filesystem-observer'
   },
   'paper-process-declared-artifact-file-preflight': {
-    module: 'paper-process-filesystem-observer',
-    mode: 'library-only'
+    module: 'paper-process-filesystem-observer'
   },
   'paper-process-executable-artifact-file-observation': {
-    module: 'paper-process-filesystem-observer',
-    mode: 'library-only'
+    module: 'paper-process-filesystem-observer'
   },
   'paper-process-declared-artifact-tcp-listener-preflight': {
-    module: 'paper-process-tcp-listener-observer',
-    mode: 'library-only'
+    module: 'paper-process-tcp-listener-observer'
   },
-  'paper-process-tcp-listener-observation': {
-    module: 'paper-process-tcp-listener-observer',
-    mode: 'library-only'
-  },
+  'paper-process-tcp-listener-observation': { module: 'paper-process-tcp-listener-observer' },
   'paper-process-declared-artifact-tcp-session-lock-preflight': {
-    module: 'paper-process-session-lock-observer',
-    mode: 'library-only'
+    module: 'paper-process-session-lock-observer'
   },
-  'paper-process-session-lock-observation': {
-    module: 'paper-process-session-lock-observer',
-    mode: 'library-only'
+  'paper-process-session-lock-observation': { module: 'paper-process-session-lock-observer' },
+  'paper-process-online-player-observation': { module: 'paper-process-online-player-observer' },
+  'paper-bukkit-online-player-claim': { module: 'paper-bukkit-online-player-claim' },
+  'paper-bukkit-online-player-transport-codec': {
+    module: 'paper-bukkit-online-player-transport-codec'
   },
-  'paper-process-online-player-observation': {
-    module: 'paper-process-online-player-observer',
-    mode: 'library-only'
+  'paper-bukkit-online-player-loopback-client': {
+    module: 'paper-bukkit-online-player-loopback-client'
   },
-  'paper-process-provider-preflight': { module: 'paper-process-provider', mode: 'library-only' },
-  'protocol-diagnostics': { module: 'protocol-diagnostic', mode: 'runtime-wired' },
-  'route-oracle': { module: 'route-oracle', mode: 'runtime-wired' },
-  'signed-provider-claim': { module: 'signed-provider-claim', mode: 'library-only' },
-  'signed-provider-canonical-signature-verification': {
-    module: 'signed-provider-claim',
-    mode: 'library-only'
+  'paper-bukkit-online-player-verified-source': {
+    module: 'paper-bukkit-online-player-runtime'
   },
-  'signed-provider-evidence-bundle-verifier': {
-    module: 'signed-provider-evidence-bundle',
-    mode: 'library-only'
-  },
-  'signed-provider-opaque-signing-adapter': {
-    module: 'signed-provider-signing-adapter',
-    mode: 'library-only'
-  },
+  'paper-process-provider-preflight': { module: 'paper-process-provider' },
+  'protocol-diagnostics': { module: 'protocol-diagnostic' },
+  'route-oracle': { module: 'route-oracle' },
+  'signed-provider-claim': { module: 'signed-provider-claim' },
+  'signed-provider-canonical-signature-verification': { module: 'signed-provider-claim' },
+  'signed-provider-evidence-bundle-verifier': { module: 'signed-provider-evidence-bundle' },
+  'signed-provider-opaque-signing-adapter': { module: 'signed-provider-signing-adapter' },
   'signed-provider-observer-signing-pipeline': {
-    module: 'signed-provider-observer-signing-pipeline',
-    mode: 'library-only'
+    module: 'signed-provider-observer-signing-pipeline'
   },
-  'signed-provider-observation-bound-claim': {
-    module: 'signed-provider-claim',
-    mode: 'library-only'
-  },
-  'signed-provider-shared-challenge-state': {
-    module: 'signed-provider-challenge-store',
-    mode: 'library-only'
-  },
-  'target-artifact-binding': { module: 'target-binding', mode: 'runtime-wired' },
-  transaction: { module: 'transaction-contract', mode: 'library-only' }
+  'signed-provider-observation-bound-claim': { module: 'signed-provider-claim' },
+  'signed-provider-shared-challenge-state': { module: 'signed-provider-challenge-store' },
+  'target-artifact-binding': { module: 'target-binding' },
+  transaction: { module: 'transaction-contract' }
+}
+
+const RELATIVE_IMPORT_PATTERN =
+  /(?:^|\n)\s*(import|export)(\s+type)?\b([\s\S]*?)from\s*['"]\.\/([a-z0-9._-]+)\.js['"]/g
+
+/**
+ * Đi từ entrypoint `index` theo đúng cạnh import tương đối trong source hiện tại.
+ * `import type` / `export type` bị xóa khi biên dịch nên KHÔNG phải cạnh runtime;
+ * chúng bị loại để mode phản ánh wiring thật thay vì khai báo bằng tay.
+ */
+export function collectEntrypointReachableModules(rootDir: string, codeRoot: string): Set<string> {
+  const extension = codeRoot === 'src' ? '.ts' : '.js'
+  const absoluteRoot = path.join(rootDir, codeRoot)
+  const reachable = new Set<string>()
+  const pending = ['index']
+
+  while (pending.length > 0) {
+    const moduleName = pending.pop()
+    if (moduleName === undefined || reachable.has(moduleName)) continue
+    let content: string
+    try {
+      content = stableReadFile(path.join(absoluteRoot, `${moduleName}${extension}`)).toString('utf8')
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue
+      throw error
+    }
+    reachable.add(moduleName)
+    RELATIVE_IMPORT_PATTERN.lastIndex = 0
+    let match: RegExpExecArray | null
+    while ((match = RELATIVE_IMPORT_PATTERN.exec(content)) !== null) {
+      const typeOnlyKeyword = match[2] !== undefined
+      const clause = match[3] ?? ''
+      const imported = match[4]
+      if (typeOnlyKeyword || imported === undefined) continue
+      // `import { type A, type B } from ...`: mọi binding đều type-only.
+      const named = clause.match(/\{([\s\S]*)\}/)
+      if (named?.[1] !== undefined) {
+        const bindings = named[1].split(',').map(entry => entry.trim()).filter(Boolean)
+        if (bindings.length > 0 && bindings.every(entry => entry.startsWith('type '))) continue
+      }
+      if (!reachable.has(imported)) pending.push(imported)
+    }
+  }
+  return reachable
 }
 
 function stableReadFile(file: string): Buffer {
@@ -478,6 +488,11 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
     throw new Error('Git HEAD or working tree changed while collecting capability manifest')
   }
   const sourcePaths = new Set(sources.map(source => source.path))
+  const reachable = collectEntrypointReachableModules(rootDir, codeRoot)
+  const adapterSources = collectFilesByExtension(rootDir, 'paper-bukkit-adapter', '.java', false)
+  const adapterBuildScript = adapterSources.length > 0
+    ? stableReadFile(path.join(rootDir, 'scripts/build-paper-adapter.mjs'))
+    : undefined
 
   return buildCapabilityManifest({
     packageJson,
@@ -490,7 +505,10 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
     capabilities: Object.fromEntries([
       ...Object.entries(CAPABILITY_MODULES)
         .filter(([, capability]) => sourcePaths.has(`${codeRoot}/${capability.module}${codeRoot === 'src' ? '.ts' : '.js'}`))
-        .map(([name, capability]) => [name, capability.mode] as const),
+        .map(([name, capability]) => [
+          name,
+          reachable.has(capability.module) ? 'runtime-wired' : 'library-only'
+        ] as const),
       ['jvm-artifact-observer', 'library-only'] as const,
       ...(javaSources.some(source => source.path
         === 'java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java')
@@ -518,15 +536,31 @@ export function collectRuntimeCapabilityManifest(options: RuntimeCapabilityManif
         : [])
     ]),
     sources,
-    auxiliaryCode: [{
-      component: 'jvm-artifact-observer',
-      sourceRoot: 'java-src',
-      outputRoot: 'dist/java',
-      mode: codeRoot === 'src' ? 'source-only' : 'source-and-compiled',
-      buildScript: { path: 'scripts/build-java.mjs', content: javaBuildScript },
-      sources: javaSources,
-      compiled: javaCompiled
-    }]
+    auxiliaryCode: [
+      {
+        component: 'jvm-artifact-observer',
+        sourceRoot: 'java-src',
+        outputRoot: 'dist/java',
+        mode: codeRoot === 'src' ? 'source-only' : 'source-and-compiled',
+        buildScript: { path: 'scripts/build-java.mjs', content: javaBuildScript },
+        sources: javaSources,
+        compiled: javaCompiled
+      },
+      ...(adapterSources.length > 0 && adapterBuildScript
+        ? [{
+            component: 'paper-bukkit-adapter',
+            sourceRoot: 'paper-bukkit-adapter',
+            outputRoot: 'paper-bukkit-adapter/build',
+            mode: 'source-only' as const,
+            buildScript: {
+              path: 'scripts/build-paper-adapter.mjs',
+              content: adapterBuildScript
+            },
+            sources: adapterSources,
+            compiled: []
+          }]
+        : [])
+    ]
   })
 }
 

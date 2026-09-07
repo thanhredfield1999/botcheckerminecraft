@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "project": "BastionForge",
+  "botcheckerVersion": "0.2.0",
+  "sourceRepo": "E:\\AI.WORK\\ForceItem",
+  "sourceVersion": "0.1.0-SNAPSHOT",
+  "gitHead": null,
+  "gitHeadIsExactTree": false,
+  "sourceBindings": [
+    {
+      "path": "E:\\AI.WORK\\ForceItem\\src\\main\\java\\vn\\heomc\\bastionforge\\bukkit\\ForgeListener.java",
+      "sha256": "313cb39ab5784710f29ba634fed9f53e6f9392d0dfc682f54c4839743f28c761"
+    },
+    {
+      "path": "E:\\AI.WORK\\ForceItem\\src\\test\\java\\vn\\heomc\\bastionforge\\bukkit\\ForgeInputReturnDecisionTest.java",
+      "sha256": "02b70c1cef298e96a5f1fea81943145cffe6c632747611a23076679acaeae494"
+    }
+  ],
+  "reviewOwner": "parent verified current source and offline contract; not target project runtime signoff",
+  "subagentReview": "incomplete; no final project report received",
+  "evidenceLayer": "offline-injected-contract",
+  "contractTest": "test/dogfood-consumer-contracts.test.ts",
+  "contractCommand": "node --import tsx --test --test-name-pattern 'consumer BastionForge:' test/dogfood-consumer-contracts.test.ts",
+  "contractObserved": "PASS in five-test focused run; see final full gate receipt",
+  "runtimeExecuted": false,
+  "runtimeVerified": false,
+  "productionTouched": false,
+  "consumerPinWritten": false,
+  "decision": "DRAFT_ONLY_NOT_READY_FOR_SERVER_EXECUTION",
+  "serverVersion": null,
+  "runtimeDependencies": "not provisioned in this round",
+  "scenarios": [
+    {
+      "path": "docs/dogfood-round2/bf/bf-forge-guide-normal-click.json",
+      "sha256": "dd2ba3c88b4771f12ca1bf4806b5533e5166076e0fbe8cfd92b9f00cb3df6a44",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    },
+    {
+      "path": "docs/dogfood-round2/bf/bf-material-input-normal-click.json",
+      "sha256": "0070fd67fcd0dab007731a104727dd7be3c4bac881975ada05adb4c7652a517c",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    }
+  ],
+  "remainingGaps": [
+    "Slot/title đã configurable theo source hiện tại; placeholder draft phải bind exact config/layout/locale.",
+    "Draft comment assert_inventory không hỗ trợ customName đã lỗi thời: parent đã sửa decoded customName/NFC.",
+    "Drag/shift/number-key chưa được runner hỗ trợ; normal click không thay thế kiểm drag.",
+    "Không có .git trong repo ForceItem; exact-current binding dùng hash source, không bịa commit."
+  ]
+}

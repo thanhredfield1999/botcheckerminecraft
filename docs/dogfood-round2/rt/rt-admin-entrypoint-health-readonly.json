@@ -1,0 +1,87 @@
+{
+  "name": "RestaurantTycoon admin entrypoint + health readback (offline-authored)",
+  "description": "FIXTURE-PLACEHOLDER: tai khoan QA phai co op (restauranttycoon.admin.setup / .health, plugin.yml:16-22). Khong bat release gate, khong mutate. Chung minh capture chi doc duoc chat/title/action_bar. FIXTURE-NOTE: step no_internal_error dung notText la message chuan cua Bukkit khi command throw, KHONG co trong source RestaurantTycoon.",
+  "maxDurationMs": 240000,
+  "steps": [
+    {
+      "id": "state_before",
+      "action": "assert_state",
+      "timeoutMs": 15000,
+      "minimumHealth": 20,
+      "gui": "closed"
+    },
+    {
+      "id": "health_cmd",
+      "action": "chat",
+      "timeoutMs": 10000,
+      "message": "/restaurant health"
+    },
+    {
+      "id": "health_state_line",
+      "action": "wait_for_text",
+      "timeoutMs": 20000,
+      "text": "State: READY",
+      "source": "chat"
+    },
+    {
+      "id": "capture_db_state",
+      "action": "capture",
+      "timeoutMs": 20000,
+      "name": "dbState",
+      "pattern": "Database:\\s*([A-Z_]+)",
+      "group": 1,
+      "source": "chat"
+    },
+    {
+      "id": "no_internal_error",
+      "action": "wait_for_text",
+      "timeoutMs": 20000,
+      "notText": "An internal error occurred",
+      "durationMs": 8000,
+      "source": "chat"
+    },
+    {
+      "id": "admin_cmd",
+      "action": "chat",
+      "timeoutMs": 10000,
+      "message": "/restaurant admin"
+    },
+    {
+      "id": "admin_gui_open",
+      "action": "wait_for_gui",
+      "timeoutMs": 25000,
+      "titleIncludes": "Thiết lập Restaurant Tycoon"
+    },
+    {
+      "id": "admin_gui_inspect",
+      "action": "assert_gui",
+      "timeoutMs": 20000,
+      "afterStep": "admin_gui_open",
+      "topSlotCount": 54,
+      "titleIncludes": "Thiết lập Restaurant Tycoon"
+    },
+    {
+      "id": "state_after",
+      "action": "assert_state",
+      "timeoutMs": 15000,
+      "minimumHealth": 20,
+      "gui": "open"
+    },
+    {
+      "id": "health_again",
+      "action": "chat",
+      "timeoutMs": 10000,
+      "message": "/restaurant health"
+    },
+    {
+      "id": "db_state_unchanged",
+      "action": "assert_capture",
+      "timeoutMs": 20000,
+      "name": "dbState",
+      "pattern": "Database:\\s*([A-Z_]+)",
+      "group": 1,
+      "source": "chat",
+      "equals": true
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import Fastify from 'fastify'
+import { timingSafeEqual } from 'node:crypto'
 import { readdir } from 'node:fs/promises'
 import { z } from 'zod'
 import { config } from './config.js'
@@ -30,28 +31,67 @@ interface ManagedRun {
   persistCancelled(): Promise<void>
   view(): unknown
   report(): unknown
+  attachQaPlan?(kind: 'permission' | 'negative-security', result: unknown): void
+}
+
+interface QaPlanEntry {
+  readonly accountRef: string
+  readonly verdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+  readonly message: string
+  readonly evidence?: unknown
+}
+
+interface QaPlanExecutor {
+  readonly kind: 'permission' | 'negative-security'
+  run(scenario: Scenario): Promise<{
+    verdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+    project: string
+    fixture: string
+    accounts: readonly string[]
+    summary: { total: number; pass: number; fail: number; inconclusive: number }
+    cells?: readonly QaPlanEntry[]
+    cases?: readonly QaPlanEntry[]
+  }>
 }
 
 interface ServerOptions {
   queueCapacity?: number
+  maxRetainedRuns?: number
+  apiCredential?: string
   scenarioLoader?: (directory: string, name: string) => Promise<Scenario>
   runFactory?: (
     scenario: Scenario,
     resolvedPlan?: Readonly<ResolvedAuthorizedPlan>
   ) => ManagedRun
   providerRegistry?: ProviderRegistry
+  qaPlanExecutor?: QaPlanExecutor
   capabilityManifestCollector?: () => CapabilityManifest
   targetBindingFile?: string
   targetBindingLoader?: (file: string) => ArtifactTargetBinding
   logger?: boolean
 }
 
+class ScenarioNotFoundError extends Error {}
+
+function credentialMatches(expected: string, provided: string | undefined): boolean {
+  if (provided === undefined) return false
+  const expectedBytes = Buffer.from(expected, 'utf8')
+  const providedBytes = Buffer.from(provided, 'utf8')
+  // So sánh constant-time; độ dài khác vẫn phải tiêu tốn cùng lượng công việc.
+  const padded = Buffer.alloc(expectedBytes.byteLength)
+  providedBytes.copy(padded, 0, 0, Math.min(providedBytes.byteLength, padded.byteLength))
+  return timingSafeEqual(expectedBytes, padded) && providedBytes.byteLength === expectedBytes.byteLength
+}
+
 export function createServer(options: ServerOptions = {}) {
   const app = Fastify({ logger: options.logger ?? true })
   const runs = new Map<string, ManagedRun>()
   const queue = new RunQueue(options.queueCapacity ?? config.queueCapacity)
+  const maxRetainedRuns = options.maxRetainedRuns ?? config.maxRetainedRuns
+  const apiCredential = options.apiCredential ?? config.apiCredential
   const scenarioLoader = options.scenarioLoader ?? loadScenario
   const providerRegistry = options.providerRegistry
+  const qaPlanExecutor = options.qaPlanExecutor
   const capabilityManifest = options.runFactory
     ? undefined
     : (options.capabilityManifestCollector ?? runtimeCapabilityManifest)()
@@ -71,6 +111,26 @@ export function createServer(options: ServerOptions = {}) {
       ...(targetBinding ? { targetBinding } : {}),
       ...(resolvedPlan ? { authorizedPlan: resolvedPlan } : {})
     })
+  })
+
+  const evictFinishedRuns = (): void => {
+    // Map giữ thứ tự chèn: evict run đã kết thúc, cũ nhất trước.
+    for (const [id, run] of runs) {
+      if (runs.size <= maxRetainedRuns) return
+      if (['queued', 'connecting', 'running'].includes(run.status)) continue
+      runs.delete(id)
+    }
+  }
+
+  app.addHook('onRequest', async (request, reply) => {
+    if (!apiCredential || !request.url.startsWith('/api/')) return
+    const header = request.headers.authorization
+    const provided = typeof header === 'string' && header.startsWith('Bearer ')
+      ? header.slice('Bearer '.length)
+      : undefined
+    if (!credentialMatches(apiCredential, provided)) {
+      await reply.code(401).send({ error: 'Unauthorized' })
+    }
   })
 
   app.get('/health', async () => ({ ok: true, queue: queue.snapshot() }))
@@ -101,17 +161,38 @@ export function createServer(options: ServerOptions = {}) {
     } else {
       scenarioName = createRunSchema.parse(request.body).scenario
     }
-    const scenario = await scenarioLoader(config.scenarioDir, scenarioName)
+    let scenario: Scenario
+    try {
+      scenario = await scenarioLoader(config.scenarioDir, scenarioName)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new ScenarioNotFoundError()
+      }
+      throw error
+    }
     if (resolvedPlan && scenario.name !== resolvedPlan.scenario) {
       return reply.code(400).send({ error: 'Authorized plan is invalid' })
     }
     const run = runFactory(scenario, resolvedPlan)
     try {
-      queue.enqueue({ id: run.id, run: () => run.start(), cancel: () => run.cancel() })
+      queue.enqueue({
+        id: run.id,
+        run: async () => {
+          // Producer QA chạy TRƯỚC scenario để kết quả thật đi vào manifest của
+          // chính run này, thay vì chỉ tồn tại trong test (audit BC-010).
+          if (qaPlanExecutor && typeof run.attachQaPlan === 'function') {
+            const result = await qaPlanExecutor.run(scenario)
+            run.attachQaPlan(qaPlanExecutor.kind, result)
+          }
+          await run.start()
+        },
+        cancel: () => run.cancel()
+      })
     } catch (error) {
       return reply.code(429).send({ error: error instanceof Error ? error.message : String(error) })
     }
     runs.set(run.id, run)
+    evictFinishedRuns()
     return reply.code(202).send({ runId: run.id, status: run.status })
   })
 
@@ -144,10 +225,18 @@ export function createServer(options: ServerOptions = {}) {
     await queue.idle()
   })
 
-  app.setErrorHandler((error, _request, reply) => {
-    const status = error instanceof z.ZodError ? 400 : 500
-    const message = error instanceof Error ? error.message : String(error)
-    void reply.code(status).send({ error: message })
+  app.setErrorHandler((error, request, reply) => {
+    if (error instanceof ScenarioNotFoundError) {
+      void reply.code(404).send({ error: 'Scenario not found' })
+      return
+    }
+    if (error instanceof z.ZodError) {
+      void reply.code(400).send({ error: 'Request is invalid' })
+      return
+    }
+    // Chi tiết chỉ ghi phía server; body trả về không phản chiếu message.
+    request.log.error({ err: error }, 'Unhandled route error')
+    void reply.code(500).send({ error: 'Internal error' })
   })
 
   return app

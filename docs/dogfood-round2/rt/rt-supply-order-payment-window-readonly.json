@@ -1,0 +1,103 @@
+{
+  "name": "RestaurantTycoon supply order draft to payment-confirm window (no payment)",
+  "description": "FIXTURE-PLACEHOLDER: QA account phai la owner cua plot_1 va supply setup phai READY truoc khi chay; DB test fixture chuan bi ngoai scenario. Chi tang draft va mo cua so xac nhan, KHONG bam Thanh toan. Sua lai timeout budget cua scenarios/restaurant-tycoon-ordering-gui.json.",
+  "maxDurationMs": 600000,
+  "steps": [
+    {
+      "id": "state_before",
+      "action": "assert_state",
+      "timeoutMs": 15000,
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "closed"
+    },
+    {
+      "id": "open_order_menu",
+      "action": "chat",
+      "timeoutMs": 10000,
+      "message": "/restaurant order plot_1"
+    },
+    {
+      "id": "ownership_check",
+      "action": "wait_for_text",
+      "timeoutMs": 20000,
+      "text": "Đang kiểm tra quyền sở hữu và thiết lập nhập hàng...",
+      "source": "chat"
+    },
+    {
+      "id": "order_gui_open",
+      "action": "wait_for_gui",
+      "timeoutMs": 45000,
+      "titleIncludes": "Đặt nguyên liệu - plot_1"
+    },
+    {
+      "id": "order_gui_shape",
+      "action": "assert_gui",
+      "timeoutMs": 20000,
+      "afterStep": "order_gui_open",
+      "topSlotCount": 27,
+      "items": [
+        {
+          "slot": 22,
+          "section": "top",
+          "nameIncludes": "Xác nhận đơn"
+        }
+      ]
+    },
+    {
+      "id": "select_tomato",
+      "action": "click_gui",
+      "timeoutMs": 30000,
+      "nameIncludes": "Cà chua",
+      "button": "left",
+      "inspectDelayMs": 750
+    },
+    {
+      "id": "confirm_order",
+      "action": "click_gui",
+      "timeoutMs": 30000,
+      "nameIncludes": "Xác nhận đơn",
+      "button": "left",
+      "inspectDelayMs": 750
+    },
+    {
+      "id": "payment_gui_ready",
+      "action": "assert_gui",
+      "timeoutMs": 30000,
+      "afterStep": "confirm_order",
+      "titleIncludes": "Xác nhận thanh toán",
+      "topSlotCount": 27,
+      "items": [
+        {
+          "slot": 11,
+          "section": "top",
+          "material": "lime_concrete",
+          "nameIncludes": "Thanh toán",
+          "loreIncludes": "ghi bền vững",
+          "count": 1
+        },
+        {
+          "slot": 15,
+          "section": "top",
+          "nameIncludes": "Quay lại"
+        }
+      ]
+    },
+    {
+      "id": "no_debit_message",
+      "action": "wait_for_text",
+      "timeoutMs": 30000,
+      "notText": "Đặt hàng thành công. Mã đơn:",
+      "durationMs": 12000,
+      "source": "chat"
+    },
+    {
+      "id": "state_after",
+      "action": "assert_state",
+      "timeoutMs": 15000,
+      "minimumHealth": 20,
+      "minimumFood": 20,
+      "gui": "open"
+    }
+  ]
+}

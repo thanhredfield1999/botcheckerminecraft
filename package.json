@@ -1,17 +1,20 @@
 {
   "name": "botcheckerminecraft",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Minecraft new-player journey and GUI tester",
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && npm run build:java && node -e \"import('./dist/src/runner.js')\"",
+    "build": "tsc -p tsconfig.json && npm run build:java && npm run build:paper-adapter && node -e \"import('./dist/src/runner.js')\"",
     "build:java": "node scripts/build-java.mjs",
+    "build:paper-adapter": "node scripts/build-paper-adapter.mjs",
     "dev": "tsx watch src/index.ts",
     "start": "node dist/src/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test test/**/*.test.ts",
+    "test": "node --import tsx --test --test-concurrency=2 test/**/*.test.ts",
+    "verify:coverage-floor": "node scripts/verify-test-coverage-floor.mjs",
+    "verify:paper-forward-compat": "node scripts/verify-paper-forward-compat.mjs",
     "verify:kms-hsm": "npm run build --silent && node scripts/verify-google-cloud-kms-hsm.mjs"
   },
   "engines": {

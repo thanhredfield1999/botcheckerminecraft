@@ -186,7 +186,12 @@ export function boundedGuiItems(items: GuiItemSnapshot[]): GuiItemSnapshot[] {
 }
 
 export function itemSearchText(item: GuiItemSnapshot): string {
-  return [item.material, item.displayName, item.customName].filter(Boolean).join('\n').toLocaleLowerCase()
+  return [item.material, item.displayName, item.customName].filter(Boolean).join('\n')
+    .normalize('NFC').toLowerCase().normalize('NFC')
+}
+
+export function inventoryItemSearchText(item: Item): string {
+  return itemSearchText(snapshotItem(item, 0))
 }
 
 export function formatGuiSnapshot(gui: GuiSnapshot): string {

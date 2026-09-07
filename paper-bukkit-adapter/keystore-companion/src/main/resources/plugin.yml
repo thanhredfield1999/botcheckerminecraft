@@ -1,0 +1,11 @@
+name: BotCheckerKeyStoreCompanion
+version: '${version}'
+main: vn.heomc.botchecker.keystorecompanion.PaperBukkitOnlinePlayerKeyStoreCompanionPlugin
+# Minimum supported API, matching the adapter; not an exact server-version pin.
+api-version: '1.21.11'
+author: HeoMC
+description: Operator-owned PKCS12 Ed25519 custody provider for the BotChecker Paper adapter.
+# Hard dependency: the companion must resolve the SAME service Class the adapter owns.
+# This also makes Paper load the adapter first, so the adapter cannot assume the
+# service already exists in its own onEnable — it must follow register/unregister events.
+depend: [BotCheckerPaperAdapter]

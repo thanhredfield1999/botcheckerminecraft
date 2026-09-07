@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "project": "ItemGuard",
+  "botcheckerVersion": "0.2.0",
+  "sourceRepo": "E:\\AI.WORK\\ItemGuard",
+  "sourceVersion": "1.0.0",
+  "gitHead": "1b7d05517f2d95d979a202971a67a08c54ad153d",
+  "gitHeadIsExactTree": false,
+  "sourceBindings": [
+    {
+      "path": "E:\\AI.WORK\\ItemGuard\\src\\main\\java\\com\\itemguard\\commands\\CheckCommand.java",
+      "sha256": "644dfa03b172a77876cc4382dc79fe026f664ac2057d956f456fd5a3705b1287"
+    },
+    {
+      "path": "E:\\AI.WORK\\ItemGuard\\src\\test\\java\\com\\itemguard\\tracking\\GroundItemMergePolicyTest.java",
+      "sha256": "fdcd68e5bdb0152b95a93a63e49511afd00995a1cc05533a2d0eb0c3058f86a0"
+    }
+  ],
+  "reviewOwner": "parent verified current source and offline contract; not target project runtime signoff",
+  "subagentReview": "incomplete; no final project report received",
+  "evidenceLayer": "offline-injected-contract",
+  "contractTest": "test/dogfood-consumer-contracts.test.ts",
+  "contractCommand": "node --import tsx --test --test-name-pattern 'consumer ItemGuard:' test/dogfood-consumer-contracts.test.ts",
+  "contractObserved": "PASS in five-test focused run; see final full gate receipt",
+  "runtimeExecuted": false,
+  "runtimeVerified": false,
+  "productionTouched": false,
+  "consumerPinWritten": false,
+  "decision": "DRAFT_ONLY_NOT_READY_FOR_SERVER_EXECUTION",
+  "serverVersion": null,
+  "runtimeDependencies": "not provisioned in this round",
+  "scenarios": [
+    {
+      "path": "docs/dogfood-round2/ig/scenario-drop-pickup-identity-continuity.json",
+      "sha256": "b7ea20fea6773c9729a7f5e98570e2f4197dcc1dfa008ffb26f6debb2af9bf75",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    },
+    {
+      "path": "docs/dogfood-round2/ig/scenario-ground-merge-identity.json",
+      "sha256": "6fe6ff591e0479e68d3a77005106f4adf823df7e853e67b0d8817c3a3f548eb5",
+      "status": "PARSE_CHECK_PENDING_NOT_EXECUTED"
+    }
+  ],
+  "remainingGaps": [
+    "CheckCommand in code/material, không in authoritative item_uuid; text equality không chứng minh anti-dupe.",
+    "Hai capture liên tiếp từ cùng response có thể miss burst: mỗi capture phải có fresh command response riêng hoặc collector contract sau này.",
+    "Đếm entity item không lọc payload material/PDC; cần isolated empty ground zone, pickup timing và exact fixture identity."
+  ]
+}

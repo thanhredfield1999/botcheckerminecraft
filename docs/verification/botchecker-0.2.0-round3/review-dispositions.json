@@ -1,0 +1,153 @@
+{
+  "scope": "Parent verification of supplied-source Opus reviews and late low-priority corrections; not a release signoff",
+  "round2": [
+    {
+      "id": "H1",
+      "status": "FIXED",
+      "evidence": "R2 H1 schema regression: negative observation window must end strictly before timeout"
+    },
+    {
+      "id": "H2",
+      "status": "FIXED",
+      "evidence": "R2 H2 behavior: skip >4096 event, later valid capture works"
+    },
+    {
+      "id": "M1",
+      "status": "FIXED",
+      "evidence": "R2 M1/M7 missing prior capture is INCONCLUSIVE_CAPTURE_MISSING"
+    },
+    {
+      "id": "M2",
+      "status": "FIXED_WITH_LIMITS",
+      "evidence": "R2 M2 plus R3-01: 3 stable samples >=200ms, count retained in evidence; timeout budget guard; client sampling only"
+    },
+    {
+      "id": "M3",
+      "status": "FIXED_FAIL_CLOSED",
+      "evidence": "R2 M3 rejects processing menu and nonempty crafting cache while container open; known storage window projection retained"
+    },
+    {
+      "id": "M4",
+      "status": "FIXED",
+      "evidence": "NFC/NFD selector regressions; R3-05 adds normalization after lowercase"
+    },
+    {
+      "id": "M5",
+      "status": "FIXED_WITH_LIMITS",
+      "evidence": "paper-forward-scope tests: main roots only, diagnostics do not infer API removal; strict real forward compile PASS; not a general Maven dependency resolver"
+    },
+    {
+      "id": "M6",
+      "status": "FIXED",
+      "evidence": "paper-forward-gate behavior test stubs javac boundary; missing-javac test still exercises fail-closed"
+    },
+    {
+      "id": "M7",
+      "status": "FIXED",
+      "evidence": "capture timeout classified missing observation/INCONCLUSIVE"
+    },
+    {
+      "id": "L1",
+      "status": "FIXED",
+      "evidence": "UUID minimum >1 schema reject test"
+    },
+    {
+      "id": "L2",
+      "status": "FIXED",
+      "evidence": "partial-drop disconnect keeps incremental completedClicks/inFlight/client delta evidence"
+    },
+    {
+      "id": "L3",
+      "status": "FIXED",
+      "evidence": "empty/whitespace captures rejected before equality comparison"
+    },
+    {
+      "id": "L4",
+      "status": "FIXED",
+      "evidence": "insufficient quantity message names selected slot, does not claim global inventory total"
+    },
+    {
+      "id": "L5",
+      "status": "FIXED",
+      "evidence": "isolated Turkish-default-locale fixture passes without changing host locale"
+    },
+    {
+      "id": "L6",
+      "status": "FIXED_WITH_LIMITS",
+      "evidence": "aggregate 100ms/128-evaluation budget test plus separate real VM hostile-regex subprocess; host wall-clock starvation may yield INCONCLUSIVE"
+    }
+  ],
+  "round3": [
+    {
+      "id": "R3-01",
+      "status": "CONFIRMED_FIXED",
+      "evidence": "Schema rejects exact/maximum timeout <=300ms; matching predicate without enough dwell on timeout is INCONCLUSIVE. RED->GREEN tests."
+    },
+    {
+      "id": "R3-02",
+      "status": "CONFIRMED_FIXED_TEST",
+      "evidence": "UUID count regression now uses 800ms and matched/mismatched UUID cases; verifies PASS/count=1 versus FAIL/count=0."
+    },
+    {
+      "id": "R3-03",
+      "status": "REJECTED_EXPERIMENTALLY",
+      "evidence": "JDK25.0.1 real forward probe compiled 19 sources at release21. Independent Api major69 -> Consumer --release21 major65 probe compiles/runs, output ok. JDK21 cannot read major69 remains a toolchain limitation, not the claimed JDK25 prohibition."
+    },
+    {
+      "id": "R3-04",
+      "status": "REJECTED_AS_CURRENT_DEFECT_LIMIT_RETAINED",
+      "evidence": "Current adapter imports do not use Component; strict real compile succeeded. Compile diagnostics explicitly leave source/API/JDK/classpath undecided. Future API dependency expansion may require classpath updates; NOT runtime evidence."
+    },
+    {
+      "id": "R3-05",
+      "status": "CONFIRMED_FIXED",
+      "evidence": "Same J+combining-caron item selector and precomposed lowercase entity query reproduced RED; NFC->toLowerCase->NFC on both sides GREEN."
+    },
+    {
+      "id": "R3-06",
+      "status": "COVERAGE_GAP_CLOSED",
+      "evidence": "Installed prismarine-windows dropClick mutates count for button0. Real Mineflayer inventory plugin regression now validates count=3 with three mode4 packets on the same slot, no cursor/window close. Remote packet interleaving remains unverified."
+    },
+    {
+      "id": "R3-07",
+      "status": "REJECTED_UNREACHABLE_COUNTEREXAMPLE",
+      "evidence": "Normal finish cannot occur while awaited drop promise is active; timeout path aborts with Error before finish. Added late-completion-after-optional-timeout test proves steps/report not overwritten. Manual mutation of private lifecycle fields is not a runtime path."
+    },
+    {
+      "id": "R3-08",
+      "status": "INTENTIONAL_CONTRACT_DOCUMENTED",
+      "evidence": "RunStatus tracks execution completion; Verdict tracks proof. report issues severity uses Verdict. README now explicitly tells consumers not to interpret summary.failed as product failure."
+    }
+  ],
+  "additionalTestRealityCorrections": [
+    "Removed dead toss/transfer injection from selection-only fake test; label now explicitly injected boundary.",
+    "Fake inventory.items() now filters storage slots 9..44; owned-slot projection probes use real prismarine-windows.",
+    "Real-library drop checks mouseButton 1 for full stack, 0 for one/three items.",
+    "Fish library reject/resolve after interruption cannot produce product FAIL or start the next fish attempt.",
+    "Full suite default concurrency starved VM wall-clock budget; configured test concurrency=2 without raising runtime budget.",
+    "No repository edits/builds concurrently with the final full gate because capability manifests reject a changing working tree."
+  ],
+  "finalCorrectionReview": {
+    "model": "claude-opus-5",
+    "rawVerdict": "PASS",
+    "findingsCount": 2,
+    "meaning": "Bounded snippet review, not clean exact-current signoff; both low findings verified and corrected after review",
+    "findings": [
+      {
+        "id": "R3-02-UUID-COMPARE-DIVERGENCE",
+        "status": "CONFIRMED_FIXED",
+        "evidence": "Uppercase letter-bearing UUID in counted selector reproduced count=1 versus intended exact count=0 (RED). Comparison now candidate.uuid === requiredUuid like pin/validate; focused GREEN."
+      },
+      {
+        "id": "R3-07-THROW-UNDEFINED-REASON",
+        "status": "CONFIRMED_GUARD_FIXED_WITH_LIMIT",
+        "evidence": "Direct finished-run guard test rejected undefined (RED), now rejects INCONCLUSIVE_DROP (GREEN). HTTP cancel paths call queue.cancel -> run.cancel before persistCancelled (server.ts/queue.ts). Direct unsupported persistCancelled during active run also reproduced duplicate sealed bundle persistence; not redesigned in this bounded fix."
+      }
+    ]
+  },
+  "remainingLimits": [
+    "No independent exact-final-tree zero-findings signoff; final low fixes parent-reviewed/tested.",
+    "Calling public persistCancelled directly while a run is active bypasses the HTTP lifecycle contract and can attempt duplicate sealed persistence; use cancel and await start/queue completion.",
+    "Client observation remains non-authoritative; no Paper E2E, restart, concurrency anti-dupe, GUI drag, provider custody runtime or cross-project release approval."
+  ]
+}

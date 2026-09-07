@@ -1,0 +1,102 @@
+{
+  "name": "vd-reward-mailbox-claim-idempotency",
+  "description": "EXTERNAL Item-Rewards=MAILBOX: /vd rewards claim ap dung dung mot lan; claim lai phai bao NOTHING_PENDING va khong sinh them item.",
+  "maxDurationMs": 300000,
+  "qa": {
+    "project": "VillageDefense",
+    "fixture": "FIXTURE_ARENA_EXTERNAL_PLACEHOLDER",
+    "accountRole": "dedicated-test-account",
+    "authorization": [
+      "authorized-test-server-placeholder",
+      "operator-approval-required-before-run"
+    ],
+    "phase": "persistence"
+  },
+  "steps": [
+    {
+      "id": "status-before",
+      "action": "chat",
+      "message": "/vd rewards status"
+    },
+    {
+      "id": "capture-pending-before",
+      "action": "capture",
+      "name": "pendingBefore",
+      "pattern": "Kho thưởng:\\s*(\\d+)\\s*lần nhận",
+      "group": 1,
+      "source": "chat",
+      "timeoutMs": 10000,
+      "note": "language.yml:61 Status + RewardsArgument.java:58 summary tieng Viet"
+    },
+    {
+      "id": "inventory-baseline",
+      "action": "assert_inventory",
+      "itemIncludes": "REWARD_ITEM_PLACEHOLDER",
+      "exactly": 0,
+      "note": "fixture phai dam bao tui do sach truoc khi claim"
+    },
+    {
+      "id": "claim-once",
+      "action": "chat",
+      "message": "/vd rewards claim"
+    },
+    {
+      "id": "claim-ack",
+      "action": "wait_for_text",
+      "text": "Đã nhận",
+      "source": "chat",
+      "timeoutMs": 15000,
+      "note": "language.yml:62 Commands.Rewards.Claimed"
+    },
+    {
+      "id": "inventory-after-claim",
+      "action": "assert_inventory",
+      "itemIncludes": "REWARD_ITEM_PLACEHOLDER",
+      "exactly": 1
+    },
+    {
+      "id": "claim-twice",
+      "action": "chat",
+      "message": "/vd rewards claim"
+    },
+    {
+      "id": "claim-twice-nothing-pending",
+      "action": "wait_for_text",
+      "text": "chưa có phần thưởng nào đang chờ",
+      "source": "chat",
+      "timeoutMs": 15000,
+      "note": "language.yml:63 Nothing-Pending == ClaimOutcome.NOTHING_PENDING"
+    },
+    {
+      "id": "inventory-no-dupe",
+      "action": "assert_inventory",
+      "itemIncludes": "REWARD_ITEM_PLACEHOLDER",
+      "exactly": 1,
+      "note": "exactly la assertion duy nhat fail duoc khi claim thu hai nhan doi item"
+    },
+    {
+      "id": "status-after",
+      "action": "chat",
+      "message": "/vd rewards status"
+    },
+    {
+      "id": "assert-pending-changed",
+      "action": "assert_capture",
+      "name": "pendingBefore",
+      "pattern": "Kho thưởng:\\s*(\\d+)\\s*lần nhận",
+      "group": 1,
+      "source": "chat",
+      "equals": false,
+      "timeoutMs": 10000,
+      "note": "so pendingBatches phai DOI sau claim; bang nhau = claim khong co hieu luc"
+    },
+    {
+      "id": "no-recovery-banner",
+      "action": "wait_for_text",
+      "notText": "đang được bảo vệ để tránh nhân đôi",
+      "durationMs": 5000,
+      "source": "chat",
+      "note": "language.yml:66 Recovery-Required khong duoc xuat hien o luong binh thuong"
+    }
+  ]
+}

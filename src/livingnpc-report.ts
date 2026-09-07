@@ -150,7 +150,8 @@ function manifest(snapshot: LivingNpcTelemetrySnapshot, options: LivingNpcTeleme
     },
     target: {
       host: 'livingnpc-telemetry',
-      port: 0
+      port: 0,
+      auth: 'offline'
     },
     observed: {
       serverWorld: worlds.length === 1 ? worlds[0] : worlds.length > 1 ? worlds.join(',') : undefined

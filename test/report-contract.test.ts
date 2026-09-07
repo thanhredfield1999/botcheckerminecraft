@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
@@ -112,7 +112,13 @@ test('manifest ghi provenance ổn định và loại credentials', async () => 
     assert.equal(report.steps[0]?.verdict, 'PASS')
     assert.equal(report.manifest.schemaVersion, 1)
     assert.deepEqual(report.manifest.runner, {
-      name: 'botcheckerminecraft', version: '0.1.0', sourceRevision: capabilityManifest.git.commit
+      // Đọc từ package.json thay vì hard-code: version là thứ sẽ còn bump nữa, và
+      // pin nó ở đây chỉ tạo ra một test đỏ giả mỗi lần phát hành.
+      // test/version-contract.test.ts mới là chỗ khoá con số thật.
+      name: 'botcheckerminecraft',
+      version: JSON.parse(
+        await readFile(new URL('../package.json', import.meta.url), 'utf8')).version,
+      sourceRevision: capabilityManifest.git.commit
     })
     assert.deepEqual(report.manifest.capability, capabilityManifest)
     assert.deepEqual(report.manifest.evidence, {
@@ -123,7 +129,7 @@ test('manifest ghi provenance ổn định và loại credentials', async () => 
     assert.equal(report.manifest.scenario.name, 'manifest success')
     assert.match(report.manifest.scenario.sha256, /^[a-f0-9]{64}$/)
     assert.deepEqual(report.manifest.target, {
-      host: '127.0.0.1', port: 25565, configuredVersion: '1.21.11'
+      host: '127.0.0.1', port: 25565, auth: 'offline', configuredVersion: '1.21.11'
     })
     assert.deepEqual(report.manifest.observed, {
       negotiatedVersion: '1.21.11', protocolVersion: '774',

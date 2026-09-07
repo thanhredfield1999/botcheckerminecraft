@@ -32,11 +32,11 @@ export async function runNegativePlan(input: NegativePlanInput, execute: Negativ
   for (const current of input.cases) {
     if (current.authorization.length === 0) { cases.push(current); continue }
     try { cases.push({ ...current, observed: await execute(current) }) }
-    catch { failures.add(`${current.accountRef}\\u0000${current.caseId}`); cases.push(current) }
+    catch { failures.add(`${current.accountRef}\u0000${current.caseId}`); cases.push(current) }
   }
   const result = evaluateNegativePlan({ ...input, cases })
   for (const current of result.cases) {
-    if (failures.has(`${current.accountRef}\\u0000${current.evidence.caseId}`)) {
+    if (failures.has(`${current.accountRef}\u0000${current.evidence.caseId}`)) {
       current.verdict = 'INCONCLUSIVE'
       current.message = 'INCONCLUSIVE_PROVIDER: negative executor failed'
     }
