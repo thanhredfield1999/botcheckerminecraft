@@ -360,6 +360,7 @@ export interface ControlledPaperJourneyOptions {
   readonly memoryMb: number
   readonly minecraftPort: number
   readonly joinClients?: readonly ControlledPaperJoinClientInput[]
+  readonly extraPlugins?: readonly string[]
   readonly readyDeadlineMs: number
   readonly stopDeadlineMs: number
   readonly stopMode?: 'graceful' | 'crash'
@@ -416,6 +417,9 @@ function materializeLayout(options: ControlledPaperJourneyOptions): { readonly p
   mkdirSync(path.join(pluginsDir, 'BotCheckerKeyStoreCompanion'), { recursive: true })
   copyFileSync(options.adapterJarPath, path.join(pluginsDir, 'BotCheckerPaperAdapter.jar'))
   copyFileSync(options.companionJarPath, path.join(pluginsDir, 'BotCheckerKeyStoreCompanion.jar'))
+  for (const extra of options.extraPlugins ?? []) {
+    copyFileSync(extra, path.join(pluginsDir, path.basename(extra)))
+  }
   writeFileSync(path.join(root, 'eula.txt'), eulaText())
   writeFileSync(path.join(root, 'server.properties'), serverPropertiesText(options.minecraftPort))
   writeFileSync(
@@ -427,6 +431,13 @@ function materializeLayout(options: ControlledPaperJourneyOptions): { readonly p
     companionConfigYaml(options.companion)
   )
   return Object.freeze({ pluginsDir, worldDir, logPath })
+}
+
+/** Export layout materializer for consumer journeys (extra plugins etc.). */
+export function materializeControlledPaperLayout(
+  options: ControlledPaperJourneyOptions
+): { readonly pluginsDir: string, readonly worldDir: string, readonly logPath: string } {
+  return materializeLayout(options)
 }
 
 function probePort(port: number, timeoutMs = 800): Promise<boolean> {

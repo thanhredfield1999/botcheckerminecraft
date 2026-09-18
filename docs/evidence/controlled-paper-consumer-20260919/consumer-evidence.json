@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "scenario": "itemguard-lite-gui",
+  "runId": "a061fbd3-45fa-42e4-9172-ee9443f2b446",
+  "runStatus": "passed",
+  "verdict": "PASS",
+  "stepSummary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "reportPath": "E:\\AI.WORK\\botchecker-runtime\\controlled-paper-consumer-20260919\\reports\\a061fbd3-45fa-42e4-9172-ee9443f2b446.json",
+  "failure": null,
+  "stop": {
+    "serverExit": "SIGTERM",
+    "paperExitCode": 0,
+    "paperExitSignal": null
+  },
+  "releaseEligible": false,
+  "factsAuthoritative": false
+}

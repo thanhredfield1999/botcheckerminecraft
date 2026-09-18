@@ -1,0 +1,3599 @@
+{
+  "runId": "a061fbd3-45fa-42e4-9172-ee9443f2b446",
+  "scenario": "ItemGuard LITE GUI consumer journey",
+  "status": "passed",
+  "verdict": "PASS",
+  "manifest": {
+    "schemaVersion": 1,
+    "evidence": {
+      "evidenceGrade": "development-unbound",
+      "releaseEligible": false
+    },
+    "runner": {
+      "name": "botcheckerminecraft",
+      "version": "0.2.0",
+      "sourceRevision": "f66f93809eea1ba9a949534163582dce0c7f9d30"
+    },
+    "capability": {
+      "schemaVersion": 2,
+      "git": {
+        "commit": "f66f93809eea1ba9a949534163582dce0c7f9d30",
+        "dirty": true
+      },
+      "runtime": {
+        "node": "v24.14.0",
+        "platform": "win32",
+        "arch": "x64"
+      },
+      "codeRoot": "dist/src",
+      "packageJsonSha256": "5f43f1fc40e72341abf45671f296e8eff8597fcf38ce631fb0fcb024f34e5d58",
+      "loadedPackageJson": {
+        "path": "dist/package.json",
+        "sha256": "558c1943fe4d779232bb81981979bdbdc2d84c5204c63fd8d35357051f86ce80"
+      },
+      "packageLockSha256": "889b212f7e8f6ad572d68c05693974a13967f76b7fa8d3b527e4dfbcd4d799b5",
+      "sourceFingerprint": "a5880945120adb0cdd0702f0e10949f72589230fd0db1a8cb1b9fd7e340713d6",
+      "sources": [
+        {
+          "path": "dist/src/authorized-plan-runner.js",
+          "sha256": "2d9ffea339c23889d29d2e353522ac767d757a767b1a9e4bf0d7e0812300940d"
+        },
+        {
+          "path": "dist/src/bot-session.js",
+          "sha256": "d30548f9bc5133334ae6293bad361497fdfc8348849850b0c0005e45bd09b898"
+        },
+        {
+          "path": "dist/src/capability-manifest.js",
+          "sha256": "6e602be0817b2049b97974feaa4e9217d6a34c402f3149df0651b1c321a54e59"
+        },
+        {
+          "path": "dist/src/cavium-v2-attestation-statement-parser.js",
+          "sha256": "168b71cb6a56e83a1f64fa9e6fb27cf121106361be4e7dd9108c52c70de15f19"
+        },
+        {
+          "path": "dist/src/compatibility-matrix.js",
+          "sha256": "4f3e2a20dcecd7596105a2f5b10aeb24635b4edc1ee017982a3f53f2d97a52dc"
+        },
+        {
+          "path": "dist/src/compatibility-report.js",
+          "sha256": "340af7e1f14662af514b901fec0ec37932f98686083a23b985351251a158eb27"
+        },
+        {
+          "path": "dist/src/compatibility-runner.js",
+          "sha256": "1866225916d47c6d2a0013b9261875b6dc4d6f8128b29ce2833977a76535c8c7"
+        },
+        {
+          "path": "dist/src/config.js",
+          "sha256": "7b7899b7885099083f5b28aeebb000c7e577d62cd06c5a67c20ab8e0b7614399"
+        },
+        {
+          "path": "dist/src/crash-recovery-contract.js",
+          "sha256": "ae10b3448e2c5da964e559176d257ccdf53e81618be1c4c0ab00e00491c37ff4"
+        },
+        {
+          "path": "dist/src/crash-recovery-report.js",
+          "sha256": "3d02604594620e8df509cab629a2652c058054a371d05a358729f3988ce9e193"
+        },
+        {
+          "path": "dist/src/crash-recovery-runner.js",
+          "sha256": "e6f5365431464c9dc753fbff9ddf2b334a92e3cbc40048f0bd0ae01633019e40"
+        },
+        {
+          "path": "dist/src/crossing.js",
+          "sha256": "f32c213e412b23b916d71e074b2059424e323186cbd622e610c92e6585c970fd"
+        },
+        {
+          "path": "dist/src/e2e/controlled-paper-executor.js",
+          "sha256": "d2fd3c7d377d3306ab5154b4fafe55fb596acd87b11c685d0c335f82921e9c68"
+        },
+        {
+          "path": "dist/src/e2e/controlled-paper-harness.js",
+          "sha256": "c8bc93b335b9c5ecbe4584318b6642c066d440e8838861118c8a75f075521090"
+        },
+        {
+          "path": "dist/src/entity-observer.js",
+          "sha256": "31b753be3afe1f5fc57d73dc04f1d4b5ad647d61a14b06b5615d4fc6d4342a2f"
+        },
+        {
+          "path": "dist/src/evidence-bundle.js",
+          "sha256": "cafecf9d61eeb85b8e769932aff3e6bbb141bc0b6dcc4328e4ba994bdf4cebe9"
+        },
+        {
+          "path": "dist/src/evidence-writer.js",
+          "sha256": "9632a3bc9a505a6f7bab227645e6a4075a2749896cbd017b340f131a9d8e09ba"
+        },
+        {
+          "path": "dist/src/failure-envelope.js",
+          "sha256": "b3548708336d7fa0350014db1181e475284210513248e49bda3f0df853229372"
+        },
+        {
+          "path": "dist/src/gameplay-contract.js",
+          "sha256": "e692508cc6f67a05317c9d4558b4905ac71b8261f089874c55d21659a5ecdd2f"
+        },
+        {
+          "path": "dist/src/gameplay-runner.js",
+          "sha256": "919d736a331174fe06ad5b67a08969997461f4aae9228ecbf84df8c4d5feadeb"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-hsm-attestation-binding-verifier.js",
+          "sha256": "a9e2d631cb9dda9f90a24e82ed1d2310a857b6c83eec03ac3623400eb01437d6"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-hsm-attestation-verifier.js",
+          "sha256": "c722563e31e466b9433f966c3217bbb48b650671589a557e25c5e5748d92d8ca"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-hsm-trust-root-policy-attestation.js",
+          "sha256": "ea7c2ece5885ce8feddc854702a3c1c8b2e2ceedc2ccb5c3ac2db51d396d13f5"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-hsm-trust-root-policy.js",
+          "sha256": "787e0589711b661585d6663b0aaadbfc65d5ed3e18c50cb705a164dfc333b564"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-live-preflight.js",
+          "sha256": "7794ec4e1736c4f6d80c60480865cd5f6746142ceb2e32a1572576613f8f3ef4"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-resource-name.js",
+          "sha256": "0b34125718f9305a4e6690bfc5d80a071d74620badaa308e0b0bba72c2b65853"
+        },
+        {
+          "path": "dist/src/google-cloud-kms-signing-backend.js",
+          "sha256": "6216b43ca00c216b671201843a2a0ced9eb3f38d9d7abbeb7b5530e18beec7a0"
+        },
+        {
+          "path": "dist/src/gui-contract.js",
+          "sha256": "54ea508f9f054386412d64682af0b2c3f727bcb6ff1c8bf5e5e5b6626a50e92c"
+        },
+        {
+          "path": "dist/src/gui-report.js",
+          "sha256": "76d4121135dab7092ff4afe41a684a3181357ca57d68f7b442146231bf583120"
+        },
+        {
+          "path": "dist/src/gui-runner.js",
+          "sha256": "56fc2ec29b86ee04c5ef0af8060a7a093fd0bbcd5c0ee8fc6746673c7d13e2bc"
+        },
+        {
+          "path": "dist/src/index.js",
+          "sha256": "681ba20a733b2e87927013194c04fdd1b90c0afdaccf93957c6a9760d6feae21"
+        },
+        {
+          "path": "dist/src/journey-reports.js",
+          "sha256": "3d7d7250825c15944b7dad26caba4dd5507a74ba3192cd735fb9824af5821dcb"
+        },
+        {
+          "path": "dist/src/jvm-artifact-observation.js",
+          "sha256": "3d00a56b16544fad93cec59790b90dea7593d7e6f4e73f2ffb455f5a1cb4692b"
+        },
+        {
+          "path": "dist/src/lifecycle.js",
+          "sha256": "4b5593cc3a3f45effc388c0c55a767224864d52e3bbe41fdcfb95ff205245fa1"
+        },
+        {
+          "path": "dist/src/livingnpc-pixel-map.js",
+          "sha256": "243b08004beb33f519f4b9d1996702e775fb7cb5b229ffece726478339afb9c7"
+        },
+        {
+          "path": "dist/src/livingnpc-report.js",
+          "sha256": "34d317a1e8bbd6ecb744e9d4eb479522dd3b6f9ad15f6eb4d93c8a79b929d772"
+        },
+        {
+          "path": "dist/src/livingnpc-telemetry.js",
+          "sha256": "9619498a12bcdbd4383b1afc3d94c6b6d68abc50f51701968863be5c2bbfbc8f"
+        },
+        {
+          "path": "dist/src/multi-account-plan.js",
+          "sha256": "01acac1b134bde741a7708b7a15544ce2a8b20ce8a568d06f8fa181a729a3f88"
+        },
+        {
+          "path": "dist/src/multi-account-report.js",
+          "sha256": "3d52eb8b09422642c008bd937410f1f67723cb1180faa3ebc8cbaabca8304b15"
+        },
+        {
+          "path": "dist/src/multi-account-runner.js",
+          "sha256": "b55fe460c16e020656cdfbfc3c692137f8d2ed443332d14be057cf58d683d43e"
+        },
+        {
+          "path": "dist/src/multi-client-contract.js",
+          "sha256": "685f1eb19ac9bdd51a9ce5ece96e9ed494be4e32310ecb0bee838fee497bd41e"
+        },
+        {
+          "path": "dist/src/multi-client-runner.js",
+          "sha256": "7444abaef89da3fb84f92e472e8b0d50b86967c5c89e3e7cc2e20b641efc8238"
+        },
+        {
+          "path": "dist/src/negative-contract.js",
+          "sha256": "f04449d3face183e61c4866e201678e1715929543f51226ea091c72f24e783e4"
+        },
+        {
+          "path": "dist/src/negative-plan.js",
+          "sha256": "2763bec85dceba21634f5f232b9170d7bb984500b9c4f3fab1eb93e1133351ca"
+        },
+        {
+          "path": "dist/src/paper-bukkit-online-player-claim.js",
+          "sha256": "aaff076c3663733305417376073c7e90f549247a04c07f04b74ea422ca73bc98"
+        },
+        {
+          "path": "dist/src/paper-bukkit-online-player-loopback-client.js",
+          "sha256": "ad16487c96220874edf2c0d6e34dbec6b9e2b4eac2102570665b87ba9aafb25e"
+        },
+        {
+          "path": "dist/src/paper-bukkit-online-player-runtime.js",
+          "sha256": "62a443d307d13a2918f1c6e5109c48130d9a75a6b893fdcc3be4cb3735bce914"
+        },
+        {
+          "path": "dist/src/paper-bukkit-online-player-transport-codec.js",
+          "sha256": "c76ffdf8c45eab857b16ca4a4a5c0cc2e8353b3d910e0e13fdaaf95d201a1285"
+        },
+        {
+          "path": "dist/src/paper-jvm-observation-byte-provider.js",
+          "sha256": "91063f27e1e11ef70128d36a3802fe3f062828112df85b7e5bfad4a7426711d6"
+        },
+        {
+          "path": "dist/src/paper-jvm-observation-result-codec.js",
+          "sha256": "dfa9c2ebf9a964e0525b7d971b045cbb9f5d9438fe04bf42f6a05d42944bfed8"
+        },
+        {
+          "path": "dist/src/paper-process-filesystem-observer.js",
+          "sha256": "008762d2774a230ed020e1332bcb225cb78870ef56ce79945e79a48cbcfa63fe"
+        },
+        {
+          "path": "dist/src/paper-process-online-player-observer.js",
+          "sha256": "40a548214511140334e22c77be4fee8362e51eb507eac9e0b70dcffea0289d8d"
+        },
+        {
+          "path": "dist/src/paper-process-provider.js",
+          "sha256": "28b33d3655e3746fdd1e602b2e309955cb645fcbfbccba5a6ea5a99e6dad4562"
+        },
+        {
+          "path": "dist/src/paper-process-session-lock-observer.js",
+          "sha256": "a5c5c95af2e0c479480b436db9d088014dfc4630d03fc2718132643f6de7cdf3"
+        },
+        {
+          "path": "dist/src/paper-process-tcp-listener-observer.js",
+          "sha256": "37adefdf4dfd40cc1ea3a6ba2c68a7ee62f00f2845fbea579427f70b4fcb74f0"
+        },
+        {
+          "path": "dist/src/permission-contract.js",
+          "sha256": "c8b89bdaadc2796433a25bfc687244074058d19256295104289bd62fda01c06f"
+        },
+        {
+          "path": "dist/src/permission-matrix.js",
+          "sha256": "20cb3ec38bffbccee643e857645743621fd69b6ceb3496ea5c56c1ba1035b125"
+        },
+        {
+          "path": "dist/src/permission-plan.js",
+          "sha256": "add6c7040ba6bc1c990ec5cd110ae478cc63c424a89ce9eb3cb1839df3ee6f0d"
+        },
+        {
+          "path": "dist/src/persistence-contract.js",
+          "sha256": "9faac9868e919485e4dd461ec3e55aba1743d39d607ed7c7ff0c2216422563b2"
+        },
+        {
+          "path": "dist/src/persistence-coordinator.js",
+          "sha256": "d2499dff10e30ebd0a0a22b927c293174470be1be11f040ff15027436758cf21"
+        },
+        {
+          "path": "dist/src/persistence-report.js",
+          "sha256": "12c854fb2bd960bdce400b9c7a69cb59117243f9bb4587c4bb8960d97cd5fc39"
+        },
+        {
+          "path": "dist/src/persistence-runner.js",
+          "sha256": "b9f241b7e6b667145efee60fbba5118eb9277b8d3f1b0277421b53631ab8b939"
+        },
+        {
+          "path": "dist/src/process-shutdown.js",
+          "sha256": "8b635f21df79aa252981384cae1a108a8f1e88bddad3e2e88ef0c574015f0dae"
+        },
+        {
+          "path": "dist/src/protocol-diagnostic.js",
+          "sha256": "9451209e1f848a4864e2ac82a0e9a176aa5f248335a499ddc6180b24d06cf324"
+        },
+        {
+          "path": "dist/src/provider-registry.js",
+          "sha256": "94b9dcc681b368ccf9ed944f93b6e47bdd119de2c59cfd67798c861b49bdcf3e"
+        },
+        {
+          "path": "dist/src/qa-execution.js",
+          "sha256": "684e5d09dc97cae1976e4e9b98b2dd2b5d8782b272049a76800330048c2fafff"
+        },
+        {
+          "path": "dist/src/qa-plan-report.js",
+          "sha256": "69b28e8fb2ed11c193450496c5446d5967723d4376b5a83cfebe39694a12544d"
+        },
+        {
+          "path": "dist/src/queue.js",
+          "sha256": "6c5686456f78f1f8ee4ed84130ccae65f036833116b58fe252e8af7c4db5d78a"
+        },
+        {
+          "path": "dist/src/route-oracle.js",
+          "sha256": "49e7d38b65c72424e18fb96f7326cbee05386aa47d6ff0b12a9c2d79c4aa045c"
+        },
+        {
+          "path": "dist/src/route-pixel-map.js",
+          "sha256": "c045e87e81593cf0560ef02394739b51777cc94c857b216fb45bca12434903ed"
+        },
+        {
+          "path": "dist/src/runner.js",
+          "sha256": "92b431ffaada74c067072fced06144a10e79183b9fca59474beb92558241a5fc"
+        },
+        {
+          "path": "dist/src/scenario.js",
+          "sha256": "48420b32b2d63c0ae39542b1ab0b80f5af0ae0e47d58d39b9285ee3c8c4f42fb"
+        },
+        {
+          "path": "dist/src/server.js",
+          "sha256": "88154464d7d617b692c751809fdb3ca696311419ff7da1b383939732617a74d7"
+        },
+        {
+          "path": "dist/src/signed-provider-challenge-store.js",
+          "sha256": "dc0da1198563eaa6d81a5628eebe477a661307e0552f3decc8531d2195d4c97a"
+        },
+        {
+          "path": "dist/src/signed-provider-claim-schema.js",
+          "sha256": "34084f8c44a3ddbc8296602e304a838a9b385ff496b0ed8c1ac13c63572353d4"
+        },
+        {
+          "path": "dist/src/signed-provider-claim.js",
+          "sha256": "f6111ba9247d76584927f9f9b2ddffffc878d6c85478c8c5b539dbd845a6620a"
+        },
+        {
+          "path": "dist/src/signed-provider-evidence-bundle.js",
+          "sha256": "bf46507ae5e6851fcb368bd3c67f97b37393411e763df8994a5ccf62be60c14d"
+        },
+        {
+          "path": "dist/src/signed-provider-observer-signing-pipeline.js",
+          "sha256": "b0f24acabe87e61959d5dd637141a991a4a9b11a067307be64a9f5a338d26c2a"
+        },
+        {
+          "path": "dist/src/signed-provider-signing-adapter.js",
+          "sha256": "a534c1c68859bcf739da9f1e786e3223917ca24f48c95f88e0af6a0fa6047e8f"
+        },
+        {
+          "path": "dist/src/snapshot.js",
+          "sha256": "f144a30e7f267470fdf2404e84cd0945ce6ea94574c42e5fed78b4480625b8fa"
+        },
+        {
+          "path": "dist/src/target-binding.js",
+          "sha256": "a80e2c5b5814e259aa576709c1331d5399913d24883c922014007f557f441889"
+        },
+        {
+          "path": "dist/src/transaction-contract.js",
+          "sha256": "829236083a07edb51cc81c7690f6710771ebe10cc007276b433e0cd3c6d6b3f8"
+        },
+        {
+          "path": "dist/src/transaction-idempotency.js",
+          "sha256": "9e9435f3a21f18b23b3444dbb041ffb2c4a6ed9d11ffb011e772691cb434c30d"
+        },
+        {
+          "path": "dist/src/transaction-report.js",
+          "sha256": "0dab9def913257ab482a594301cacd12d179f1cc73489d8d42737af5f664a3aa"
+        },
+        {
+          "path": "dist/src/transaction-runner.js",
+          "sha256": "c7d107083e5448f0675c4f7cb4aa0c32d4e4c521cb5f72eb999179b0cbe96097"
+        },
+        {
+          "path": "dist/src/types.js",
+          "sha256": "01ae2a5b120382f9a648ced7ee8507493a134f216d100fc61600c6c9738235d2"
+        }
+      ],
+      "dependencies": [
+        {
+          "name": "@google-cloud/kms",
+          "version": "6.0.0"
+        },
+        {
+          "name": "fast-crc32c",
+          "version": "2.0.0"
+        },
+        {
+          "name": "fastify",
+          "version": "5.11.3"
+        },
+        {
+          "name": "mineflayer",
+          "version": "4.37.1"
+        },
+        {
+          "name": "mineflayer-pathfinder",
+          "version": "2.4.5"
+        },
+        {
+          "name": "vec3",
+          "version": "0.1.10"
+        },
+        {
+          "name": "zod",
+          "version": "4.4.3"
+        }
+      ],
+      "capabilities": [
+        {
+          "name": "authorized-provider-registry",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "compatibility-matrix",
+          "mode": "library-only"
+        },
+        {
+          "name": "crash-recovery",
+          "mode": "library-only"
+        },
+        {
+          "name": "evidence-bundle",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "failure-envelope",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "gameplay",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-attestation-binding-verifier",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-attestation-envelope-verifier",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-attestation-snapshot-bridge",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-cavium-v2-statement-parser",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-ed25519-signer",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-live-preflight",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-policy-attestation-bridge",
+          "mode": "library-only"
+        },
+        {
+          "name": "google-cloud-kms-hsm-trust-root-policy",
+          "mode": "library-only"
+        },
+        {
+          "name": "gui-journey",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "immutable-artifacts",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "jvm-artifact-observation-assessment",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "jvm-artifact-observer",
+          "mode": "library-only"
+        },
+        {
+          "name": "jvm-observation-bound-claim-builder",
+          "mode": "library-only"
+        },
+        {
+          "name": "livingnpc-telemetry",
+          "mode": "library-only"
+        },
+        {
+          "name": "multi-account",
+          "mode": "library-only"
+        },
+        {
+          "name": "multi-client",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-bukkit-online-player-claim",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-bukkit-online-player-loopback-client",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-bukkit-online-player-transport-codec",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-bukkit-online-player-verified-source",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-jvm-observation-byte-provider",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-jvm-observation-claim-bridge",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-jvm-observation-port",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-jvm-observation-result-codec",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-configuration-artifact-file-observation",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-declared-artifact-file-preflight",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-declared-artifact-tcp-listener-preflight",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-declared-artifact-tcp-session-lock-preflight",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-executable-artifact-file-observation",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-online-player-observation",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-provider-preflight",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-session-lock-observation",
+          "mode": "library-only"
+        },
+        {
+          "name": "paper-process-tcp-listener-observation",
+          "mode": "library-only"
+        },
+        {
+          "name": "persistence",
+          "mode": "library-only"
+        },
+        {
+          "name": "protocol-diagnostics",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "route-oracle",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "signed-provider-canonical-signature-verification",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-claim",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-evidence-bundle-verifier",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-observation-bound-claim",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-observer-signing-pipeline",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-opaque-signing-adapter",
+          "mode": "library-only"
+        },
+        {
+          "name": "signed-provider-shared-challenge-state",
+          "mode": "library-only"
+        },
+        {
+          "name": "target-artifact-binding",
+          "mode": "runtime-wired"
+        },
+        {
+          "name": "transaction",
+          "mode": "library-only"
+        }
+      ],
+      "auxiliaryCode": [
+        {
+          "component": "jvm-artifact-observer",
+          "sourceRoot": "java-src",
+          "outputRoot": "dist/java",
+          "mode": "source-and-compiled",
+          "buildScript": {
+            "path": "scripts/build-java.mjs",
+            "sha256": "e45a21c183647e90da16c5e234e3c2735553bfbbc8f5afab4e8622c1171329ee"
+          },
+          "sources": [
+            {
+              "path": "java-src/vn/heomc/botchecker/probe/JvmArtifactObserver.java",
+              "sha256": "7d6fa689963ed74f270f427438a95a2d3a375ceeb93aa45ea7a47b9bb5f42d5a"
+            },
+            {
+              "path": "java-src/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.java",
+              "sha256": "7e5c1e9f976d0426764b0dfae8a1d0afa66eda80aee5f1a6814afac17668027f"
+            },
+            {
+              "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.java",
+              "sha256": "7e289b4603639446698d2c444d9ba40705ce934782a4a14ae7d0381df0e1b95d"
+            },
+            {
+              "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationPort.java",
+              "sha256": "ceb970cf1f4c5873366b57280e1cc04b80dd739b1e46e1987b3241c0b3d4a828"
+            },
+            {
+              "path": "java-src/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.java",
+              "sha256": "e051d9fedd8a55bcce28b0d35fd553db3a25cde37075397c070e8444ad4183fd"
+            }
+          ],
+          "compiled": [
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$DeclaredIdentity.class",
+              "sha256": "76ae1105f3d3ddd645f663a173e9f9287a653f98936fcca7c27465e8ffd1b650"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$FileSnapshot.class",
+              "sha256": "e607c0545f771b4b38b94b978a8570efaf121de3cbc4b9e43f59b336ffd410dd"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$InternalEntryConsistency.class",
+              "sha256": "f8ad55e35eb6318c720714ab6007dabe04fe909ea653ee9f3543b594d0e66c8a"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$Limits.class",
+              "sha256": "9ef44995b987f9fc8c319225902a895ac77b5876d6062ccb7c34de239563c0d4"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$Observation.class",
+              "sha256": "dddfaecf9a64a54f6bb1e56d6b9f528a758fb6e25886e863937e127f4de1c601"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$ObservationException.class",
+              "sha256": "47613e4cb6758c38004d2650a0cb6f2870372081f2a89ca56cc588673cb86c56"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver$PathReadHook.class",
+              "sha256": "cf25c3930d09ffc81d9db10b9cd68e15bc5db71b6b27625bdd0609eb94dff295"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmArtifactObserver.class",
+              "sha256": "ae2c7d3d06ae159d66f5ddeb4f7f1f190f2286070b29191890da4e12df8aad38"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder$Artifact.class",
+              "sha256": "e711c8900c5795194f1a543b74dd807ec8012f2f466ce9d7be4d0bec7a08a9e3"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder$Claims.class",
+              "sha256": "9f27d6adffc41968fd7fc4a870b3f09cfbfe17d37f142e3172cd07653d388464"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder$Input.class",
+              "sha256": "cec79d13b80d023f5d5f10a3a74d3cce00df9324d1aaf461dc3c5fc3a27b7a00"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder$Provider.class",
+              "sha256": "0fd0940dd1bae88923856f47b4f337ac7ed827cae4843be866ca315943076966"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/JvmObservationBoundClaimBuilder.class",
+              "sha256": "dded2ad5b5df1dbf7d9c6bf76e54274edaeec3be78ba0011f8495bf5e27bfb68"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/PaperJvmObservationClaimBridge.class",
+              "sha256": "087134f0cb9e4de505f68aee93da666cbe285f5038ed6bbc8a2b32727b76033d"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/PaperJvmObservationPort$Context.class",
+              "sha256": "aab1732903da5cec76affad008b6f7c933d9fefb85e9c98aa5a5f88f0986a1ad"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/PaperJvmObservationPort$Result.class",
+              "sha256": "51fbdaf9c773f8356ebf7bbb62cde6127180ec8f51d5a2eb94ee93ebff145f3b"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/PaperJvmObservationPort.class",
+              "sha256": "b6c53758f9d725fa8ff7599e587d9f8c69fafd3c8210a6ad57385904f484ae86"
+            },
+            {
+              "path": "dist/java/vn/heomc/botchecker/probe/PaperJvmObservationResultCodec.class",
+              "sha256": "abb820afaec76874b9f61cb8703b8ba832ae19fe2135322049c6f504b5bda306"
+            }
+          ]
+        },
+        {
+          "component": "paper-bukkit-adapter",
+          "sourceRoot": "paper-bukkit-adapter",
+          "outputRoot": "paper-bukkit-adapter/build",
+          "mode": "source-only",
+          "buildScript": {
+            "path": "scripts/build-paper-adapter.mjs",
+            "sha256": "b7a97446e74a3f97e7b0be14680d120624f44d8b567697b410976383dfadd588"
+          },
+          "sources": [
+            {
+              "path": "paper-bukkit-adapter/keystore-companion/src/main/java/vn/heomc/botchecker/keystorecompanion/PaperBukkitOnlinePlayerKeyStoreCompanionPlugin.java",
+              "sha256": "b9079f29f5eeb26273ec883a304e2af72333fea671fe24528b407bb22533e96e"
+            },
+            {
+              "path": "paper-bukkit-adapter/keystore-companion/src/main/java/vn/heomc/botchecker/keystorecompanion/PaperBukkitOnlinePlayerPkcs12KeyStoreAccess.java",
+              "sha256": "63bb23d6d2c14ed41f80ef1b745d68a506855d6fe4307369fca7e536df849f4a"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/CanonicalPaperBukkitOnlinePlayerPayload.java",
+              "sha256": "fd3556a7cade1a5b00c70ad593e845af77cd739053e987dbd79c79682944679b"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterConfig.java",
+              "sha256": "6633dca61d5d6c89a965adc2b8e23013253e4797f853acf6be1e565b1c531a9b"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterLifecycle.java",
+              "sha256": "81387687ba7901b939acdc71aadbbeefc145afc0bd496bb8606f6a940be5f023"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerAdapterRuntimeFactory.java",
+              "sha256": "51702b9beeefc80e00b19a054db197f85d3ae608042298745d78d6f83c556af5"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerBukkitSnapshotAdapter.java",
+              "sha256": "4933d7930310856e35ee28bf4e7cbff355a6942312e0c9cbc99985c52c2af7f4"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreAccess.java",
+              "sha256": "503f3f903b98bf544e033058bdb40a80e54266d22c37f2adc6d701f48e63e5af"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreRuntimeComposition.java",
+              "sha256": "2a5aa18b1a7f3ada343e74e1e6adb8b84167a808a8f0b37de69e29dfc310c907"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceCoordinator.java",
+              "sha256": "0cad8f2b5a43969ba4361f683b8e0842a8f10e9b6d48bbfd5c324e90b5964d14"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceEventBridge.java",
+              "sha256": "7a808cac7c97d84645590b38350b26d258e79a594ce8a46081ada3614a08b856"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceRegistration.java",
+              "sha256": "73f16cd22014df354ae606d33dc094f66c5875266dd6c7cbaa831ea15b2107a0"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerExternalKeyStoreServiceResolver.java",
+              "sha256": "08894e36676eabd42f1a42439a64b23fc3a975e078334214510a89ebad29408f"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerLoopbackListener.java",
+              "sha256": "3c471186be3b6a3aff1b6a84f1a6e80aea456813564f98abf707d6aceeef188e"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerMainThreadSnapshotBridge.java",
+              "sha256": "aca0287456ddf2dd40c9d7ce9d5179fda0e7510b5b5aeece85d2cca00c801cb1"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerOpaqueEd25519Signer.java",
+              "sha256": "d618abc34c727522cc04c14933df0a6e825c5e9bc676dd523329dfb433bbfee6"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerPlugin.java",
+              "sha256": "222520c30a57c2e9842aa715b98da9116d9bdc818b7717824d100ed4eab39021"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerRequestProcessor.java",
+              "sha256": "b5f4fbf5026fa2333023c3b6dff5797ac1e874fa501c560aa5a42b25218dc10a"
+            },
+            {
+              "path": "paper-bukkit-adapter/src/main/java/vn/heomc/botchecker/paperadapter/PaperBukkitOnlinePlayerTransportCodec.java",
+              "sha256": "b9073c73a70c378e66a0198eb4db2abdfa815b42c9c40f18e151994d87f9fea9"
+            }
+          ],
+          "compiled": []
+        }
+      ]
+    },
+    "scenario": {
+      "name": "ItemGuard LITE GUI consumer journey",
+      "sha256": "c7cdedf5bf84509fcd377ecce2d1309fac9341b2859cafaaf39c4b61e2b07cb6"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 25681,
+      "auth": "offline",
+      "configuredVersion": "1.21.11"
+    },
+    "observed": {
+      "negotiatedVersion": "1.21.11",
+      "protocolVersion": 774,
+      "serverWorld": "overworld",
+      "dimension": "overworld",
+      "accountUuid": "1a43ed8c-a5fe-3fea-afdd-7a98f637f95c"
+    }
+  },
+  "startedAt": "2026-09-18T22:19:01.201Z",
+  "finishedAt": "2026-09-18T22:19:10.250Z",
+  "durationMs": 9049,
+  "summary": {
+    "total": 4,
+    "passed": 4,
+    "failed": 0,
+    "skipped": 0
+  },
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "status": "passed",
+      "verdict": "PASS",
+      "startedAt": "2026-09-18T22:19:03.115Z",
+      "durationMs": 4007,
+      "message": "Completed",
+      "evidence": {
+        "waitedMs": 4000
+      }
+    },
+    {
+      "id": "open_itemguard_gui",
+      "action": "chat",
+      "status": "passed",
+      "verdict": "PASS",
+      "startedAt": "2026-09-18T22:19:07.122Z",
+      "durationMs": 0,
+      "message": "Completed",
+      "evidence": {
+        "sent": "/ig gui"
+      }
+    },
+    {
+      "id": "recorded_items_gui_visible",
+      "action": "wait_for_gui",
+      "status": "passed",
+      "verdict": "PASS",
+      "startedAt": "2026-09-18T22:19:07.123Z",
+      "durationMs": 109,
+      "message": "Completed",
+      "evidence": {
+        "id": 1,
+        "type": "minecraft:generic_9x6",
+        "title": "ItemGuard - Recorded item history",
+        "topSlotCount": 54,
+        "totalSlotCount": 90,
+        "inventoryStart": 54,
+        "slotCount": 90,
+        "items": [
+          {
+            "slot": 0,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 1,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 2,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 3,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 4,
+            "section": "top",
+            "material": "book",
+            "displayName": "Book",
+            "customName": "Recorded item history",
+            "lore": [
+              "Showing 0 items (up to 28 per page).",
+              "Click an item to open its timeline.",
+              "This is recorded history, not live custody.",
+              "Missing history is not proof that an item does not exist."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 5,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 6,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 7,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 8,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 9,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 10,
+            "section": "top",
+            "material": "light_gray_dye",
+            "displayName": "Light Gray Dye",
+            "customName": "No recorded history yet",
+            "lore": [
+              "Hold an item and run /ig check to see its ID.",
+              "Items are tracked once the server records them.",
+              "No history is not proof that an item does not exist."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 11,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 12,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 13,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 14,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 15,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 16,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 17,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 18,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 19,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 20,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 21,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 22,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 23,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 24,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 25,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 26,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 27,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 28,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 29,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 30,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 31,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 32,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 33,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 34,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 35,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 36,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 37,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 38,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 39,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 40,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 41,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 42,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 43,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 44,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 45,
+            "section": "top",
+            "material": "gray_dye",
+            "displayName": "Gray Dye",
+            "customName": "Already on the first page",
+            "lore": [
+              "No previous page to show."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 46,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 47,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 48,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 49,
+            "section": "top",
+            "material": "paper",
+            "displayName": "Paper",
+            "customName": "Page 1 of 1",
+            "lore": [
+              "Use the arrows on either side to change page."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 50,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 51,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 52,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 53,
+            "section": "top",
+            "material": "gray_dye",
+            "displayName": "Gray Dye",
+            "customName": "Already on the last page",
+            "lore": [
+              "No further page to show."
+            ],
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "id": "observe_gui",
+      "action": "wait",
+      "status": "passed",
+      "verdict": "PASS",
+      "startedAt": "2026-09-18T22:19:07.232Z",
+      "durationMs": 3014,
+      "message": "Completed",
+      "evidence": {
+        "waitedMs": 3000
+      }
+    }
+  ],
+  "issues": [],
+  "timeline": [
+    {
+      "at": "2026-09-18T22:19:03.072Z",
+      "elapsedMs": 1871,
+      "type": "chat",
+      "summary": "ConsumerBot joined the game"
+    },
+    {
+      "at": "2026-09-18T22:19:03.114Z",
+      "elapsedMs": 1913,
+      "type": "spawn",
+      "summary": "Connected to 127.0.0.1:25681",
+      "data": {
+        "configuredVersion": "1.21.11",
+        "negotiatedVersion": "1.21.11",
+        "protocolVersion": 774,
+        "dimension": "overworld",
+        "position": {
+          "x": 5.5,
+          "y": -60,
+          "z": -1.5
+        }
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:03.115Z",
+      "elapsedMs": 1914,
+      "type": "step_start",
+      "summary": "settle_after_join: wait",
+      "data": {
+        "id": "settle_after_join",
+        "timeoutMs": 30000,
+        "optional": false,
+        "action": "wait",
+        "durationMs": 4000
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.122Z",
+      "elapsedMs": 5921,
+      "type": "step_passed",
+      "summary": "settle_after_join",
+      "data": {
+        "waitedMs": 4000
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.122Z",
+      "elapsedMs": 5921,
+      "type": "step_start",
+      "summary": "open_itemguard_gui: chat",
+      "data": {
+        "id": "open_itemguard_gui",
+        "timeoutMs": 30000,
+        "optional": false,
+        "action": "chat",
+        "message": "/ig gui"
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.122Z",
+      "elapsedMs": 5921,
+      "type": "step_passed",
+      "summary": "open_itemguard_gui",
+      "data": {
+        "sent": "/ig gui"
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.123Z",
+      "elapsedMs": 5922,
+      "type": "step_start",
+      "summary": "recorded_items_gui_visible: wait_for_gui",
+      "data": {
+        "id": "recorded_items_gui_visible",
+        "timeoutMs": 15000,
+        "optional": false,
+        "action": "wait_for_gui",
+        "titleIncludes": "ItemGuard - Recorded item history"
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.230Z",
+      "elapsedMs": 6029,
+      "type": "gui_inspection",
+      "summary": "GUI opened: ItemGuard - Recorded item history",
+      "data": {
+        "reason": "GUI opened",
+        "visual": "+ GUI #1: ItemGuard - Recorded item history (minecraft:generic_9x6, 54 top / 90 total)\n[00] 1x blue_stained_glass_pane |  \n[01] 1x blue_stained_glass_pane |  \n[02] 1x blue_stained_glass_pane |  \n[03] 1x blue_stained_glass_pane |  \n[04] 1x book | Recorded item history | Showing 0 items (up to 28 per page). / Click an item to open its timeline. / This is recorded history, not live custody. / Missing history is not proof that an item does not exist.\n[05] 1x blue_stained_glass_pane |  \n[06] 1x blue_stained_glass_pane |  \n[07] 1x blue_stained_glass_pane |  \n[08] 1x blue_stained_glass_pane |  \n[09] 1x blue_stained_glass_pane |  \n[10] 1x light_gray_dye | No recorded history yet | Hold an item and run /ig check to see its ID. / Items are tracked once the server records them. / No history is not proof that an item does not exist.\n[11] 1x gray_stained_glass_pane |  \n[12] 1x gray_stained_glass_pane |  \n[13] 1x gray_stained_glass_pane |  \n[14] 1x gray_stained_glass_pane |  \n[15] 1x gray_stained_glass_pane |  \n[16] 1x gray_stained_glass_pane |  \n[17] 1x blue_stained_glass_pane |  \n[18] 1x blue_stained_glass_pane |  \n[19] 1x gray_stained_glass_pane |  \n[20] 1x gray_stained_glass_pane |  \n[21] 1x gray_stained_glass_pane |  \n[22] 1x gray_stained_glass_pane |  \n[23] 1x gray_stained_glass_pane |  \n[24] 1x gray_stained_glass_pane |  \n[25] 1x gray_stained_glass_pane |  \n[26] 1x blue_stained_glass_pane |  \n[27] 1x blue_stained_glass_pane |  \n[28] 1x gray_stained_glass_pane |  \n[29] 1x gray_stained_glass_pane |  \n[30] 1x gray_stained_glass_pane |  \n[31] 1x gray_stained_glass_pane |  \n[32] 1x gray_stained_glass_pane |  \n[33] 1x gray_stained_glass_pane |  \n[34] 1x gray_stained_glass_pane |  \n[35] 1x blue_stained_glass_pane |  \n[36] 1x blue_stained_glass_pane |  \n[37] 1x gray_stained_glass_pane |  \n[38] 1x gray_stained_glass_pane |  \n[39] 1x gray_stained_glass_pane |  \n[40] 1x gray_stained_glass_pane |  \n[41] 1x gray_stained_glass_pane |  \n[42] 1x gray_stained_glass_pane |  \n[43] 1x gray_stained_glass_pane |  \n[44] 1x blue_stained_glass_pane |  \n[45] 1x gray_dye | Already on the first page | No previous page to show.\n[46] 1x blue_stained_glass_pane |  \n[47] 1x blue_stained_glass_pane |  \n[48] 1x blue_stained_glass_pane |  \n[49] 1x paper | Page 1 of 1 | Use the arrows on either side to change page.\n[50] 1x blue_stained_glass_pane |  \n[51] 1x blue_stained_glass_pane |  \n[52] 1x blue_stained_glass_pane |  \n[53] 1x gray_dye | Already on the last page | No further page to show.\n+ END GUI",
+        "gui": {
+          "id": 1,
+          "type": "minecraft:generic_9x6",
+          "title": "ItemGuard - Recorded item history",
+          "topSlotCount": 54,
+          "totalSlotCount": 90,
+          "inventoryStart": 54,
+          "slotCount": 90,
+          "items": [
+            {
+              "slot": 0,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 1,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 2,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 3,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 4,
+              "section": "top",
+              "material": "book",
+              "displayName": "Book",
+              "customName": "Recorded item history",
+              "lore": [
+                "Showing 0 items (up to 28 per page).",
+                "Click an item to open its timeline.",
+                "This is recorded history, not live custody.",
+                "Missing history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 5,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 6,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 7,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 8,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 9,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 10,
+              "section": "top",
+              "material": "light_gray_dye",
+              "displayName": "Light Gray Dye",
+              "customName": "No recorded history yet",
+              "lore": [
+                "Hold an item and run /ig check to see its ID.",
+                "Items are tracked once the server records them.",
+                "No history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 11,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 12,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 13,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 14,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 15,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 16,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 17,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 18,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 19,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 20,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 21,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 22,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 23,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 24,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 25,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 26,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 27,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 28,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 29,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 30,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 31,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 32,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 33,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 34,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 35,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 36,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 37,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 38,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 39,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 40,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 41,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 42,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 43,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 44,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 45,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the first page",
+              "lore": [
+                "No previous page to show."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 46,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 47,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 48,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 49,
+              "section": "top",
+              "material": "paper",
+              "displayName": "Paper",
+              "customName": "Page 1 of 1",
+              "lore": [
+                "Use the arrows on either side to change page."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 50,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 51,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 52,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 53,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the last page",
+              "lore": [
+                "No further page to show."
+              ],
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.230Z",
+      "elapsedMs": 6029,
+      "type": "gui_open",
+      "summary": "ItemGuard - Recorded item history",
+      "data": {
+        "windowGeneration": 1,
+        "gui": {
+          "id": 1,
+          "type": "minecraft:generic_9x6",
+          "title": "ItemGuard - Recorded item history",
+          "topSlotCount": 54,
+          "totalSlotCount": 90,
+          "inventoryStart": 54,
+          "slotCount": 90,
+          "items": [
+            {
+              "slot": 0,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 1,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 2,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 3,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 4,
+              "section": "top",
+              "material": "book",
+              "displayName": "Book",
+              "customName": "Recorded item history",
+              "lore": [
+                "Showing 0 items (up to 28 per page).",
+                "Click an item to open its timeline.",
+                "This is recorded history, not live custody.",
+                "Missing history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 5,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 6,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 7,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 8,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 9,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 10,
+              "section": "top",
+              "material": "light_gray_dye",
+              "displayName": "Light Gray Dye",
+              "customName": "No recorded history yet",
+              "lore": [
+                "Hold an item and run /ig check to see its ID.",
+                "Items are tracked once the server records them.",
+                "No history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 11,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 12,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 13,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 14,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 15,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 16,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 17,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 18,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 19,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 20,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 21,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 22,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 23,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 24,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 25,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 26,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 27,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 28,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 29,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 30,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 31,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 32,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 33,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 34,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 35,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 36,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 37,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 38,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 39,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 40,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 41,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 42,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 43,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 44,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 45,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the first page",
+              "lore": [
+                "No previous page to show."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 46,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 47,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 48,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 49,
+              "section": "top",
+              "material": "paper",
+              "displayName": "Paper",
+              "customName": "Page 1 of 1",
+              "lore": [
+                "Use the arrows on either side to change page."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 50,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 51,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 52,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 53,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the last page",
+              "lore": [
+                "No further page to show."
+              ],
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.232Z",
+      "elapsedMs": 6031,
+      "type": "gui_inspection",
+      "summary": "GUI ready: ItemGuard - Recorded item history",
+      "data": {
+        "reason": "GUI ready",
+        "visual": "+ GUI #1: ItemGuard - Recorded item history (minecraft:generic_9x6, 54 top / 90 total)\n[00] 1x blue_stained_glass_pane |  \n[01] 1x blue_stained_glass_pane |  \n[02] 1x blue_stained_glass_pane |  \n[03] 1x blue_stained_glass_pane |  \n[04] 1x book | Recorded item history | Showing 0 items (up to 28 per page). / Click an item to open its timeline. / This is recorded history, not live custody. / Missing history is not proof that an item does not exist.\n[05] 1x blue_stained_glass_pane |  \n[06] 1x blue_stained_glass_pane |  \n[07] 1x blue_stained_glass_pane |  \n[08] 1x blue_stained_glass_pane |  \n[09] 1x blue_stained_glass_pane |  \n[10] 1x light_gray_dye | No recorded history yet | Hold an item and run /ig check to see its ID. / Items are tracked once the server records them. / No history is not proof that an item does not exist.\n[11] 1x gray_stained_glass_pane |  \n[12] 1x gray_stained_glass_pane |  \n[13] 1x gray_stained_glass_pane |  \n[14] 1x gray_stained_glass_pane |  \n[15] 1x gray_stained_glass_pane |  \n[16] 1x gray_stained_glass_pane |  \n[17] 1x blue_stained_glass_pane |  \n[18] 1x blue_stained_glass_pane |  \n[19] 1x gray_stained_glass_pane |  \n[20] 1x gray_stained_glass_pane |  \n[21] 1x gray_stained_glass_pane |  \n[22] 1x gray_stained_glass_pane |  \n[23] 1x gray_stained_glass_pane |  \n[24] 1x gray_stained_glass_pane |  \n[25] 1x gray_stained_glass_pane |  \n[26] 1x blue_stained_glass_pane |  \n[27] 1x blue_stained_glass_pane |  \n[28] 1x gray_stained_glass_pane |  \n[29] 1x gray_stained_glass_pane |  \n[30] 1x gray_stained_glass_pane |  \n[31] 1x gray_stained_glass_pane |  \n[32] 1x gray_stained_glass_pane |  \n[33] 1x gray_stained_glass_pane |  \n[34] 1x gray_stained_glass_pane |  \n[35] 1x blue_stained_glass_pane |  \n[36] 1x blue_stained_glass_pane |  \n[37] 1x gray_stained_glass_pane |  \n[38] 1x gray_stained_glass_pane |  \n[39] 1x gray_stained_glass_pane |  \n[40] 1x gray_stained_glass_pane |  \n[41] 1x gray_stained_glass_pane |  \n[42] 1x gray_stained_glass_pane |  \n[43] 1x gray_stained_glass_pane |  \n[44] 1x blue_stained_glass_pane |  \n[45] 1x gray_dye | Already on the first page | No previous page to show.\n[46] 1x blue_stained_glass_pane |  \n[47] 1x blue_stained_glass_pane |  \n[48] 1x blue_stained_glass_pane |  \n[49] 1x paper | Page 1 of 1 | Use the arrows on either side to change page.\n[50] 1x blue_stained_glass_pane |  \n[51] 1x blue_stained_glass_pane |  \n[52] 1x blue_stained_glass_pane |  \n[53] 1x gray_dye | Already on the last page | No further page to show.\n+ END GUI",
+        "gui": {
+          "id": 1,
+          "type": "minecraft:generic_9x6",
+          "title": "ItemGuard - Recorded item history",
+          "topSlotCount": 54,
+          "totalSlotCount": 90,
+          "inventoryStart": 54,
+          "slotCount": 90,
+          "items": [
+            {
+              "slot": 0,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 1,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 2,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 3,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 4,
+              "section": "top",
+              "material": "book",
+              "displayName": "Book",
+              "customName": "Recorded item history",
+              "lore": [
+                "Showing 0 items (up to 28 per page).",
+                "Click an item to open its timeline.",
+                "This is recorded history, not live custody.",
+                "Missing history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 5,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 6,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 7,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 8,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 9,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 10,
+              "section": "top",
+              "material": "light_gray_dye",
+              "displayName": "Light Gray Dye",
+              "customName": "No recorded history yet",
+              "lore": [
+                "Hold an item and run /ig check to see its ID.",
+                "Items are tracked once the server records them.",
+                "No history is not proof that an item does not exist."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 11,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 12,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 13,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 14,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 15,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 16,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 17,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 18,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 19,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 20,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 21,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 22,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 23,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 24,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 25,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 26,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 27,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 28,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 29,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 30,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 31,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 32,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 33,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 34,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 35,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 36,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 37,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 38,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 39,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 40,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 41,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 42,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 43,
+              "section": "top",
+              "material": "gray_stained_glass_pane",
+              "displayName": "Gray Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 44,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 45,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the first page",
+              "lore": [
+                "No previous page to show."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 46,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 47,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 48,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 49,
+              "section": "top",
+              "material": "paper",
+              "displayName": "Paper",
+              "customName": "Page 1 of 1",
+              "lore": [
+                "Use the arrows on either side to change page."
+              ],
+              "count": 1
+            },
+            {
+              "slot": 50,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 51,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 52,
+              "section": "top",
+              "material": "blue_stained_glass_pane",
+              "displayName": "Blue Stained Glass Pane",
+              "customName": " ",
+              "lore": [],
+              "count": 1
+            },
+            {
+              "slot": 53,
+              "section": "top",
+              "material": "gray_dye",
+              "displayName": "Gray Dye",
+              "customName": "Already on the last page",
+              "lore": [
+                "No further page to show."
+              ],
+              "count": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.232Z",
+      "elapsedMs": 6031,
+      "type": "step_passed",
+      "summary": "recorded_items_gui_visible",
+      "data": {
+        "id": 1,
+        "type": "minecraft:generic_9x6",
+        "title": "ItemGuard - Recorded item history",
+        "topSlotCount": 54,
+        "totalSlotCount": 90,
+        "inventoryStart": 54,
+        "slotCount": 90,
+        "items": [
+          {
+            "slot": 0,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 1,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 2,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 3,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 4,
+            "section": "top",
+            "material": "book",
+            "displayName": "Book",
+            "customName": "Recorded item history",
+            "lore": [
+              "Showing 0 items (up to 28 per page).",
+              "Click an item to open its timeline.",
+              "This is recorded history, not live custody.",
+              "Missing history is not proof that an item does not exist."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 5,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 6,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 7,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 8,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 9,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 10,
+            "section": "top",
+            "material": "light_gray_dye",
+            "displayName": "Light Gray Dye",
+            "customName": "No recorded history yet",
+            "lore": [
+              "Hold an item and run /ig check to see its ID.",
+              "Items are tracked once the server records them.",
+              "No history is not proof that an item does not exist."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 11,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 12,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 13,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 14,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 15,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 16,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 17,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 18,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 19,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 20,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 21,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 22,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 23,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 24,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 25,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 26,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 27,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 28,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 29,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 30,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 31,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 32,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 33,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 34,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 35,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 36,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 37,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 38,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 39,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 40,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 41,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 42,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 43,
+            "section": "top",
+            "material": "gray_stained_glass_pane",
+            "displayName": "Gray Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 44,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 45,
+            "section": "top",
+            "material": "gray_dye",
+            "displayName": "Gray Dye",
+            "customName": "Already on the first page",
+            "lore": [
+              "No previous page to show."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 46,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 47,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 48,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 49,
+            "section": "top",
+            "material": "paper",
+            "displayName": "Paper",
+            "customName": "Page 1 of 1",
+            "lore": [
+              "Use the arrows on either side to change page."
+            ],
+            "count": 1
+          },
+          {
+            "slot": 50,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 51,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 52,
+            "section": "top",
+            "material": "blue_stained_glass_pane",
+            "displayName": "Blue Stained Glass Pane",
+            "customName": " ",
+            "lore": [],
+            "count": 1
+          },
+          {
+            "slot": 53,
+            "section": "top",
+            "material": "gray_dye",
+            "displayName": "Gray Dye",
+            "customName": "Already on the last page",
+            "lore": [
+              "No further page to show."
+            ],
+            "count": 1
+          }
+        ]
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:07.232Z",
+      "elapsedMs": 6031,
+      "type": "step_start",
+      "summary": "observe_gui: wait",
+      "data": {
+        "id": "observe_gui",
+        "timeoutMs": 30000,
+        "optional": false,
+        "action": "wait",
+        "durationMs": 3000
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:10.246Z",
+      "elapsedMs": 9045,
+      "type": "step_passed",
+      "summary": "observe_gui",
+      "data": {
+        "waitedMs": 3000
+      }
+    },
+    {
+      "at": "2026-09-18T22:19:10.247Z",
+      "elapsedMs": 9046,
+      "type": "gui_close",
+      "summary": "ItemGuard - Recorded item history",
+      "data": {
+        "windowGeneration": 2
+      }
+    }
+  ]
+}

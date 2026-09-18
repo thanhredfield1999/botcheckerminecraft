@@ -1,0 +1,11 @@
+{
+  "name": "ItemGuard LITE GUI consumer journey",
+  "description": "Join a controlled Paper server running ItemGuard LITE 1.0.0, open the read-only /ig gui menu and verify the recorded-item menu window appears. This is a black-box consumer journey: it asserts the real plugin's GUI through a real protocol client, not through ItemGuard internals.",
+  "maxDurationMs": 120000,
+  "steps": [
+    { "id": "settle_after_join", "action": "wait", "durationMs": 4000 },
+    { "id": "open_itemguard_gui", "action": "chat", "message": "/ig gui" },
+    { "id": "recorded_items_gui_visible", "action": "wait_for_gui", "titleIncludes": "ItemGuard - Recorded item history", "timeoutMs": 15000 },
+    { "id": "observe_gui", "action": "wait", "durationMs": 3000 }
+  ]
+}

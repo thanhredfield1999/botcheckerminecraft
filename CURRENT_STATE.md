@@ -2,6 +2,23 @@
 
 Last reviewed: 2026-09-19
 
+## 2026-09-19 — Consumer journey VERIFIED (ItemGuard LITE GUI qua BotChecker API thật)
+
+- Bo sung consumer journey: `scripts/controlled-paper-consumer.mjs` — boot controlled Paper pack
+  extra plugins (ItemGuard LITE 1.0.0 + LiteProbe), start BotChecker HTTP server THAT (dist)
+  tro vao Paper qua env, POST /api/runs scenario that, poll, luu report. Preflight fail-closed giong
+  journey; stop clean server child + Paper; evidence `consumer-evidence.json`.
+- Scenario `scenarios/itemguard-lite-gui.json` (wait → /ig gui → wait_for_gui titleIncludes
+  "ItemGuard - Recorded item history" → observe) co test parse; full gate nay them 1 test.
+- VERIFIED Paper runtime: ItemGuard v1.0.0-lite (sha8c0e540e, release candidate) enable that,
+  SQLite ok; BotChecker API run `a061fbd3` status passed / verdict PASS / 4 steps PASS; report
+  that (shell bundle + step records) tai `docs/evidence/controlled-paper-consumer-20260919/`.
+- OBSERVED + ROOT-CAUSED: username 17 ky tu `HeoMC_ConsumerBot` pha hello login (Paper offline
+  name <=16) -> Paper bao loi decode hello sai lech; consumer script bay gio validate botUsername
+  <=16 fail-closed. ItemGuard repo khong bi sua (read-only).
+- Gate: typecheck/coverage/test/build/diff PASS (count o duoi). `releaseEligible:false`.
+- Commit push: fd63c5f, d3ef575, e71be40, f66f938 (rounds 1-6) + (commit moi sau gate).
+
 ## 2026-09-19 — Round-5/6 restart + crash VERIFIED (boot identity per-boot, crash recovery)
 
 - Restart journey (`mode: restart`): `runControlledPaperRestartJourney` — 2 boots trên CÙNG
