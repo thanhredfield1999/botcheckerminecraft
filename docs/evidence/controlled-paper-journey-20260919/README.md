@@ -41,6 +41,18 @@ Status: first real Paper runtime evidence for the adapter + keystore companion. 
 - companion JAR: `90d926ad53d693b9ad5621ee17b3be7f4029adc12fc6fe811842c8e12dd4ee6f`
 - binding SHA-256: `7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b`
 
+## Restart / crash journey (VERIFIED, round-5/6)
+
+- Restart (round-5, `restart-evidence.json`): 2 boots trên CÙNG isolated root, cả hai clean
+  stop. `bootIdsDistinct: true` — boot1 `boot-f8ef038e...`, boot2 `boot-a2814e45...`,
+  `allBootsVerified: true`, `boot2CleanStop: true`. Restart không dùng lại bootId cũ.
+- Crash (round-6, `crash-restart-evidence.json`): boot1 bị kill cứng (child.kill(), log không
+  có `Disabling`, `exitSignal: SIGTERM`, bootId `boot-ca265158...`), rồi boot2 recovery sạch
+  (exit 0, exitSignal null, bootId `boot-461f4908...` — KHÁC boot1). `bootIdsDistinct: true`,
+  `allBootsVerified: true`, `boot1Crashed: true`, `boot2CleanStop: true`. Crash không để lại
+  claim dùng được cho boot sau (bootId khác, nonce khác).
+- Cả hai đều `replayRejected: true` mỗi boot.
+
 ## Limits (NOT asserted)
 
 `releaseEligible: false`, `factsAuthoritative: false` by evidence. Rounds prove the

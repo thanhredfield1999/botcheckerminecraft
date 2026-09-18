@@ -24,6 +24,7 @@ import {
   buildControlledPaperBinding,
   companionConfigYaml,
   runControlledPaperJourney,
+  runControlledPaperRestartJourney,
   validateJoinClientsInput
 } from '../src/e2e/controlled-paper-executor.ts'
 import { buildPaperBukkitOnlinePlayerTrustStore } from '../src/paper-bukkit-online-player-claim.ts'
@@ -210,7 +211,7 @@ try {
   const rawJoin = config.joinClients ?? (config.joinClient !== undefined ? [config.joinClient] : undefined)
   const joinClients = rawJoin === undefined ? undefined : validateJoinClientsInput(rawJoin)
   const expectedPlayers = joinClients?.length ?? 0
-  const evidence = await runControlledPaperJourney({
+  const baseOptions = {
     isolatedRoot: config.isolatedRoot,
     paperJarPath: config.paperJarPath,
     adapterJarPath: config.adapterJarPath,
@@ -232,16 +233,35 @@ try {
     password,
     runId,
     authorizationId: config.authorizationId
-  })
+  }
 
-  process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`)
-  const pass = evidence.ready
-    && evidence.claim.verified
-    && evidence.claim.replayRejected
-    && evidence.claim.onlinePlayers === expectedPlayers
-    && evidence.stop.exitSignal === null
-    && evidence.stop.adapterDisabled
-    && evidence.stop.companionDisabled
+  const mode = config.mode ?? 'single'
+  let result
+  let pass
+  if (mode === 'restart' || mode === 'crash-restart') {
+    result = await runControlledPaperRestartJourney({
+      ...baseOptions,
+      boot1Crash: mode === 'crash-restart'
+    })
+    pass = result.bootIdsDistinct
+      && result.allBootsVerified
+      && result.boot2CleanStop
+    // Với crash-restart, boot1 phải có dấu hiệu crash (không clean stop).
+    if (mode === 'crash-restart') {
+      pass = pass && result.boot1Crashed && result.boots[0].stop.exitSignal !== null
+    }
+  } else {
+    result = await runControlledPaperJourney(baseOptions)
+    pass = result.ready
+      && result.claim.verified
+      && result.claim.replayRejected
+      && result.claim.onlinePlayers === expectedPlayers
+      && result.stop.exitSignal === null
+      && result.stop.adapterDisabled
+      && result.stop.companionDisabled
+  }
+
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`)
   process.exitCode = pass ? 0 : 2
   if (!pass) process.stderr.write('Controlled Paper journey did not fully pass — see evidence above.\n')
 } catch (error) {

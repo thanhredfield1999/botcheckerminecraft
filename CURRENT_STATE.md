@@ -2,6 +2,23 @@
 
 Last reviewed: 2026-09-19
 
+## 2026-09-19 — Round-5/6 restart + crash VERIFIED (boot identity per-boot, crash recovery)
+
+- Restart journey (`mode: restart`): `runControlledPaperRestartJourney` — 2 boots trên CÙNG
+  isolated root, boot1 graceful → boot2. `restart-evidence.json`: bootIdsDistinct=true
+  (boot-f8ef038e vs boot-a2814e45), allBootsVerified, boot2CleanStop. Restart không dùng lại
+  bootId cũ.
+- Crash journey (`mode: crash-restart`): boot1 `stopMode:'crash'` (child.kill() cứng, không
+  `Disabling`, exitSignal SIGTERM) → boot2 graceful recovery. `crash-restart-evidence.json`:
+  bootIdsDistinct=true (boot-ca265158 vs boot-461f4908), boot1Crashed=true, boot2CleanStop=true.
+  Crash không để lại claim dùng được cho boot sau.
+- `distinctBootIds` fail-closed (RED→GREEN, 20 test executor). VERIFIED full gate: preview logs
+  (chờ xác nhận final exit).
+- Evidence: `docs/evidence/controlled-paper-journey-20260919/restart-evidence.json` +
+  `crash-restart-evidence.json`.
+- Giới hạn còn: keystore custody thật, release. `releaseEligible:false`. Join-client không dùng
+  ở rounds 5/6 (onlinePlayers=0 chỉ là phụ).
+
 ## 2026-09-19 — Round-4 three-players VERIFIED (onlinePlayers accuracy multi-account)
 
 - Executor nâng multi-client: `joinClients` (mảng 1–4, username duy nhất, validate fail-closed

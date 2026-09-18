@@ -274,6 +274,21 @@ export function validateJoinClientsInput(input: unknown): readonly ControlledPap
   return Object.freeze(clients.map(client => Object.freeze(client)))
 }
 
+/** Trích bootId duy nhất theo thứ tự các boot; một boot id giống nhau bị coi là một. */
+export function distinctBootIds(claims: readonly { readonly bootId: string }[]): readonly string[] {
+  if (!Array.isArray(claims) || claims.length < 1) {
+    throw new Error('Controlled Paper boot claims are invalid')
+  }
+  const seen: string[] = []
+  for (const claim of claims) {
+    if (typeof claim?.bootId !== 'string' || claim.bootId.length === 0) {
+      throw new Error('Controlled Paper boot claim is invalid')
+    }
+    if (!seen.includes(claim.bootId)) seen.push(claim.bootId)
+  }
+  return Object.freeze(seen)
+}
+
 function sha256Bytes(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
@@ -347,6 +362,7 @@ export interface ControlledPaperJourneyOptions {
   readonly joinClients?: readonly ControlledPaperJoinClientInput[]
   readonly readyDeadlineMs: number
   readonly stopDeadlineMs: number
+  readonly stopMode?: 'graceful' | 'crash'
   readonly password: string
   readonly runId: string
   readonly authorizationId: string
@@ -432,18 +448,22 @@ function probePort(port: number, timeoutMs = 800): Promise<boolean> {
 
 async function stopPaperGracefully(
   child: ChildProcess,
-  options: { readonly stopDeadlineMs: number }
+  options: { readonly stopDeadlineMs: number, readonly crash: boolean }
 ): Promise<{ readonly exitCode: number | null, readonly exitSignal: string | null }> {
   const exited = new Promise<{ exitCode: number | null, exitSignal: string | null }>(resolve => {
     child.once('exit', (exitCode, exitSignal) => resolve({ exitCode, exitSignal }))
   })
-  child.stdin?.write(buildStopCommand())
+  if (options.crash) {
+    // Crash có chủ đích: kill cứng đúng PID do executor spawn (không kill hàng loạt).
+    try { child.kill() } catch { /* best effort */ }
+  } else {
+    child.stdin?.write(buildStopCommand())
+  }
   let result = await Promise.race([
     exited,
     sleep(options.stopDeadlineMs).then(() => ({ exitCode: null as number | null, exitSignal: 'TIMEOUT' as const }))
   ])
   if (result.exitSignal === 'TIMEOUT') {
-    // Fallback chỉ nhắm PID do executor tự spawn; không bao giờ kill hàng loạt.
     try { child.kill() } catch { /* best effort */ }
     result = await Promise.race([
       exited,
@@ -493,6 +513,59 @@ export function buildControlledPaperBinding(options: {
         : [])
     ]
   })
+}
+
+export interface ControlledPaperRestartJourneyEvidence {
+  readonly schemaVersion: 1
+  readonly runId: string
+  readonly boots: readonly [ControlledPaperJourneyEvidence, ControlledPaperJourneyEvidence]
+  readonly bootCount: 2
+  readonly bootIdsDistinct: boolean
+  readonly allBootsVerified: boolean
+  readonly boot1Crashed: boolean
+  readonly boot2CleanStop: boolean
+  readonly releaseEligible: false
+  readonly factsAuthoritative: false
+}
+
+/**
+ * Restart/crash journey: cùng một isolated root, hai boot tuần tự.
+ * - `boot1Crash=false`: boot1 graceful stop rồi boot2 (restart sạch).
+ * - `boot1Crash=true`: boot1 bị kill cứng (crash) rồi boot2 (recovery sau crash).
+ * Chứng minh bootId mỗi boot khác nhau; crash không để lại claim dùng được cho boot sau.
+ */
+export async function runControlledPaperRestartJourney(
+  options: ControlledPaperJourneyOptions & { readonly boot1Crash?: boolean }
+): Promise<ControlledPaperRestartJourneyEvidence> {
+  const boot1 = await runControlledPaperJourney({
+    ...options,
+    runId: `${options.runId}-boot1`,
+    stopMode: options.boot1Crash === true ? 'crash' : 'graceful'
+  })
+  const boot2 = await runControlledPaperJourney({
+    ...options,
+    runId: `${options.runId}-boot2`,
+    stopMode: 'graceful'
+  })
+  const bootIds = distinctBootIds([boot1, boot2].map(boot => ({ bootId: boot.claim.claimedBootId })))
+  const evidence: ControlledPaperRestartJourneyEvidence = Object.freeze({
+    schemaVersion: 1 as const,
+    runId: options.runId,
+    boots: Object.freeze([boot1, boot2]) as readonly [ControlledPaperJourneyEvidence, ControlledPaperJourneyEvidence],
+    bootCount: 2 as const,
+    bootIdsDistinct: bootIds.length === 2,
+    allBootsVerified: [boot1, boot2].every(boot => boot.ready && boot.claim.verified && boot.claim.replayRejected),
+    boot1Crashed: options.boot1Crash === true,
+    boot2CleanStop: boot2.stop.exitCode === 0 && boot2.stop.exitSignal === null
+      && boot2.stop.adapterDisabled && boot2.stop.companionDisabled,
+    releaseEligible: false as const,
+    factsAuthoritative: false as const
+  })
+  writeFileSync(
+    path.join(options.isolatedRoot, 'restart-evidence.json'),
+    JSON.stringify(evidence, null, 2)
+  )
+  return evidence
 }
 
 export async function runControlledPaperJourney(
@@ -584,7 +657,10 @@ export async function runControlledPaperJourney(
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Controlled Paper journey failed'
   } finally {
-    const stopResult = await stopPaperGracefully(child, { stopDeadlineMs: options.stopDeadlineMs })
+    const stopResult = await stopPaperGracefully(child, {
+      stopDeadlineMs: options.stopDeadlineMs,
+      crash: options.stopMode === 'crash'
+    })
     const stopEvidence = classifyPaperStopEvidence(readBoundedLog(layout.logPath))
     const finishedAtMs = Date.now()
     const evidence: ControlledPaperJourneyEvidence = Object.freeze({

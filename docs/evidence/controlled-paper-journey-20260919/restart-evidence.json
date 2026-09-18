@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "runId": "controlled-paper-journey-20260919e",
+  "boots": [
+    {
+      "schemaVersion": 1,
+      "runId": "controlled-paper-journey-20260919e-boot1",
+      "ready": true,
+      "claim": {
+        "verified": true,
+        "onlinePlayers": 0,
+        "claimedServerInstanceId": "controlled-paper-a",
+        "claimedBootId": "boot-f8ef038e2f947ed22b7ce7ebb78ab098",
+        "targetBindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+        "replayRejected": true
+      },
+      "join": {
+        "requested": false,
+        "usernames": [],
+        "expectedPlayers": 0
+      },
+      "failure": null,
+      "stop": {
+        "exitCode": 0,
+        "exitSignal": null,
+        "adapterDisabled": true,
+        "companionDisabled": true
+      },
+      "artifacts": {
+        "paperJarSha256": "6c099540fccd27e10750d1adcb382f1552fb5aa2816aeaf2cc1efb23ddd9e3df",
+        "adapterJarSha256": "28a8a617d4c8b7387f24ea4b941927da3b65b5caa0033a0392195f3ac4032778",
+        "companionJarSha256": "90d926ad53d693b9ad5621ee17b3be7f4029adc12fc6fe811842c8e12dd4ee6f"
+      },
+      "bindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+      "startedAtMs": 1789765568481,
+      "finishedAtMs": 1789765629882,
+      "releaseEligible": false,
+      "factsAuthoritative": false
+    },
+    {
+      "schemaVersion": 1,
+      "runId": "controlled-paper-journey-20260919e-boot2",
+      "ready": true,
+      "claim": {
+        "verified": true,
+        "onlinePlayers": 0,
+        "claimedServerInstanceId": "controlled-paper-a",
+        "claimedBootId": "boot-a2814e45f202eb2c4452fce797684574",
+        "targetBindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+        "replayRejected": true
+      },
+      "join": {
+        "requested": false,
+        "usernames": [],
+        "expectedPlayers": 0
+      },
+      "failure": null,
+      "stop": {
+        "exitCode": 0,
+        "exitSignal": null,
+        "adapterDisabled": true,
+        "companionDisabled": true
+      },
+      "artifacts": {
+        "paperJarSha256": "6c099540fccd27e10750d1adcb382f1552fb5aa2816aeaf2cc1efb23ddd9e3df",
+        "adapterJarSha256": "28a8a617d4c8b7387f24ea4b941927da3b65b5caa0033a0392195f3ac4032778",
+        "companionJarSha256": "90d926ad53d693b9ad5621ee17b3be7f4029adc12fc6fe811842c8e12dd4ee6f"
+      },
+      "bindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+      "startedAtMs": 1789765630015,
+      "finishedAtMs": 1789765661528,
+      "releaseEligible": false,
+      "factsAuthoritative": false
+    }
+  ],
+  "bootCount": 2,
+  "bootIdsDistinct": true,
+  "allBootsVerified": true,
+  "boot1Crashed": false,
+  "boot2CleanStop": true,
+  "releaseEligible": false,
+  "factsAuthoritative": false
+}

@@ -9,6 +9,7 @@ import {
   eulaText,
   paperLogReady,
   serverPropertiesText,
+  distinctBootIds,
   validateJoinClientInput,
   validateJoinClientsInput,
   waitForPaperReady,
@@ -214,4 +215,18 @@ test('join client list reject rỗng / trùng username / quá 4 / entry sai', ()
 test('server.properties mở đủ chỗ cho nhiều client test (max-players=8)', () => {
   const text = serverPropertiesText(25682)
   assert.ok(text.includes('max-players=8'))
+})
+
+test('distinctBootIds tách bootId duy nhất theo thứ tự, reject đầu vào rác', () => {
+  const distinct = distinctBootIds([
+    { bootId: 'boot-aaaa' },
+    { bootId: 'boot-bbbb' }
+  ])
+  assert.deepEqual(distinct, ['boot-aaaa', 'boot-bbbb'])
+  const same = distinctBootIds([{ bootId: 'boot-x' }, { bootId: 'boot-x' }])
+  assert.deepEqual(same, ['boot-x'])
+  assert.throws(() => distinctBootIds([]))
+  assert.throws(() => distinctBootIds([{ bootId: '' }]))
+  assert.throws(() => distinctBootIds([{ bootId: 42 } as never]))
+  assert.throws(() => distinctBootIds(null as never))
 })
