@@ -100,6 +100,24 @@ test('composition đi trọn challenge → loopback → verify → consume', asy
   assert.equal(observed.targetBindingSha256, artifactTargetBindingSha256(expectedBinding))
   // Không được overclaim: đây vẫn chưa phải bằng chứng release.
   assert.equal(observed.releaseEligible, false)
+  // Envelope đã dùng đúng một lần: replay trên cùng envelope bị từ chối.
+  assert.equal(source.replayAttemptRejected(), true)
+})
+
+test('replay probe ném lỗi sanitized khi chưa có observation nào trước đó', async () => {
+  const { expectedBinding, keyId, trustStore, clock, adapterClient } = fixture()
+  const source = createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource({
+    trustStore,
+    audience: 'paper-bukkit-verifier',
+    verifierInstanceId: 'paper-bukkit-verifier-a',
+    keyId,
+    targetBinding: expectedBinding,
+    challengeTtlMs: 5_000,
+    loopbackClient: adapterClient(0) as never,
+    wallNowMs: () => clock.now,
+    randomBytes: size => Buffer.alloc(size, 77)
+  })
+  assert.throws(() => source.replayAttemptRejected(), /requires a prior observation/)
 })
 
 test('adapter trả claim cho challenge khác thì composition từ chối', async () => {

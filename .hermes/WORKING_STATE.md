@@ -1,6 +1,51 @@
 # BotChecker working state
 
-## 2026-09-08 — 0.2.0 offline candidate checkpoint
+## 2026-09-19 — CONTROLLED PAPER JOURNEY VERIFIED (runtime evidence đạt)
+
+- Đã chạy thành công journey Paper thật lần đầu: Paper 1.21.11 + JDK21, isolated root
+  `E:/AI.WORK/botchecker-runtime/controlled-paper-journey-20260919b`, adapter loopback 25680 /
+  Minecraft 25681, flat offline world. Kết quả evidence (`docs/evidence/controlled-paper-journey-20260919/`):
+  ready=true; claim.verified=true, onlinePlayers=0, claimedServerInstanceId=controlled-paper-a,
+  bootId per-boot (boot-0a1377...), replayRejected=true; stop exit 0, cả 2 plugin
+  Disabling trong log; port đóng, không orphan java. 2 lượt chạy (round1 initial + round2
+  refactored) đều PASS.
+- Code mới (đã trong tree, chưa commit): `src/e2e/controlled-paper-executor.ts` (14 test;
+  config builders/spawn args/readiness/replay/stop fail-closed) + `scripts/controlled-paper-journey.mjs`
+  + `scripts/provision-controlled-paper-keystore.mjs` + 2 npm scripts. Runtime composition
+  `paper-bukkit-online-player-runtime.ts` thêm `replayAttemptRejected()` (test RED→GREEN).
+  Executor tiêu thụ composition (đường sanctioned) — claim module KHÔNG thêm importer.
+- VERIFIED 19/09: full gate `npm run typecheck && npm run verify:coverage-floor && npm test &&
+  npm run build && git diff --check` → exit 0; 907 total / 901 pass / 0 fail / 6 skip; build
+  19 Java sources.
+- Keystore test operator-owned ngoài repo (`botchecker-runtime/artifacts/controlled-test-*.p12`),
+  password chỉ qua env var cho JVM, không bao giờ vào repo/argv/evidence. Paper JAR copy read-only
+  từ fixture ItemGuard `09a53fc5c744` → `botchecker-runtime/artifacts/paper-1.21.11.jar`
+  (sha 6c0995...). Không commit/push. Không production/deploy.
+- Còn mở (claim không overclaim): onlinePlayers=0 chỉ chứng minh pipeline trên server rỗng;
+  chưa có multi-player accuracy, restart/crash, drag/multiplayer/anti-dupe journey, keystore
+  custody thật, release eligibility. `releaseEligible:false`.
+
+## 2026-09-19 — Controlled-Paper harness WIP verified (offline), runtime blocker
+
+- WIP 13/09 (chưa commit): `src/e2e/controlled-paper-harness.ts` (preflight + run plan fail-closed,
+  không spawn/socket/download), `scripts/controlled-paper-preflight.mjs` (CLI),
+  `test/controlled-paper-harness.test.ts` (7), `test/controlled-paper-preflight-cli.test.ts` (1),
+  `docs/controlled-paper-e2e-harness.md` (scope: chuẩn bị input non-secret cho journey Paper
+  cô lập; PAPER_JAR_MISSING/KEYSTORE_MISSING block deterministic; operation thứ ba là
+  await-explicit-runtime-approval). Kèm zigzag observer (3 test) giữ nguyên, ngoài scope.
+- VERIFIED 19/09 trên tree đang có: `npm run typecheck && npm run verify:coverage-floor &&
+  npm test && npm run build && git diff --check` → exit 0; 892 total / 886 pass / 0 fail /
+  6 skip; build 19 Java sources (adapter + keystore-companion). Tự review harness: chặn
+  secret-shaped field (deny-list + strict schema), root/artifact ngoài repo + realpath,
+  symlink/junction/proxy fail-closed, plan đóng băng, ready chỉ khi 2 artifact ngoài repo
+  là regular file. Không runtime claim. 3 reviewer độc lập 13/09 đều FAIL infra (timeout
+  Opus), không có verdict độc lập — tự review thay thế, ghi rõ giới hạn.
+- Game plan run plan: materialize-isolated-root → write-non-secret-config →
+  await-explicit-runtime-approval. Executor đã tồn tại từ 19/09 (SUPERSEDED bởi section trên).
+- BLOCKER cũ (đã resolve 19/09): Paper JAR ngoài repo, PKCS12 operator-owned, approval runtime —
+  cả ba đã có: copy paper.jar read-only từ fixture ItemGuard, keystore test provisioned ngoài repo,
+  Thanh duyệt "okey lam đi". SUPPERSEDED bởi section trên.
+- Chưa commit (chưa được yêu cầu). Zigzag observer + controlled-paper WIP giữ untracked.
 
 - Canonical repo: `E:/AI.WORK/botcheckerminecraft-botchecker`, branch `main`.
 - Gate baseline HEAD: `7501337490153b7b5533ca1d17e0c8f91d1eec2b` + dirty tree;

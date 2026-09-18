@@ -15,7 +15,9 @@
     "test": "node --import tsx --test --test-concurrency=2 test/**/*.test.ts",
     "verify:coverage-floor": "node scripts/verify-test-coverage-floor.mjs",
     "verify:paper-forward-compat": "node scripts/verify-paper-forward-compat.mjs",
-    "verify:kms-hsm": "npm run build --silent && node scripts/verify-google-cloud-kms-hsm.mjs"
+    "verify:kms-hsm": "npm run build --silent && node scripts/verify-google-cloud-kms-hsm.mjs",
+    "provision:controlled-paper-keystore": "node scripts/provision-controlled-paper-keystore.mjs",
+    "journey:controlled-paper": "node --import tsx scripts/controlled-paper-journey.mjs"
   },
   "engines": {
     "node": ">=22.18.0"

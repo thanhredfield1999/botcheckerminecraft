@@ -1,0 +1,145 @@
+{
+  "name": "LivingNPC zig-zag heading acceptance (m44)",
+  "description": "Quan sát đúng một Farmer theo UUID đi hết hành lang ZIG-ZAG hậu cổng của fixture m17. Checkpoint có THỨ TỰ ở từng góc đảo chiều, nên 'đi đúng đích nhưng sai hướng' bị bắt bằng shortcutDetected/backtrackDetected chứ không chỉ nhìn đích cuối. Chỉ entity stream + block cache; không command, teleport, click, interaction, mutation. Schema observe_route giới hạn 16 checkpoint nên mốc APPROACH A bị lược; quyền qua cổng vẫn được chứng minh bằng gate crossing A->B->C riêng.",
+  "maxDurationMs": 300000,
+  "qa": {
+    "project": "LivingNPC",
+    "fixture": "livingnpc-manual-m44-zigzag",
+    "accountRole": "read-only-observer",
+    "authorization": [
+      "read-only-entity-observation",
+      "read-only-block-cache"
+    ]
+  },
+  "steps": [
+    {
+      "id": "settle_after_join",
+      "action": "wait",
+      "durationMs": 3000
+    },
+    {
+      "id": "observe-zigzag-heading",
+      "action": "observe_route",
+      "nameIncludes": "DemoFarmer",
+      "targetUuid": "93df5666-fbef-2b8c-a217-6b7b7848b315",
+      "maxDistance": 64,
+      "checkpoints": [
+        {
+          "id": "P0",
+          "position": {
+            "x": 2.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 1.0
+        },
+        {
+          "id": "B",
+          "position": {
+            "x": 8.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 0.4
+        },
+        {
+          "id": "C",
+          "position": {
+            "x": 9.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 0.5
+        },
+        {
+          "id": "ZIG1_NORTH",
+          "position": {
+            "x": 13.5,
+            "y": 64.0,
+            "z": 3.5
+          },
+          "radius": 1.2
+        },
+        {
+          "id": "ZIG2_SOUTH",
+          "position": {
+            "x": 16.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 1.2
+        },
+        {
+          "id": "ZIG3_NORTH",
+          "position": {
+            "x": 20.5,
+            "y": 64.0,
+            "z": 3.5
+          },
+          "radius": 1.2
+        },
+        {
+          "id": "ZIG4_SOUTH",
+          "position": {
+            "x": 24.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 1.2
+        },
+        {
+          "id": "ZIG5_NORTH",
+          "position": {
+            "x": 27.5,
+            "y": 64.0,
+            "z": 3.5
+          },
+          "radius": 1.2
+        },
+        {
+          "id": "FINAL",
+          "position": {
+            "x": 34.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "radius": 1.8
+        }
+      ],
+      "fences": [],
+      "gates": [
+        {
+          "checkpointId": "B",
+          "block": {
+            "x": 8,
+            "y": 64,
+            "z": 8
+          },
+          "approach": {
+            "x": 7.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "exit": {
+            "x": 9.5,
+            "y": 64.0,
+            "z": 8.5
+          },
+          "entryClearance": 0.3,
+          "exitClearance": 0.3,
+          "verticalTolerance": 1.0,
+          "requiredExitSamples": 2,
+          "planeEpsilon": 0.1,
+          "corridorHalfWidth": 0.75,
+          "entityHalfWidth": 0.3,
+          "maxStepDistance": 1.75,
+          "exitDwellMs": 100
+        }
+      ],
+      "requireFenceEvidence": false,
+      "sampleMs": 100,
+      "timeoutMs": 290000,
+      "note": "Checkpoint căn theo quỹ đạo THẬT đo từ m17 (bot 911 mẫu): NPC đi chéo trong hành lang 2 block, cực bắc z~4.7. Mốc cũ đặt ở tâm cột z=3.5 nên không bao giờ chạm. Mỗi mốc là một góc đảo chiều Z; đi sai hướng vẫn bị shortcut/backtrack bắt."
+    }
+  ]
+}

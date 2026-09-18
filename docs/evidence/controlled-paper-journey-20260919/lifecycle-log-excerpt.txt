@@ -1,0 +1,5 @@
+[03:06:33] [Server thread/INFO]: [BotCheckerPaperAdapter] Enabling BotCheckerPaperAdapter v0.2.0-SNAPSHOT
+[03:06:33] [Server thread/INFO]: [BotCheckerPaperAdapter] BotChecker Paper adapter armed; awaiting companion key service registration.
+[03:06:33] [Server thread/INFO]: [BotCheckerKeyStoreCompanion] Enabling BotCheckerKeyStoreCompanion v0.2.0-SNAPSHOT
+[03:06:33] [Server thread/INFO]: [BotCheckerKeyStoreCompanion] BotChecker KeyStore companion registered one opaque Ed25519 provider.
+[03:06:34] [Server thread/INFO]: Done (24.232s)! For help, type "help"

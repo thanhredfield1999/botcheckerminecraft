@@ -43,6 +43,12 @@ export interface PaperBukkitOnlinePlayerVerifiedOnlinePlayerSource {
     runId: string,
     signal: AbortSignal
   ): Promise<PaperBukkitOnlinePlayerVerifiedObservation>
+  /**
+   * Xác nhận một envelope đã được dùng đúng một lần: lần verify thứ hai trên cùng
+   * envelope phải bị từ chối (nonce đã consume). Ném lỗi sanitized nếu chưa có
+   * observation nào trước đó.
+   */
+  replayAttemptRejected(): boolean
   toPreflightFacts(
     observation: PaperBukkitOnlinePlayerVerifiedObservation,
     remainingFacts: unknown
@@ -82,6 +88,7 @@ export function createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource(
     ...(options.maxPending !== undefined ? { maxPending: options.maxPending } : {})
   })
   const expectedTargetBindingSha256 = artifactTargetBindingSha256(options.targetBinding)
+  let lastEnvelope: Awaited<ReturnType<PaperBukkitOnlinePlayerLoopbackClient['request']>> | undefined
 
   return Object.freeze({
     async observe(runId: string, signal: AbortSignal) {
@@ -95,6 +102,7 @@ export function createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource(
         const envelope = await options.loopbackClient.request(challenge, signal)
         const verified = verifier.verifyAndConsume(envelope)
         if (verified.targetBindingSha256 !== expectedTargetBindingSha256) throw new Error()
+        lastEnvelope = envelope
         return Object.freeze({
           schemaVersion: 1 as const,
           onlinePlayers: verified.onlinePlayers,
@@ -108,6 +116,18 @@ export function createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource(
       } catch {
         // Sanitize: không để chi tiết transport/verifier rò ra ngoài biên tin cậy.
         throw new Error('Paper Bukkit online-player observation failed')
+      }
+    },
+
+    replayAttemptRejected() {
+      if (lastEnvelope === undefined) {
+        throw new Error('Paper Bukkit replay probe requires a prior observation')
+      }
+      try {
+        verifier.verifyAndConsume(lastEnvelope)
+        return false
+      } catch {
+        return true
       }
     },
 

@@ -1,6 +1,32 @@
 # BotChecker Current State
 
-Last reviewed: 2026-09-08
+Last reviewed: 2026-09-19
+
+## 2026-09-19 — Controlled Paper journey VERIFIED (first Paper runtime evidence)
+
+- Executor controlled-Paper mới: `src/e2e/controlled-paper-executor.ts` (config builders,
+  spawn args, readiness poller fail-closed, stop + kill fallback đúng PID, evidence fail-closed),
+  `scripts/controlled-paper-journey.mjs`, `scripts/provision-controlled-paper-keystore.mjs`.
+  Node side tiêu thụ `createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource` (composition
+  sanctioned) — verifier không có importer mới; composition thêm `replayAttemptRejected()`
+  (RED→GREEN). Harness preflight vẫn không spawn/socket/download; executor là đường duy nhất
+  starts Paper và chỉ chạy khi operator cấp Paper JAR + PKCS12 ngoài repo.
+- `VERIFIED controlled Paper runtime (OBSERVED + signed claim)`: Paper 1.21.11 + JDK21,
+  isolated root `E:/AI.WORK/botchecker-runtime/controlled-paper-journey-20260919b`, loopback
+  adapter 25680 / Minecraft 25681. Log thật: adapter Enable → armed → companion Enable →
+  "registered one opaque Ed25519 provider" → Done (22.5s). Node issue challenge → signed claim →
+  verifyAndConsume one-shot → replay bị từ chối. `onlinePlayers=0`, claimedServerInstanceId
+  `controlled-paper-a`, bootId per-boot. Stop sạch: exit 0, cả hai plugin Disabling,
+  port đóng, không orphan java. Evidence:
+  `docs/evidence/controlled-paper-journey-20260919/README.md` (+ 2 JSON + log excerpt).
+- `VERIFIED full gate 19/09`: typecheck → coverage-floor → 907 total / 901 pass / 0 fail /
+  6 skip → build (19 Java sources) → diff-check, exit 0.
+- Giới hạn giữ nguyên: `releaseEligible:false`, `factsAuthoritative:false`. onlinePlayers=0
+  chỉ chứng minh pipeline trên server rỗng; chưa đo multi-player accuracy, restart/crash,
+  drag/multiplayer/anti-dupe customer journeys, keystore custody thật, release.
+- Không commit/push (chưa được yêu cầu), không production/deploy, không tải Paper qua mạng
+  (copy read-only từ fixture ItemGuard `09a53fc5c744`, sha 6c0995...). Test keystore operator-
+  owned ngoài repo, password chỉ qua env var cho JVM.
 
 ## Current checkpoint — 0.2.0 offline candidate, NOT released
 
