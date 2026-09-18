@@ -10,6 +10,7 @@ import {
   paperLogReady,
   serverPropertiesText,
   validateJoinClientInput,
+  validateJoinClientsInput,
   waitForPaperReady,
   type ControlledPaperCompanionInput,
   type ControlledPaperPolicyInput
@@ -187,4 +188,30 @@ test('join client input reject username/version sai dạng', () => {
   assert.throws(() => validateJoinClientInput({ username: 'Probe', version: 'not-a-version' }))
   assert.throws(() => validateJoinClientInput(null))
   assert.throws(() => validateJoinClientInput({}))
+})
+
+test('join client list hợp lệ: nhiều client, username duy nhất, tối đa 4', () => {
+  const list = validateJoinClientsInput([
+    { username: 'BotCheckerProbe1', version: '1.21.11' },
+    { username: 'BotCheckerProbe2', version: '1.21.11' },
+    { username: 'BotCheckerProbe3', version: '1.21.11' }
+  ])
+  assert.equal(list.length, 3)
+  assert.equal(Object.isFrozen(list), true)
+})
+
+test('join client list reject rỗng / trùng username / quá 4 / entry sai', () => {
+  assert.throws(() => validateJoinClientsInput([]))
+  assert.throws(() => validateJoinClientsInput([{ username: 'Probe1' }, { username: 'Probe1' }]))
+  assert.throws(() => validateJoinClientsInput([
+    { username: 'P1' }, { username: 'P2' }, { username: 'P3' }, { username: 'P4' }, { username: 'P5' }
+  ]))
+  assert.throws(() => validateJoinClientsInput([{ username: 'bad name!' }]))
+  assert.throws(() => validateJoinClientsInput(null))
+  assert.throws(() => validateJoinClientsInput('not-an-array'))
+})
+
+test('server.properties mở đủ chỗ cho nhiều client test (max-players=8)', () => {
+  const text = serverPropertiesText(25682)
+  assert.ok(text.includes('max-players=8'))
 })

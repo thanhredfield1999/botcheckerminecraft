@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
+import { types } from 'node:util'
 import { createBot } from 'mineflayer'
 import { createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource } from '../paper-bukkit-online-player-runtime.js'
 import { createPaperBukkitOnlinePlayerLoopbackClient } from '../paper-bukkit-online-player-loopback-client.js'
@@ -154,7 +155,7 @@ generate-structures=false
 spawn-protection=0
 view-distance=4
 simulation-distance=4
-max-players=1
+max-players=8
 allow-nether=false
 level-name=world
 `
@@ -261,6 +262,18 @@ export function validateJoinClientInput(input: unknown): ControlledPaperJoinClie
   )
 }
 
+export function validateJoinClientsInput(input: unknown): readonly ControlledPaperJoinClientInput[] {
+  if (!Array.isArray(input) || input.length < 1 || input.length > 4 || types.isProxy(input)) {
+    throw new Error('Controlled Paper join clients are invalid')
+  }
+  const clients = input.map(item => validateJoinClientInput(item))
+  const usernames = new Set(clients.map(client => client.username))
+  if (usernames.size !== clients.length) {
+    throw new Error('Controlled Paper join clients are invalid')
+  }
+  return Object.freeze(clients.map(client => Object.freeze(client)))
+}
+
 function sha256Bytes(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
@@ -331,7 +344,7 @@ export interface ControlledPaperJourneyOptions {
   readonly keyId: string
   readonly memoryMb: number
   readonly minecraftPort: number
-  readonly joinClient?: ControlledPaperJoinClientInput
+  readonly joinClients?: readonly ControlledPaperJoinClientInput[]
   readonly readyDeadlineMs: number
   readonly stopDeadlineMs: number
   readonly password: string
@@ -353,7 +366,8 @@ export interface ControlledPaperJourneyEvidence {
   }
   readonly join: {
     readonly requested: boolean
-    readonly username: string | null
+    readonly usernames: readonly string[]
+    readonly expectedPlayers: number
   }
   readonly failure: string | null
   readonly stop: {
@@ -528,7 +542,7 @@ export async function runControlledPaperJourney(
     replayRejected: false
   }
   let failure: string | null = null
-  const join = options.joinClient === undefined ? undefined : validateJoinClientInput(options.joinClient)
+  const joinClients = options.joinClients === undefined ? undefined : validateJoinClientsInput(options.joinClients)
 
   try {
     await waitForPaperReady({
@@ -544,9 +558,13 @@ export async function runControlledPaperJourney(
       }
     })
 
-    let joinedBot: { readonly quit: () => void } | undefined
-    if (join !== undefined) {
-      joinedBot = await joinMinecraftClient(join, options.minecraftPort, 30_000)
+    const joinedBots: { readonly quit: () => void }[] = []
+    if (joinClients !== undefined) {
+      for (const join of joinClients) {
+        joinedBots.push(await joinMinecraftClient(join, options.minecraftPort, 30_000))
+      }
+      // Chờ Paper xử lý toàn bộ login và cập nhật online-player set.
+      await sleep(1_500)
     }
     try {
       const observation = await verifiedSource.observe(options.runId, new AbortController().signal)
@@ -560,8 +578,8 @@ export async function runControlledPaperJourney(
         replayRejected
       }
     } finally {
-      joinedBot?.quit()
-      if (join !== undefined) await sleep(1_000)
+      for (const joinedBot of joinedBots) joinedBot.quit()
+      if (joinClients !== undefined) await sleep(1_000)
     }
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Controlled Paper journey failed'
@@ -575,8 +593,9 @@ export async function runControlledPaperJourney(
       ready: failure === null,
       claim,
       join: Object.freeze({
-        requested: join !== undefined,
-        username: join?.username ?? null
+        requested: joinClients !== undefined,
+        usernames: Object.freeze(joinClients?.map(client => client.username) ?? []),
+        expectedPlayers: joinClients?.length ?? 0
       }),
       failure,
       stop: Object.freeze({

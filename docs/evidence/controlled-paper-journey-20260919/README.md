@@ -21,11 +21,12 @@ Status: first real Paper runtime evidence for the adapter + keystore companion. 
 4. `BotChecker KeyStore companion registered one opaque Ed25519 provider.`
 5. `Done (22.5s)!` — server ready.
 
-## Claim journey (VERIFIED, round-2/3 refactored path)
+## Claim journey (VERIFIED, round-2/3/4 refactored path)
 
-- Round-2 (empty server): `onlinePlayers: 0`. Round-3 (one real mineflayer client `BotCheckerProbe`
-  joined, OBSERVED in log: UUID assigned → joined → logged in → claim → left): `onlinePlayers: 1`.
-  Both: `verified: true`, `nonceConsumed: true`, `replayRejected: true`.
+- Round-2 (empty): `onlinePlayers: 0`. Round-3 (one real client `BotCheckerProbe`):
+  `onlinePlayers: 1`. Round-4 (three real clients `BotCheckerProbe1/2/3`, distinct entity
+  IDs 1/5/17): `onlinePlayers: 3`. All: `verified: true`, `nonceConsumed: true`,
+  `replayRejected: true`.
 - Node issued an Ed25519 challenge over the loopback listener; the adapter returned a signed
   claim; `verifyAndConsume` accepted exactly once.
 - Claim fields: `claimedServerInstanceId: controlled-paper-a`, per-boot
@@ -42,12 +43,11 @@ Status: first real Paper runtime evidence for the adapter + keystore companion. 
 
 ## Limits (NOT asserted)
 
-`releaseEligible: false`, `factsAuthoritative: false` by evidence. Round-3 proves the
-snapshot+binding+signing pipeline reports `onlinePlayers: 1` when exactly one real client is
-joined (OBSERVED join/disconnect in log) and `0` on an empty server — accuracy at the
-single/multi-account boundary on this controlled server. It does NOT cover: many simultaneous
-players, restart/crash proof, drag/multiplayer/anti-dupe customer journeys, or production
-custody (keystore is a throwaway test key).
+`releaseEligible: false`, `factsAuthoritative: false` by evidence. Rounds prove the
+snapshot+binding+signing pipeline reports the exact real online-players count at 0, 1 and 3
+clients (OBSERVED join/disconnect in log). Not covered: many (>4) simultaneous players,
+restart/crash proof, drag/multiplayer/anti-dupe customer journeys, or production custody
+(keystore is a throwaway test key).
 
 ## Reproduction
 

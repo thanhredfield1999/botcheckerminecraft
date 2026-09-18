@@ -24,7 +24,7 @@ import {
   buildControlledPaperBinding,
   companionConfigYaml,
   runControlledPaperJourney,
-  validateJoinClientInput
+  validateJoinClientsInput
 } from '../src/e2e/controlled-paper-executor.ts'
 import { buildPaperBukkitOnlinePlayerTrustStore } from '../src/paper-bukkit-online-player-claim.ts'
 import { artifactTargetBindingSha256 } from '../src/target-binding.ts'
@@ -206,7 +206,10 @@ try {
   }
 
   const runId = config.runId ?? `controlled-paper-journey-${now}`
-  const joinClient = config.joinClient === undefined ? undefined : validateJoinClientInput(config.joinClient)
+  // Chấp nhận joinClients (mảng) hoặc joinClient (một client, legacy).
+  const rawJoin = config.joinClients ?? (config.joinClient !== undefined ? [config.joinClient] : undefined)
+  const joinClients = rawJoin === undefined ? undefined : validateJoinClientsInput(rawJoin)
+  const expectedPlayers = joinClients?.length ?? 0
   const evidence = await runControlledPaperJourney({
     isolatedRoot: config.isolatedRoot,
     paperJarPath: config.paperJarPath,
@@ -223,7 +226,7 @@ try {
     keyId: trustInput.keyId,
     memoryMb: config.memoryMb ?? 1024,
     minecraftPort: config.minecraftPort ?? (config.port + 1),
-    joinClient,
+    joinClients,
     readyDeadlineMs: config.readyDeadlineMs ?? 180_000,
     stopDeadlineMs: config.stopDeadlineMs ?? 45_000,
     password,
@@ -235,6 +238,7 @@ try {
   const pass = evidence.ready
     && evidence.claim.verified
     && evidence.claim.replayRejected
+    && evidence.claim.onlinePlayers === expectedPlayers
     && evidence.stop.exitSignal === null
     && evidence.stop.adapterDisabled
     && evidence.stop.companionDisabled

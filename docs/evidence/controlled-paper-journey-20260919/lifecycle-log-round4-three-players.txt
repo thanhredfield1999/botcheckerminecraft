@@ -1,0 +1,9 @@
+[03:48:36] [Server thread/INFO]: BotCheckerProbe1 joined the game
+[03:48:36] [Server thread/INFO]: BotCheckerProbe1[/127.0.0.1:56650] logged in with entity id 1 at ([world]-3.5, -60.0, -0.5)
+[03:48:37] [Server thread/INFO]: BotCheckerProbe2 joined the game
+[03:48:37] [Server thread/INFO]: BotCheckerProbe2[/127.0.0.1:56662] logged in with entity id 5 at ([world]-5.5, -60.0, 5.5)
+[03:48:39] [Server thread/INFO]: BotCheckerProbe3 joined the game
+[03:48:39] [Server thread/INFO]: BotCheckerProbe3[/127.0.0.1:56668] logged in with entity id 17 at ([world]5.5, -60.0, 9.5)
+[03:48:42] [Server thread/INFO]: BotCheckerProbe1 lost connection: Disconnected
+[03:48:42] [Server thread/INFO]: BotCheckerProbe2 lost connection: Disconnected
+[03:48:42] [Server thread/INFO]: BotCheckerProbe3 lost connection: Disconnected

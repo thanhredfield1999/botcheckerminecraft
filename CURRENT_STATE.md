@@ -2,6 +2,21 @@
 
 Last reviewed: 2026-09-19
 
+## 2026-09-19 — Round-4 three-players VERIFIED (onlinePlayers accuracy multi-account)
+
+- Executor nâng multi-client: `joinClients` (mảng 1–4, username duy nhất, validate fail-closed
+  RED→GREEN 19/19) — join nhiều client thật trước claim; server.properties `max-players=8`.
+  CLI chấp nhận `joinClients[]` (và `joinClient` legacy 1 client).
+- `VERIFIED controlled Paper runtime`: Paper 1.21.11 + JDK21, join 3 client thật
+  `BotCheckerProbe1/2/3` (log: 3 dòng joined, entity id 1/5/17 riêng biệt). Claim
+  `onlinePlayers: 3` (r2=0, r3=1, r4=3), signature verified, replayRejected, stop sạch
+  (exit 0, 2 plugin Disabling, port đóng, không orphan). Evidence:
+  `docs/evidence/controlled-paper-journey-20260919/journey-evidence-round4-three-players.json`
+  + `lifecycle-log-round4-three-players.txt`.
+- Giới hạn còn: >4 player đồng thời chưa đo, restart/crash, drag/anti-dupe customer journeys,
+  keystore custody thật, release. `releaseEligible:false`.
+- Commit đã push: `fd63c5f`, `d3ef575` (round-3).
+
 ## 2026-09-19 — Round-3 multi-player VERIFIED (onlinePlayers accuracy với player thật)
 
 - Executor thêm join client: `joinClient` tùy chọn (username + version, validate fail-closed,

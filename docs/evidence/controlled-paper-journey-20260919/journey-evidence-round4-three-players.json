@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runId": "controlled-paper-journey-20260919d",
+  "ready": true,
+  "claim": {
+    "verified": true,
+    "onlinePlayers": 3,
+    "claimedServerInstanceId": "controlled-paper-a",
+    "claimedBootId": "boot-04e1e08d7575aa1ba676d2560e241dfd",
+    "targetBindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+    "replayRejected": true
+  },
+  "join": {
+    "requested": true,
+    "usernames": [
+      "BotCheckerProbe1",
+      "BotCheckerProbe2",
+      "BotCheckerProbe3"
+    ],
+    "expectedPlayers": 3
+  },
+  "failure": null,
+  "stop": {
+    "exitCode": 0,
+    "exitSignal": null,
+    "adapterDisabled": true,
+    "companionDisabled": true
+  },
+  "artifacts": {
+    "paperJarSha256": "6c099540fccd27e10750d1adcb382f1552fb5aa2816aeaf2cc1efb23ddd9e3df",
+    "adapterJarSha256": "28a8a617d4c8b7387f24ea4b941927da3b65b5caa0033a0392195f3ac4032778",
+    "companionJarSha256": "90d926ad53d693b9ad5621ee17b3be7f4029adc12fc6fe811842c8e12dd4ee6f"
+  },
+  "bindingSha256": "7b9c2eb76f7ccdcfd5208ac534561a3a3b0413436632e1055f96e1a6072d209b",
+  "startedAtMs": 1789764475389,
+  "finishedAtMs": 1789764524894,
+  "releaseEligible": false,
+  "factsAuthoritative": false
+}
