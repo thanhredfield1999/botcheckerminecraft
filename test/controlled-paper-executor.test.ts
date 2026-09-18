@@ -9,6 +9,7 @@ import {
   eulaText,
   paperLogReady,
   serverPropertiesText,
+  validateJoinClientInput,
   waitForPaperReady,
   type ControlledPaperCompanionInput,
   type ControlledPaperPolicyInput
@@ -168,4 +169,22 @@ test('waitForPaperReady fail closed khi hết deadline hoặc process thoát s�
 
 test('stop command luôn là stop + newline để console Paper nhận', () => {
   assert.equal(buildStopCommand(), 'stop\n')
+})
+
+test('join client input hợp lệ: username + version tùy chọn', () => {
+  const parsed = validateJoinClientInput({ username: 'BotCheckerProbe', version: '1.21.11' })
+  assert.deepEqual(parsed, { username: 'BotCheckerProbe', version: '1.21.11' })
+  const withoutVersion = validateJoinClientInput({ username: 'Probe' })
+  assert.equal(withoutVersion.username, 'Probe')
+  assert.equal(withoutVersion.version, undefined)
+})
+
+test('join client input reject username/version sai dạng', () => {
+  assert.throws(() => validateJoinClientInput({ username: 'bad name!' }))
+  assert.throws(() => validateJoinClientInput({ username: 'a'.repeat(17) }))
+  assert.throws(() => validateJoinClientInput({ username: '' }))
+  assert.throws(() => validateJoinClientInput({ username: 42 }))
+  assert.throws(() => validateJoinClientInput({ username: 'Probe', version: 'not-a-version' }))
+  assert.throws(() => validateJoinClientInput(null))
+  assert.throws(() => validateJoinClientInput({}))
 })

@@ -3,6 +3,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
+import { createBot } from 'mineflayer'
 import { createPaperBukkitOnlinePlayerVerifiedOnlinePlayerSource } from '../paper-bukkit-online-player-runtime.js'
 import { createPaperBukkitOnlinePlayerLoopbackClient } from '../paper-bukkit-online-player-loopback-client.js'
 import { artifactTargetBindingSha256, buildArtifactTargetBinding, type ArtifactTargetBinding } from '../target-binding.js'
@@ -234,8 +235,78 @@ export function buildStopCommand(): string {
   return 'stop\n'
 }
 
+const USERNAME = /^[A-Za-z0-9_]{1,16}$/
+const MC_VERSION = /^\d+\.\d+(\.\d+)?$/
+
+export interface ControlledPaperJoinClientInput {
+  readonly username: string
+  readonly version?: string
+}
+
+export function validateJoinClientInput(input: unknown): ControlledPaperJoinClientInput {
+  if (typeof input !== 'object' || input === null) {
+    throw new Error('Controlled Paper join client is invalid')
+  }
+  const record = input as Record<string, unknown>
+  const username = record.username
+  const version = record.version
+  if (typeof username !== 'string' || !USERNAME.test(username)
+    || (version !== undefined && (typeof version !== 'string' || !MC_VERSION.test(version)))) {
+    throw new Error('Controlled Paper join client is invalid')
+  }
+  return Object.freeze(
+    version === undefined
+      ? { username }
+      : { username, version }
+  )
+}
+
 function sha256Bytes(bytes: Buffer): string {
   return createHash('sha256').update(bytes).digest('hex')
+}
+
+/** Join một client thật vào server controlled (offline mode) để Bukkit online-player set có người. */
+async function joinMinecraftClient(
+  join: ControlledPaperJoinClientInput,
+  port: number,
+  timeoutMs: number
+): Promise<{ readonly quit: () => void }> {
+  const bot = createBot({
+    host: '127.0.0.1',
+    port,
+    username: join.username,
+    auth: 'offline',
+    version: join.version ?? '1.21.11'
+  })
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Controlled Paper client join timed out'))
+    }, timeoutMs)
+    const cleanup = () => clearTimeout(timer)
+    bot.once('spawn', () => {
+      cleanup()
+      resolve()
+    })
+    bot.once('error', () => {
+      cleanup()
+      reject(new Error('Controlled Paper client join failed'))
+    })
+    bot.once('kicked', () => {
+      cleanup()
+      reject(new Error('Controlled Paper client was kicked'))
+    })
+    bot.once('end', () => {
+      cleanup()
+      reject(new Error('Controlled Paper client disconnected during join'))
+    })
+  })
+  // Chờ Paper xử lý login và cập nhật online-player set trước khi issue challenge.
+  await sleep(1_500)
+  return Object.freeze({
+    quit: () => {
+      try { bot.quit('observation-complete') } catch { /* đóng im lặng */ }
+    }
+  })
 }
 
 function readBoundedLog(logPath: string): string {
@@ -260,6 +331,7 @@ export interface ControlledPaperJourneyOptions {
   readonly keyId: string
   readonly memoryMb: number
   readonly minecraftPort: number
+  readonly joinClient?: ControlledPaperJoinClientInput
   readonly readyDeadlineMs: number
   readonly stopDeadlineMs: number
   readonly password: string
@@ -278,6 +350,10 @@ export interface ControlledPaperJourneyEvidence {
     readonly claimedBootId: string
     readonly targetBindingSha256: string
     readonly replayRejected: boolean
+  }
+  readonly join: {
+    readonly requested: boolean
+    readonly username: string | null
   }
   readonly failure: string | null
   readonly stop: {
@@ -452,6 +528,7 @@ export async function runControlledPaperJourney(
     replayRejected: false
   }
   let failure: string | null = null
+  const join = options.joinClient === undefined ? undefined : validateJoinClientInput(options.joinClient)
 
   try {
     await waitForPaperReady({
@@ -467,15 +544,24 @@ export async function runControlledPaperJourney(
       }
     })
 
-    const observation = await verifiedSource.observe(options.runId, new AbortController().signal)
-    const replayRejected = verifiedSource.replayAttemptRejected()
-    claim = {
-      verified: true,
-      onlinePlayers: observation.onlinePlayers,
-      claimedServerInstanceId: observation.claimedServerInstanceId,
-      claimedBootId: observation.claimedBootId,
-      targetBindingSha256: observation.targetBindingSha256,
-      replayRejected
+    let joinedBot: { readonly quit: () => void } | undefined
+    if (join !== undefined) {
+      joinedBot = await joinMinecraftClient(join, options.minecraftPort, 30_000)
+    }
+    try {
+      const observation = await verifiedSource.observe(options.runId, new AbortController().signal)
+      const replayRejected = verifiedSource.replayAttemptRejected()
+      claim = {
+        verified: true,
+        onlinePlayers: observation.onlinePlayers,
+        claimedServerInstanceId: observation.claimedServerInstanceId,
+        claimedBootId: observation.claimedBootId,
+        targetBindingSha256: observation.targetBindingSha256,
+        replayRejected
+      }
+    } finally {
+      joinedBot?.quit()
+      if (join !== undefined) await sleep(1_000)
     }
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Controlled Paper journey failed'
@@ -488,6 +574,10 @@ export async function runControlledPaperJourney(
       runId: options.runId,
       ready: failure === null,
       claim,
+      join: Object.freeze({
+        requested: join !== undefined,
+        username: join?.username ?? null
+      }),
       failure,
       stop: Object.freeze({
         exitCode: stopResult.exitCode,

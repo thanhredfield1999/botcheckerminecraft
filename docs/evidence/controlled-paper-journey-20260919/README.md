@@ -21,16 +21,17 @@ Status: first real Paper runtime evidence for the adapter + keystore companion. 
 4. `BotChecker KeyStore companion registered one opaque Ed25519 provider.`
 5. `Done (22.5s)!` — server ready.
 
-## Claim journey (VERIFIED, round-2 refactored path)
+## Claim journey (VERIFIED, round-2/3 refactored path)
 
+- Round-2 (empty server): `onlinePlayers: 0`. Round-3 (one real mineflayer client `BotCheckerProbe`
+  joined, OBSERVED in log: UUID assigned → joined → logged in → claim → left): `onlinePlayers: 1`.
+  Both: `verified: true`, `nonceConsumed: true`, `replayRejected: true`.
 - Node issued an Ed25519 challenge over the loopback listener; the adapter returned a signed
-  claim; `verifyAndConsume` accepted exactly once: `verified: true`, `nonceConsumed: true`,
-  `replayRejected: true` (second verify on the same envelope rejected).
+  claim; `verifyAndConsume` accepted exactly once.
 - Claim fields: `claimedServerInstanceId: controlled-paper-a`, per-boot
-  `claimedBootId: boot-0a1377...` (fresh each enable), `onlinePlayers: 0` (empty controlled server),
-  `targetBindingSha256` matches the artifact binding.
-- Stop: `exitCode 0`, `exitSignal null`, both plugins reported disabled in log;
-  ports `25680`/`25681` no longer LISTENING; no orphan `java.exe` with the journey root.
+  `claimedBootId: boot-09b0cf...` (round-3, fresh each enable), `targetBindingSha256` matches
+  the artifact binding.
+- Stop: `exitCode 0`, both plugins reported disabled; ports no longer LISTENING; no orphan java.
 
 ## Artifacts bound (SHA-256)
 
@@ -41,10 +42,12 @@ Status: first real Paper runtime evidence for the adapter + keystore companion. 
 
 ## Limits (NOT asserted)
 
-`releaseEligible: false`, `factsAuthoritative: false` by evidence. `onlinePlayers: 0` proves the
-snapshot+binding+signing pipeline on an empty server, not multi-player accuracy. No restart/crash
-evidence, no drag/multiplayer/anti-dupe journey, no production custody; the keystore is a throwaway
-test key, not the operator's real Ed25519 custody.
+`releaseEligible: false`, `factsAuthoritative: false` by evidence. Round-3 proves the
+snapshot+binding+signing pipeline reports `onlinePlayers: 1` when exactly one real client is
+joined (OBSERVED join/disconnect in log) and `0` on an empty server — accuracy at the
+single/multi-account boundary on this controlled server. It does NOT cover: many simultaneous
+players, restart/crash proof, drag/multiplayer/anti-dupe customer journeys, or production
+custody (keystore is a throwaway test key).
 
 ## Reproduction
 

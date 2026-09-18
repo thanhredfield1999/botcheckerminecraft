@@ -2,6 +2,22 @@
 
 Last reviewed: 2026-09-19
 
+## 2026-09-19 — Round-3 multi-player VERIFIED (onlinePlayers accuracy với player thật)
+
+- Executor thêm join client: `joinClient` tùy chọn (username + version, validate fail-closed,
+  RED→GREEN 16/16) — một mineflayer client thật join server controlled (offline mode) trước khi
+  issue challenge; disconnect sau claim. CLI `controlled-paper-journey.mjs` hỗ trợ `joinClient`.
+- `VERIFIED controlled Paper runtime`: Paper 1.21.11 + JDK21, join `BotCheckerProbe` (log thật:
+  UUID assigned → joined → logged in → claim → left). Claim `onlinePlayers: 1` (r2 server rỗng = 0),
+  signature verified, replayRejected, stop sạch (exit 0, 2 plugin Disabling, port đóng, không
+  orphan). Evidence: `docs/evidence/controlled-paper-journey-20260919/journey-evidence-round3-multiplayer.json`
+  + `lifecycle-log-round3-multiplayer.txt`.
+- `VERIFIED full gate 19/09 (round 3)`: typecheck → coverage-floor → 909 total / 903 pass /
+  0 fail / 6 skip → build (19 Java sources) → diff-check, exit 0.
+- Giới hạn còn: nhiều player đồng thời chưa đo (join-client single), restart/crash, drag/
+  multiplayer/anti-dupe customer journeys, keystore custody thật, release. `releaseEligible:false`.
+- Commit đợt này đã push: `fd63c5f` (dự kiến thêm commit round-3 sau gate).
+
 ## 2026-09-19 — Controlled Paper journey VERIFIED (first Paper runtime evidence)
 
 - Executor controlled-Paper mới: `src/e2e/controlled-paper-executor.ts` (config builders,

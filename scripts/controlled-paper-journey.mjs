@@ -23,7 +23,8 @@ import { preflightControlledPaperHarness } from '../src/e2e/controlled-paper-har
 import {
   buildControlledPaperBinding,
   companionConfigYaml,
-  runControlledPaperJourney
+  runControlledPaperJourney,
+  validateJoinClientInput
 } from '../src/e2e/controlled-paper-executor.ts'
 import { buildPaperBukkitOnlinePlayerTrustStore } from '../src/paper-bukkit-online-player-claim.ts'
 import { artifactTargetBindingSha256 } from '../src/target-binding.ts'
@@ -205,6 +206,7 @@ try {
   }
 
   const runId = config.runId ?? `controlled-paper-journey-${now}`
+  const joinClient = config.joinClient === undefined ? undefined : validateJoinClientInput(config.joinClient)
   const evidence = await runControlledPaperJourney({
     isolatedRoot: config.isolatedRoot,
     paperJarPath: config.paperJarPath,
@@ -221,6 +223,7 @@ try {
     keyId: trustInput.keyId,
     memoryMb: config.memoryMb ?? 1024,
     minecraftPort: config.minecraftPort ?? (config.port + 1),
+    joinClient,
     readyDeadlineMs: config.readyDeadlineMs ?? 180_000,
     stopDeadlineMs: config.stopDeadlineMs ?? 45_000,
     password,

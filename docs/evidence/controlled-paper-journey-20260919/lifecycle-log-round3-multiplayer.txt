@@ -1,0 +1,10 @@
+[03:28:52] [Server thread/INFO]: [BotCheckerPaperAdapter] Enabling BotCheckerPaperAdapter v0.2.0-SNAPSHOT
+[03:28:53] [Server thread/INFO]: [BotCheckerPaperAdapter] BotChecker Paper adapter armed; awaiting companion key service registration.
+[03:28:53] [Server thread/INFO]: [BotCheckerKeyStoreCompanion] Enabling BotCheckerKeyStoreCompanion v0.2.0-SNAPSHOT
+[03:28:53] [Server thread/INFO]: [BotCheckerKeyStoreCompanion] BotChecker KeyStore companion registered one opaque Ed25519 provider.
+[03:28:53] [Server thread/INFO]: Done (24.066s)! For help, type "help"
+[03:28:55] [User Authenticator #0/INFO]: UUID of player BotCheckerProbe is 6ae5b89a-5bf6-3d43-9714-663a35fe26d2
+[03:28:57] [Server thread/INFO]: BotCheckerProbe joined the game
+[03:28:57] [Server thread/INFO]: BotCheckerProbe[/127.0.0.1:50102] logged in with entity id 1 at ([world]5.5, -60.0, 6.5)
+[03:28:59] [Server thread/INFO]: BotCheckerProbe lost connection: Disconnected
+[03:28:59] [Server thread/INFO]: BotCheckerProbe left the game
