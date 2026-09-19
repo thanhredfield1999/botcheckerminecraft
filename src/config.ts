@@ -58,6 +58,15 @@ export const config = {
     ? path.resolve(process.env.TARGET_BINDING_FILE.trim())
     : undefined,
   protocolDiagnosticsEnabled: booleanEnv('PROTOCOL_DIAGNOSTICS'),
+  vision: {
+    // AI vision evaluator (OpenAI-compatible). Không cấu hình => undefined:
+    // step assert_vision trả INCONCLUSIVE (VISION_INCONCLUSIVE_API_NOT_CONFIGURED).
+    baseUrl: process.env.BOTCHECKER_VISION_BASE_URL?.trim() || undefined,
+    model: process.env.BOTCHECKER_VISION_MODEL?.trim() || undefined,
+    apiKeyEnvVariable: process.env.BOTCHECKER_VISION_API_KEY_ENV?.trim() || 'BOTCHECKER_VISION_API_KEY',
+    timeoutMs: numberEnv('BOTCHECKER_VISION_TIMEOUT_MS', 60_000),
+    maxResponseBytes: numberEnv('BOTCHECKER_VISION_MAX_RESPONSE_BYTES', 64 * 1024)
+  },
   minecraft: {
     host: process.env.MC_HOST ?? '127.0.0.1',
     port: numberEnv('MC_PORT', 25565),

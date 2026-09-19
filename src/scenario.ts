@@ -154,6 +154,18 @@ const stepSchema = z.discriminatedUnion('action', [
     // mã item phải khác; giống nghĩa là thao tác không có hiệu lực).
     equals: z.boolean().default(true)
   }),
+  // Vision: render GUI đang mở thành PNG deterministic, gửi AI vision API
+  // (OpenAI-compatible) đánh giá theo prompt. Key CHỈ đọc từ env
+  // BOTCHECKER_VISION_API_KEY_ENV tại lúc chạy; scenario không bao giờ chứa key.
+  // Không cấu hình/key → step INCONCLUSIVE (VISION_INCONCLUSIVE_API_NOT_CONFIGURED),
+  // không bao giờ tự bịa verdict.
+  baseStep.extend({
+    action: z.literal('assert_vision'),
+    prompt: z.string().min(1).max(2000),
+    expectVerdict: z.enum(['PASS', 'FAIL', 'INCONCLUSIVE']).default('PASS'),
+    requiresGui: z.boolean().default(true),
+    timeoutMs: z.number().int().positive().max(120_000).default(30_000)
+  }),
   baseStep.extend({ action: z.literal('fish'), attempts: z.number().int().positive().max(20).default(1) }),
   baseStep.extend({ action: z.literal('plant'), seedIncludes: z.string().min(1), soil: z.enum(['farmland', 'dirt', 'grass_block']).default('farmland') }),
   // Dogfooding 2026-09-07 (DF-01): trước đây chỉ có `minimum` và nó `.positive()`.

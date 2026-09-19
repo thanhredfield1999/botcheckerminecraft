@@ -2,6 +2,30 @@
 
 Last reviewed: 2026-09-19
 
+## 2026-09-19 — AI vision evaluation (assert_vision) implemented, fail-closed
+
+- New capability: `assert_vision` scenario step — render trạng thái client quan sát được
+  (GUI title + slots/items/lore) thành PNG deterministic (zlib-only, no dep), gửi
+  OpenAI-compatible vision API với prompt, verdict PASS/FAIL/INCONCLUSIVE. Files:
+  `src/vision-frame.ts` (render + asciiFold, bỏ § color code), `src/vision-evaluator.ts`
+  (fetch injectable, bounded, sanitized), `src/scenario.ts` + `src/runner.ts` (step +
+  execution, evidence chỉ lưu SHA-256 frame + reason bounded), `src/config.ts` +
+  `src/server.ts` (env wiring).
+- Config bằng env, KHÔNG key trong repo/scenario/report: `BOTCHECKER_VISION_BASE_URL`
+  (https), `BOTCHECKER_VISION_MODEL`, `BOTCHECKER_VISION_API_KEY_ENV` (tên env chứa key —
+  key chỉ đọc `process.env` lúc chạy), `TIMEOUT_MS`, `MAX_RESPONSE_BYTES`. Fail-closed:
+  thiếu config/key/GUI → INCONCLUSIVE (VISION_INCONCLUSIVE_API_NOT_CONFIGURED /
+  INCONCLUSIVE_VISION_NOT_CONFIGURED / VISION_HTTP_ERROR / VISION_MALFORMED_RESPONSE /
+  VISION_INVALID_VERDICT); không bao giờ tự bịa verdict.
+- VERIFIED: vision tests RED→GREEN (render deterministic PNG signature/IHDR/IDAT/IEND,
+  asciiFold §/dấu, evaluator PASS/FAIL/INCONCLUSIVE + config reject, runner step pass/fail/
+  unwired) — 10 test mới; full gate 923 total / 917 pass / 0 fail / 6 skip, build 19 Java
+  sources, diff-check sạch. (Một lần gate giữa chừng fail 1 test do tải — chạy lại 3 lần
+  đều xanh, không phải regression.)
+- Docs: `docs/AI_VISION_EVALUATION.md`. Chưa chạy sniff với API thật — cần Thanh cung cấp
+  API key (env, không gửi vào chat/repo).
+- `releaseEligible:false`. Commit push sau gate.
+
 ## 2026-09-19 — Consumer journey VERIFIED (ItemGuard LITE GUI qua BotChecker API thật)
 
 - Bo sung consumer journey: `scripts/controlled-paper-consumer.mjs` — boot controlled Paper pack

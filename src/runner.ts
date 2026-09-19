@@ -7,6 +7,7 @@ import type { Entity } from 'prismarine-entity'
 import { Vec3 } from 'vec3'
 import type { Scenario, ScenarioStep } from './scenario.js'
 import { boundedGuiItems, boundedGuiSnapshot, formatGuiSnapshot, inventoryItemSearchText, itemSearchText, sanitizeGuiText, snapshotGui } from './snapshot.js'
+import { renderWindowFramePng, type WindowFrame } from './vision-frame.js'
 import type {
   GuiSnapshot,
   RunManifest,
@@ -124,7 +125,7 @@ function immutableAuthorizedPlan(
   })
 }
 
-interface TestRunDependencies {
+export interface TestRunDependencies {
   createBot?: (options: MinecraftOptions) => Bot
   prepareNavigation?: (bot: Bot) => void
   connectTimeoutMs?: number
@@ -135,6 +136,16 @@ interface TestRunDependencies {
   targetBinding?: ArtifactTargetBinding
   authorizedPlan?: Readonly<ResolvedAuthorizedPlan>
   signedProviderEvidenceFactory?: SignedProviderEvidenceFactory
+  /** AI vision evaluator (OpenAI-compatible). Không có → step assert_vision INCONCLUSIVE. */
+  visionEvaluator?: {
+    evaluate(input: { pngBase64: string, prompt: string }, auth: { apiKey: string | undefined }): Promise<{
+      verdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+      code: string
+      reason: string
+    }>
+  }
+  /** API key cho vision — chỉ đọc từ env tại lúc chạy, không bao giờ literal. */
+  visionApiKey?: string
   qaExecution?: {
     executionId: string
     beforeRunId: string
@@ -804,6 +815,48 @@ export class TestRun {
         const evidence = observeDrop(false)
         if (evidence.dropped !== requested) throw new Error('INCONCLUSIVE_DROP: observed inventory delta differs from request')
         return evidence
+      }
+      case 'assert_vision': {
+        if (!this.dependencies.visionEvaluator) {
+          throw new Error('INCONCLUSIVE_VISION_NOT_CONFIGURED: no vision evaluator wired')
+        }
+        // Chờ một GUI mở (nếu requiresGui) hoặc dùng GUI hiện tại.
+        const gui = await this.poll(() => {
+          const current = snapshotGui(this.requireBot())
+          if (step.requiresGui && !current) return undefined
+          return current
+        }, signal, 100)
+        if (!gui) throw new Error('INCONCLUSIVE_VISION_GUI_CLOSED: no GUI is open')
+        const frame: WindowFrame = {
+          title: gui.title,
+          slots: gui.items.map(item => ({
+            slot: item.slot,
+            name: item.displayName || item.material || '?',
+            count: item.count,
+            lore: item.lore
+          }))
+        }
+        const pngBase64 = renderWindowFramePng(frame).toString('base64')
+        const apiKey = this.dependencies.visionApiKey
+        const result = await this.dependencies.visionEvaluator.evaluate(
+          { pngBase64, prompt: step.prompt },
+          { apiKey }
+        )
+        const matched = result.verdict === step.expectVerdict
+        const framePngSha256 = createHash('sha256').update(pngBase64).digest('hex')
+        this.record('vision_eval', `${step.id}: ${result.verdict} (${result.code})`, {
+          prompt: sanitizeGuiText(step.prompt),
+          expected: step.expectVerdict,
+          verdict: result.verdict,
+          code: result.code,
+          reason: sanitizeGuiText(result.reason),
+          framePngSha256
+        })
+        if (!matched) {
+          throw new Error(`Vision verdict ${result.verdict} != expected ${step.expectVerdict} (${result.code})`)
+        }
+        // Không lưu toàn bộ ảnh vào report — chỉ hash; lý do AI giữ bounded.
+        return { verdict: result.verdict, code: result.code, reason: result.reason, framePngSha256 }
       }
       case 'capture':
       case 'assert_capture': {

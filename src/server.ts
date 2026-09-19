@@ -4,7 +4,8 @@ import { readdir } from 'node:fs/promises'
 import { z } from 'zod'
 import { config } from './config.js'
 import { loadScenario, type Scenario } from './scenario.js'
-import { TestRun } from './runner.js'
+import { TestRun, type TestRunDependencies } from './runner.js'
+import { createVisionEvaluator } from './vision-evaluator.js'
 import { RunQueue } from './queue.js'
 import type { RunStatus } from './types.js'
 import { runtimeCapabilityManifest, type CapabilityManifest } from './capability-manifest.js'
@@ -104,10 +105,33 @@ export function createServer(options: ServerOptions = {}) {
     resolvedPlan?: Readonly<ResolvedAuthorizedPlan>
   ) => {
     if (!capabilityManifest) throw new Error('Capability manifest unavailable')
+    // Vision evaluator: chỉ bật khi cấu hình đủ; API key đọc từ env lúc chạy,
+    // không bao giờ đi qua HTTP/report/repo.
+    let visionEvaluator: TestRunDependencies['visionEvaluator'] | undefined
+    let visionApiKey: string | undefined
+    if (config.vision.baseUrl && config.vision.model) {
+      try {
+        visionEvaluator = createVisionEvaluator({
+          config: {
+            apiKeyEnvVariable: config.vision.apiKeyEnvVariable,
+            baseUrl: config.vision.baseUrl,
+            model: config.vision.model,
+            timeoutMs: config.vision.timeoutMs,
+            maxResponseBytes: config.vision.maxResponseBytes
+          }
+        })
+        visionApiKey = process.env[config.vision.apiKeyEnvVariable]
+      } catch {
+        // Cấu hình sai -> không wire evaluator; assert_vision sẽ INCONCLUSIVE.
+        visionEvaluator = undefined
+        visionApiKey = undefined
+      }
+    }
     return new TestRun(scenario, config.minecraft, config.reportDir, {
       protocolDiagnosticsEnabled: config.protocolDiagnosticsEnabled,
       sourceRevision: capabilityManifest.git.commit,
       capabilityManifest,
+      ...(visionEvaluator ? { visionEvaluator, visionApiKey } : {}),
       ...(targetBinding ? { targetBinding } : {}),
       ...(resolvedPlan ? { authorizedPlan: resolvedPlan } : {})
     })
